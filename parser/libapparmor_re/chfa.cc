@@ -402,7 +402,7 @@ void CHFA::flex_table(ostream &os, const char *name)
 
 	size_t hsize = pad64(sizeof(th) + sizeof(th_version) + strlen(name) + 1);
 	th.th_magic = htonl(YYTH_REGEX_MAGIC);
-	th.th_flags = htonl(chfaflags);
+	th.th_flags = htons(chfaflags);
 	th.th_hsize = htonl(hsize);
 	th.th_ssize = htonl(hsize +
 			    flex_table_size(accept.begin(), accept.end()) +
