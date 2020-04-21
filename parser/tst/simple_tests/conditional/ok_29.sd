@@ -1,0 +1,12 @@
+#=DESCRIPTION conditional within profile
+#=EXRESULT PASS
+
+$FOO=true
+$BAR=true
+$THREE=true
+
+/bin/true {
+  if not defined @FOO or not defined $BAR {
+      /bin/true rix,
+  }
+}

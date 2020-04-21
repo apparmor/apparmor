@@ -152,6 +152,8 @@ static void abi_features(char *filename, bool search);
 %token TOK_SQPOLL
 %token TOK_ALL
 %token TOK_PRIORITY
+%token TOK_AND
+%token TOK_OR
 
  /* rlimits */
 %token TOK_RLIMIT
@@ -270,6 +272,9 @@ static void abi_features(char *filename, bool search);
 %type <var_val>	TOK_VALUE
 %type <val_list> valuelist
 %type <cond> expr
+%type <cond> term
+%type <cond> notfactor
+%type <cond> factor
 %type <id>	id_or_var
 %type <id>	opt_id_or_var
 %type <boolean> opt_subset_flag
@@ -942,14 +947,43 @@ cond_rule: TOK_IF expr block TOK_ELSE cond_rule
 		$$ = ret;
 	}
 
-expr:	TOK_NOT expr
+
+expr:   expr TOK_OR term
+	{
+		cond_expr *conds = new cond_expr($1->eval() || $3->eval());
+		delete $1;
+		delete $3;
+		$$ = conds;
+	}
+	| term
+	{
+		$$ = $1;
+	}
+
+term:	term TOK_AND notfactor
+	{
+		cond_expr *conds = new cond_expr($1->eval() && $3->eval());
+		delete $1;
+		delete $3;
+		$$ = conds;
+	}
+	| notfactor
+	{
+		$$ = $1;
+	}
+
+notfactor:	TOK_NOT notfactor
 	{
 		cond_expr *conds = new cond_expr(!$2->eval());
 		delete $2;
 		$$ = conds;
 	}
+	| factor
+	{
+		$$ = $1;
+	}
 
-expr:	TOK_BOOL_VAR
+factor:	TOK_BOOL_VAR
 	{
 		cond_expr *conds = new cond_expr($1, false);
 		PDEBUG("Matched: boolean expr %s value: %d\n", $1, conds->eval());
@@ -957,7 +991,7 @@ expr:	TOK_BOOL_VAR
 		free($1);
 	}
 
-expr:	TOK_DEFINED TOK_SET_VAR
+factor:	TOK_DEFINED TOK_SET_VAR
 	{
 		cond_expr *conds = new cond_expr($2, true);
 		PDEBUG("Matched: defined set expr %s value %d\n", $2, conds->eval());
@@ -965,12 +999,17 @@ expr:	TOK_DEFINED TOK_SET_VAR
 		free($2);
 	}
 
-expr:	TOK_DEFINED TOK_BOOL_VAR
+factor:	TOK_DEFINED TOK_BOOL_VAR
 	{
 		cond_expr *conds = new cond_expr($2, false);
 		PDEBUG("Matched: defined set expr %s value %d\n", $2, conds->eval());
 		$$ = conds;
 		free($2);
+	}
+
+factor:   TOK_OPENPAREN expr TOK_CLOSEPAREN
+	{
+		$$ = $2;
 	}
 
 id_or_var: TOK_ID { $$ = $1; }

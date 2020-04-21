@@ -1,0 +1,12 @@
+#=DESCRIPTION @FOO is not a boolean variable, but $FOO is defined
+#=EXRESULT FAIL
+
+$FOO=true
+$BAR=true
+$THREE=true
+
+/bin/true {
+  if not @FOO {
+      /bin/true rix,
+  }
+}
