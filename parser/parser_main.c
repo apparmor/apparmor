@@ -944,12 +944,12 @@ void set_supported_features()
 	features_supports_networkv8 = features_intersect(kernel_features,
 							 policy_features,
 							 "network_v8");
-	features_supports_inet = features_intersect(kernel_features,
-						    policy_features,
-						    "network_v8/af_inet");
-	features_supports_unix = features_intersect(kernel_features,
-						    policy_features,
-						    "network/af_unix");
+	features_supports_inetv8 = features_intersect(kernel_features,
+						      policy_features,
+						      "network_v8/af_inet");
+	features_supports_unixv7 = features_intersect(kernel_features,
+						      policy_features,
+						      "network/af_unix");
 	features_supports_mount = features_intersect(kernel_features,
 						     policy_features,
 						     "mount");

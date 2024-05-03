@@ -221,6 +221,13 @@ void unix_rule::downgrade_rule(Profile &prof) {
 
 void unix_rule::write_to_prot(std::ostringstream &buffer)
 {
+	/* This is wrong. Unfortunately this will generate af_unix rules
+	 * under v8 even if the kernel only support v8 socket mediation
+	 * and v7 af_unix. Since this is already in the wild and generated
+	 * by released parsers we are keeping the behavior.
+	 * Unfortunately it means there needs to be an ABI break for the
+	 * upstream kernel.
+	 */
 	int c = features_supports_networkv8 ? AA_CLASS_NETV8 : AA_CLASS_NET;
 
 	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << c;
@@ -329,7 +336,8 @@ int unix_rule::gen_policy_re(Profile &prof)
 	 */
 	if (downgrade)
 		downgrade_rule(prof);
-	if (!features_supports_unix) {
+
+	if (!features_supports_unixv7) {
 		if (features_supports_network || features_supports_networkv8) {
 			/* only warn if we are building against a kernel
 			 * that requires downgrading */
