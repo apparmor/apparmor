@@ -230,6 +230,9 @@ void unix_rule::write_to_prot(std::ostringstream &buffer)
 	 */
 	int c = features_supports_networkv8 ? AA_CLASS_NETV8 : AA_CLASS_NET;
 
+	/* use v9 if available */
+	if (features_supports_networkv9)
+		c = AA_CLASS_NETV9;
 	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << c;
 	writeu16(buffer, AF_UNIX);
 	if (sock_type)
@@ -295,32 +298,211 @@ bool unix_rule::write_label(std::ostringstream &buffer, const char *label)
 	return true;
 }
 
-/* General Layout
+/* v7, v8, v9 Layout
+ * v7 set the original layout - Ubuntu af_unix mediation
+ * v8 followed v7 layout, and was original attempt to fix abi issue, it
+ *    however was generated wrong by the parser, and released into the
+ *    wild. Which means the upstream kernel could not support v8, and
+ *    not cause ABI breakage in userspace.
+ * v9 followed v8 has the same layout again, but fixes the issue that
+ *    v8 has.
+ *    Notes:
+ *      1. v9 is intended to support extensions. This will require additional
+ *         feature flags, and these will extend the layout.
+ *      2. v9 while having the same layout is not entirely semantically
+ *         compatible with the Ubuntu v7/v8 kernel implementation.
+ *         - It uses dynamically updated socket labeling instead of
+ *           statically the open time socket label
+ *           This tightens the profile
+ *         - it handles shutdown sockets differently. Only doing implied
+ *           deleted fd delegation until, explicit delegation lands
+ *           This loosens the profile slightly
+ *         - it optionally has some changes around when/how an fs socket
+ *           is referenced. This requires the kernel exporting a flag
+ *           and the parser encoding fs sockets as part of af_unix
+ *           mediation and not path.
+ *           If the optional path flag is available and if path data is
+ *           encoded in the profile, then v9 af_unix will be used to
+ *           mediate unix file accesses, which is different than v7/v8
+ *           semantics
+ *           To allow a file rule
+ *                file rw /var/snapd_socket,
+ *           to allow fs unix sockets, it must encode 2 rules (1 for file
+ *           and 1 for socket)
+ *           The details around switching between policy enforcement
+ *           style is documented else wher.
  *
  * Local socket end point perms
- * CLASS_NET  AF  TYPE PROTO  local (addr\0label) \0 cmd cmd_option
- *          ^   ^           ^                       ^              ^
- *          |   |           |                       |              |
- *  stub perm   |           |                       |              |
- *              |           |                       |              |
- *  sub stub perm           |                       |              |
- *                          |                       |              |
- *                create perm                       |              |
- *                                                  |              |
- *                                                  |              |
- *                         bind, accept, get/set attr              |
- *                                                                 |
- *                                          listen, set/get opt perm
+ * CLASS_NETv9
+ * CLASS_NETv8
+ * CLASS_NET   AF  TYPE PROTO  local (addr\0label) \0 cmd cmd_option
+ *           ^   ^           ^        ^              ^              ^
+ *           |   |           |        |              |              |
+ *   stub perm   |           |        |              |              |
+ *               |           |        |              |              |
+ *   sub stub perm           |        |              |              |
+ *                           |        |              |              |
+ *                 create perm        |              |              |
+ *                                    |              |              |
+ *                  v9 optional fs path              |              |
+ *                                                   |              |
+ *                          bind, accept, get/set attr              |
+ *                                                                  |
+ *                                           listen, set/get opt perm
  *
  *
  * peer socket end point perms
- * CLASS_NET  AF  TYPE PROTO  local(addr\0label\0) cmd_addr peer(addr\0label )
- *                                                                          ^
- *                                                                          |
- *                                           send/receive connect/accept perm
+ * CLASS_NETv9
+ * CLASS_NETv8
+ * CLASS_NET   AF  TYPE PROTO  local(addr\0label\0) cmd_addr peer(addr\0label)
+ *           ^   ^           ^       ^             ^              ^           ^
+ *           |   |           |       |             |              |           |
+ *   stub perm   |           |       |             |              |           |
+ *               |           |       |             |              |           |
+ *   sub stub perm           |       |             |              |           |
+ *                           |       |             |              |           |
+ *                 create perm       |             |              |           |
+ *                                   |             |              |           |
+ *               v9 optionally fs path             |              |           |
+ *                                                 |              |           |
+ *                        bind, accept, get/set attr              |           |
+ *                                                                |           |
+ *                                            v9 optionally fs path           |
+ *                                                                            |
+ *                                             send/receive connect/accept perm
  *
  * NOTE: accept is encoded twice, locally to check if a socket is allowed
  *       to accept, and then as a pair to test that it can accept the pair.
+ *
+ * -------------------------------------------------------------------------
+ *
+ * v9 Semantics changes
+ *
+ * While v9 keeps the same base layout as v7/8 (except for the class
+ * byte) for compatibility. There is a semanitc change due to v9
+ * fixing two mediation bug present in v7/v8. This fix to mediation will
+ * be applied to v7/v8 policy when it is run through a v9 compatible
+ * kernel, either by the parser mapping v7/v8 into v9 OR by a kernel
+ * with a compatibility patch.
+ *
+ * The change is in the syncing of the file permissions cache label
+ * and the socket label. Under v9 the socket label is updated and kept
+ * in sync with the file label cache. This prevents 2 different labels
+ * being used during mediation. On a cache hit mediation would be
+ * based off of the local file cache alone, resulting in no
+ * revalidation if the peer updated (first bug).
+ *
+ *    eg. Say we have a subject with a label=subj, and a
+ *        peer_label=peer1 The permission check for subj being able to
+ *        communicate with peer1 is done, and allowed. The file cache
+ *        is updated to use subj. So file_cache=subj Now the peer
+ *        passes its end of the socket connection to a task labeled
+ *        with peer2.
+ *
+ *        When subj sends a message over the socket, it could go to
+ *        either peer1 or peer2, but the cache only sees that
+ *        label=subj matches the cache and has not changed, when the
+ *        cache check is done. The cache check short circuits the
+ *        permissions check and the send is allowed, even if subj is
+ *        not allowed to communicate with peer2.
+ *
+ * If the file cache check failed and revalidation was done, the peer
+ * label obtained from the socked was always the initial labeling of
+ * the peer.  This means that the peer match expression might allow
+ * sending to security context that the subj did not have permissions
+ * to access.  That is to say the peer check is done against a subset
+ * of the actual peer. If the subset is equivalent, then the check is
+ * good but if the subset is a proper subset (ie. contains fewer
+ * elements) the peer label check is bad.
+ *
+ *    eg. Continuing the above example, when peer hands its end of the
+ *        socket to peer2, the label is not updated. So communication
+ *        checks are only done against peer1. Not peer1 and peer2 as
+ *        should be done. This is effectively unintended/uncontrolled
+ *        delegation and it could potentially lead to a confused
+ *        deputy privilege escalation.
+ *
+ * The cross check when done used the socket peer label as a
+ * proxy. However because the socket peer label was not correctly
+ * updated, this resulted in only partial permission check instead of
+ * a check against the full subj label set.
+ *
+ * This was often mitigated by the receiving task also doing a check
+ * within its own subject cred context. ie. the sender has a
+ * permission check done on the send, and then the receiver does a
+ * permission check at receive.  Unfortunately this is not always the
+ * case for every operation, that needs to consider the peer. Internal
+ * (to the network stack) caching may mean that the receive permission
+ * hook is not always called. And for some other operations the check
+ * is only ever done on one side of the socket, not both.
+ *
+ *    eg. Continuing with the example the peer label is used as a proxy
+ *        for the subject. In this case the proxy has to represent
+ *        all possible subjects on the peer end, in this case that would
+ *        be peer1 and peer2. Unfortunately only peer1 is checked.
+ *
+ * The socket now keeps 2 labels on each side, in addition to the
+ * file cache label. The basic layout is
+ *
+ * File-------------> socket                    peer socket<------ peer File
+ *    |                 |                           |           |
+ *    v                 v                           v           v
+ * subj_label cache     sk----------------------> peer_sk     peer
+ *                      |                           |         subj_label cache
+ *                      v                           v
+ *                     ctx                       peer  ctx
+ *                      |                           |
+ *                   +--+--+                    +---+--+
+ *                   |     |                    |      |
+ *                   v     v                    v      v
+ *                 label  peer                 peer   subj
+ *                        proxy                label  proxy
+ *
+ * Under v7/v8
+ *
+ * - subj_label cache and peer subj_label cache
+ *    - were consulted during rcu critical section so the permission check
+ *      is only done if something has changed.
+ *    - were updated by their respective owners when the file was used as
+        a subject in a permission check.
+ *
+ * - ctx label, and peer ctx label were not correctly updated.
+ * - peer proxy and subj proxy did not exist.
+ *
+ * under v9
+ *
+ * - subj_label cache and peer subj_label cache
+ *    - were consulted during rcu critical section so the permission check
+ *      is only done if something has changed (same as v7/8)
+ *    - subj_label and peer subj_label cache are updated the same as under
+ *      v7/v8
+ * - peer proxy, and subj proxy
+ *    - are consulted during the lockless rcu critical section cache check
+ *      to see if there is a peer update thus allowing updates of sock
+ *      based on peer changes to be done without the locking the peer
+ *      mediation check does.
+ *      Fixes bug of cache being out of sync with peer.
+ *    - are updated by peer mediation permission check (needs peer lock)
+ * - label and peer_label
+ *   - updated by local (subj) permission check if changes are made.
+ *   - consulted by peer=(label= mediation check. (needs peer lock).
+ *     Fixes bug where peer label check doesn't use full label, and
+ *     peer label used as proxy subject is wrong.
+ *
+ * There are cases where v9 semantics do require additional
+ * permissions/rules in a profile, even if that profile declares a
+ * v7/8 abi.
+ *
+ * It is also important to note that the above semantic issue does not
+ * affect fs based unix sockets; only abstract and anonymous (socket
+ * pairs). Unless the v9 fs in unix sockets extension is used. In that
+ * case fs based sockets go through the af_unix socket mediation
+ * checks, and paths can be used in place of the local and peer addr.
+ * The same set of cache check and semantics will be applied to
+ * profiles using this v9 extension.
+ *
+ * Note: that this extension is placed behind a separate features abi
+ *       flag so that it is an opt-in change.
  */
 int unix_rule::gen_policy_re(Profile &prof)
 {
@@ -337,8 +519,9 @@ int unix_rule::gen_policy_re(Profile &prof)
 	if (downgrade)
 		downgrade_rule(prof);
 
-	if (!features_supports_unixv7) {
-		if (features_supports_network || features_supports_networkv8) {
+	if (!(features_supports_unixv7 || features_supports_unixv9)) {
+		if (features_supports_network || features_supports_networkv8 ||
+		    features_supports_networkv9) {
 			/* only warn if we are building against a kernel
 			 * that requires downgrading */
 			if (parseopts.warn & WARN_RULE_DOWNGRADED)

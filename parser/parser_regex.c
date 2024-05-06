@@ -1057,7 +1057,9 @@ static const char *mediates_signal =  CLASS_STR(AA_CLASS_SIGNAL);
 static const char *mediates_ptrace =  CLASS_STR(AA_CLASS_PTRACE);
 static const char *mediates_socket_net = CLASS_STR(AA_CLASS_NET);	// socket af_family type
 static const char *mediates_netv8 = CLASS_STR(AA_CLASS_NETV8);		// address on inet
+static const char *mediates_netv9 = CLASS_STR(AA_CLASS_NETV9);
 static const char *mediates_net_unixv7 = CLASS_SUB_STR(AA_CLASS_NET, AF_UNIX);
+static const char *mediates_net_unixv9 = CLASS_SUB_STR(AA_CLASS_NETV9, AF_UNIX);
 static const char *mediates_ns = CLASS_STR(AA_CLASS_NS);
 static const char *mediates_posix_mqueue = CLASS_STR(AA_CLASS_POSIX_MQUEUE);
 static const char *mediates_sysv_mqueue = CLASS_STR(AA_CLASS_SYSV_MQUEUE);
@@ -1129,7 +1131,20 @@ int process_profile_policydb(Profile *prof)
 		if (features_supports_networkv8 &&
 		    !prof->policy.rules->add_rule(mediates_netv8, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
-		if (features_supports_unixv7 &&
+		/* v9 requires net and unix to be done together to avoid
+		 * the problem that happend with v7/v8 unix/net
+		 */
+		if (features_supports_unixv9 &&
+		    (!prof->policy.rules->add_rule(mediates_netv9,
+						   mediates_priority,
+						   RULE_ALLOW, AA_MAY_READ,
+						   0, parseopts) ||
+		     !prof->policy.rules->add_rule(mediates_net_unixv9,
+						   mediates_priority,
+						   RULE_ALLOW,  AA_MAY_READ,
+						   0, parseopts)))
+			goto out;
+		else if (features_supports_unixv7 &&
 		    (!prof->policy.rules->add_rule(mediates_socket_net,
 						   mediates_priority,
 						   RULE_ALLOW, AA_MAY_READ,
