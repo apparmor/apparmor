@@ -93,6 +93,11 @@ extern int aa_getprocattr_raw(pid_t tid, const char *attr, char *buf, int len,
 			      char **mode);
 extern int aa_getprocattr(pid_t tid, const char *attr, char **label,
 			  char **mode);
+
+extern char *get_iface_name(int op);
+extern int aa_get_self_attr(int op_type, char **label, char **mode);
+extern int aa_set_self_attr(int op_type, char *buf, int len);
+
 extern int aa_gettaskcon(pid_t target, char **label, char **mode);
 extern int aa_getcon(char **label, char **mode);
 extern int aa_getpeercon_raw(int fd, char *buf, socklen_t *len, char **mode);

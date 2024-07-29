@@ -26,6 +26,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#ifdef HAVE_LINUX_LSM_H
+#include <linux/lsm.h>
+#else
+#define LSM_ATTR_CURRENT	100
+#define LSM_ATTR_EXEC		101
+#endif
+
 #include "changehat.h" /* for do_open() */
 
 #define STACK_DELIM	"//&"
@@ -140,15 +147,15 @@ static bool compound_labels_equal(struct compound_label *cl1,
 /**
  * Verifies that the current confinement context matches the expected context.
  *
- * @attr is the file in /proc/self/attr/ that you want to verify. It is passed
- * directly to aa_getprocattr(2).
+ * @op_type is the lsm attribute operation that you want to verify. It is passed
+ * directly to aa_get_self_attr().
  *
  * Either @expected_label or @expected_mode can be NULL if their values should
  * not be verified. If a NULL mode is expected, as what happens when an
  * unconfined process calls aa_getcon(2), then @expected_mode should be equal
  * to NO_MODE.
  */
-static void verify_confinement_context(const char *attr,
+static void verify_confinement_context(int op_type,
 				       const char *expected_label,
 				       const char *expected_mode)
 {
@@ -157,10 +164,10 @@ static void verify_confinement_context(const char *attr,
 	bool null_expected_mode = expected_mode ?
 				  strcmp(NO_MODE, expected_mode) == 0 : false;
 
-	rc = aa_getprocattr(getpid(), attr, &label, &mode);
+	rc = aa_get_self_attr(op_type, &label, &mode);
 	if (rc < 0) {
 		int err = errno;
-		fprintf(stderr, "FAIL - aa_getprocattr (%s): %m", attr);
+		fprintf(stderr, "FAIL - aa_getprocattr (%s): %m", get_iface_name(op_type));
 		exit(err);
 	}
 
@@ -183,7 +190,7 @@ static void verify_confinement_context(const char *attr,
 
 		if (!compound_labels_equal(&cl, &expected_cl)) {
 			fprintf(stderr, "FAIL - %s label \"%s\" != expected_label \"%s\"\n",
-				attr, label, expected_label);
+				get_iface_name(op_type), label, expected_label);
 			rc = EINVAL;
 			goto err;
 		}
@@ -193,7 +200,7 @@ static void verify_confinement_context(const char *attr,
 	    ((!mode && !null_expected_mode) ||
 	     (mode && strcmp(mode, expected_mode)))) {
 		fprintf(stderr, "FAIL - %s mode \"%s\" != expected_mode \"%s\"\n",
-			attr, mode, expected_mode);
+			get_iface_name(op_type), mode, expected_mode);
 		rc = EINVAL;
 		goto err;
 	}
@@ -228,13 +235,13 @@ err:
 static void verify_current(const char *expected_label,
 			   const char *expected_mode)
 {
-	verify_confinement_context("current", expected_label, expected_mode);
+	verify_confinement_context(LSM_ATTR_CURRENT, expected_label, expected_mode);
 }
 
 static void verify_exec(const char *expected_label,
 			const char *expected_mode)
 {
-	verify_confinement_context("exec", expected_label, expected_mode);
+	verify_confinement_context(LSM_ATTR_EXEC, expected_label, expected_mode);
 }
 
 static void handle_transition(int transition, const char *target)

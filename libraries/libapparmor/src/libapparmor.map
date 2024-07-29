@@ -132,6 +132,15 @@ APPARMOR_3.1 {
 	*;
 } APPARMOR_3.0;
 
+APPARMOR_4.1 {
+  global:
+	aa_get_self_attr;
+	aa_set_self_attr;
+  local:
+	*;
+} APPARMOR_3.1;
+
+
 PRIVATE {
 	global:
 		_aa_is_blacklisted;

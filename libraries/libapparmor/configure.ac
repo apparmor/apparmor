@@ -82,7 +82,7 @@ AM_CONDITIONAL(HAVE_RUBY, test x$with_ruby = xyes)
 # Keep because we use grep in a test
 AC_PROG_EGREP
 
-AC_CHECK_HEADERS(unistd.h stdint.h syslog.h)
+AC_CHECK_HEADERS(unistd.h stdint.h syslog.h linux/lsm.h)
 
 AC_CHECK_FUNCS([asprintf __secure_getenv secure_getenv reallocarray])
 
