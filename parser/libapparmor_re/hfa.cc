@@ -1615,16 +1615,15 @@ static int pri_update_perm(optflags const &opts, vector<int> &priority, int i,
  * have any exact matches, then they override the execute and safe
  * execute flags.
  */
-int accept_perms(optflags const &opts, NodeVec *state, perms_t &perms,
-		 bool filedfa)
+perms_t::perms_t(optflags const &opts, NodeVec *state, bool filedfa)
 {
 	int error = 0;
 	// scaling priority by *4
 	std::vector<int>  priority(sizeof(perm32_t)*8,  MIN_INTERNAL_PRIORITY*4);	// 32 but wasn't tied to perm32_t
-	perms.clear();
+	clear();
 
 	if (!state)
-		return error;
+		return;
 	if (opts.dump & DUMP_DFA_PERMS) {
 		cerr << "Building Perms";
 		if (filedfa)
@@ -1644,7 +1643,7 @@ int accept_perms(optflags const &opts, NodeVec *state, perms_t &perms,
 
 		for (int i = 0;  check; i++) {
 			if (check & bit) {
-				error = pri_update_perm(opts, priority, i, match, perms, filedfa);
+				error = pri_update_perm(opts, priority, i, match, *this, filedfa);
 				if (error)
 					goto out;
 			}
@@ -1652,15 +1651,15 @@ int accept_perms(optflags const &opts, NodeVec *state, perms_t &perms,
 			bit <<= 1;
 		}
 	}
-	if (filedfa && (perms.allow & AA_EXEC_BITS)) {
-		add_implied_ix_mmap(opts, priority, perms.allow);
+	if (filedfa && (allow & AA_EXEC_BITS)) {
+		add_implied_ix_mmap(opts, priority, allow);
 	}
 	if (opts.dump & DUMP_DFA_PERMS) {
-		cerr << "  computed: ";  perms.dump(cerr); cerr << "\n";
+		cerr << "  computed: ";  dump(cerr); cerr << "\n";
 	}
 out:
-	if (error)
+	if (error) {
 		fprintf(stderr, "profile has merged rule with conflicting x modifiers\n");
-
-	return error;
+		throw error;
+	}
 }
