@@ -52,7 +52,10 @@ ostream &operator<<(ostream &os, State &state);
 
 class perms_t {
 public:
-	perms_t(void): allow(0), deny(0), prompt(0), audit(0), quiet(0), exact(0) { };
+	perms_t(void): allow(0), deny(0), prompt(0), audit(0), quiet(0),
+		       exact(0)
+		{ };
+	perms_t(optflags const &opts, NodeVec *match, bool filedfa);
 
 	bool is_accept(void) { return (allow | deny | prompt | audit | quiet); }
 
@@ -172,9 +175,6 @@ public:
 	perm32_t allow, deny, prompt, audit, quiet, exact;
 };
 
-int accept_perms(optflags const &opts, NodeVec *state, perms_t &perms,
-		 bool filedfa);
-
 /*
  * ProtoState - NodeSet and ancillery information used to create a state
  */
@@ -239,23 +239,15 @@ class State {
 public:
 	State(optflags const &opts, int l, ProtoState &n, State *other,
 	      bool filedfa):
-		label(l), flags(0), idx(0), perms(), trans()
+		label(l), flags(0), idx(0), perms(opts, n.anodes, filedfa),
+		trans()
 	{
-		int error;
-
 		if (other)
 			otherwise = other;
 		else
 			otherwise = this;
 
 		proto = n;
-
-		/* Compute permissions associated with the State. */
-		error = accept_perms(opts, n.anodes, perms, filedfa);
-		if (error) {
-			//cerr << "Failing on accept perms " << error << "\n";
-			throw error;
-		}
 	};
 
 	State *next(transchar c) {
