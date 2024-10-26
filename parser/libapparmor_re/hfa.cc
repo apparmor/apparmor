@@ -334,7 +334,8 @@ State *DFA::add_new_state(optflags const &opts, NodeSet *anodes,
 	proto.init(nnodev, anodev);
 	State *state;
 	try {
-		state = new State(opts, node_map.size(), proto, other, filedfa);
+		state = new State(uniq_perms, opts, node_map.size(), proto,
+				  other, filedfa);
 	} catch(int error) {
 		/* this function is called in the DFA object creation,
 		 * and the exception prevents the destructor from
@@ -565,18 +566,13 @@ State *DFA::match(const char *str)
 
 void DFA::dump_uniq_perms(const char *s)
 {
-	set<perms_t> uniq;
-	for (Partition::iterator i = states.begin(); i != states.end(); i++)
-		uniq.insert((*i)->perms);
-
-	cerr << "Unique Permission sets: " << s << " (" << uniq.size() << ")\n";
+	cerr << "Unique Permission sets: " << s << " (" << uniq_perms.size() << ")\n";
 	cerr << "----------------------\n";
-	for (set<perms_t >::iterator i = uniq.begin(); i != uniq.end(); i++) {
-		cerr << "  allow:" << hex << i->allow << " deny:"
-		     << i->deny << " audit:" << i->audit
-		     << " quiet:" << i->quiet << dec << "\n";
+	for (std::set<perms_t *>::iterator i = uniq_perms.begin(); i != uniq_perms.end(); i++) {
+	  cerr << "  allow:" << hex << (*i)->allow << " deny:"
+	       << (*i)->deny << " audit:" << (*i)->audit
+	       << " quiet:" << (*i)->quiet << " prompt:" << (*i)->prompt <<  dec << "\n";
 	}
-	//TODO: add prompt
 }
 
 // make sure work_queue and reachable insertion are always done together
@@ -622,8 +618,8 @@ void DFA::remove_unreachable(optflags const &opts)
 					cerr << "unreachable: " << **i;
 					if (*i == start)
 						cerr << " <==";
-					if ((*i)->perms.is_accept())
-						(*i)->perms.dump(cerr);
+					if ((*i)->perms->is_accept())
+						(*i)->perms->dump(cerr);
 					cerr << "\n";
 				}
 				State *current = *i;
@@ -685,8 +681,9 @@ bool DFA::same_mappings(State *s1, State *s2)
 int DFA::apply_and_clear_deny(void)
 {
 	int c = 0;
+	/* TODO: update to remove perms that are no longer in use */
 	for (Partition::iterator i = states.begin(); i != states.end(); i++)
-		c += (*i)->apply_and_clear_deny();
+		c += (*i)->apply_and_clear_deny(uniq_perms);
 
 	return c;
 }
@@ -725,13 +722,6 @@ ostream &DFA::dump_partitions(ostream &os, const char *description,
 	return os;
 }
 
-struct deref_less_than_perms {
-       bool operator()(perms_t * const &lhs, perms_t * const &rhs)const
-		{
-			return *lhs < *rhs;
-		}
-};
-
 typedef map<perms_t *, Partition *, deref_less_than_perms> PermMap;
 
 /* minimize the number of dfa states */
@@ -746,14 +736,14 @@ void DFA::minimize(optflags const &opts)
 	int accept_count = 0;
 	int final_accept = 0;
 	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
-		PermMap::iterator p = perm_map.find(&(*i)->perms);
+		PermMap::iterator p = perm_map.find((*i)->perms);
 		if (p == perm_map.end()) {
 			Partition *part = new Partition();
 			part->push_back(*i);
-			perm_map.insert(make_pair(&(*i)->perms, part));
+			perm_map.insert(make_pair((*i)->perms, part));
 			partitions.push_back(part);
 			(*i)->partition = part;
-			if ((*i)->perms.is_accept())
+			if ((*i)->perms->is_accept())
 				accept_count++;
 		} else {
 			(*i)->partition = p->second;
@@ -871,9 +861,23 @@ void DFA::minimize(optflags const &opts)
 			if (opts.dump & DUMP_DFA_MIN_PARTS)
 				cerr << **i << ", ";
 			(*i)->label = -1;
-			rep->perms.add((*i)->perms, filedfa);
+			/* merging perms is only necessary if partitioning doesn't
+			 * completely separate base on unique perms.
+			 * atm this should be the case. Code to handle case is
+			 * only to document what should be done if this is allowed
+			 * in the future
+			 */
+			if ((rep->perms != (*i)->perms) &&
+			    (*rep->perms != *(*i)->perms)) {
+				throw std::runtime_error("Minimization different permissions in same partion");
+				/*
+				perms_t tmp = *rep->perms;
+				tmp.add((*i)->perms, filedfa);
+				rep->perms = uniq_perms.insert(tmp);
+				*/
+			}
 		}
-		if (rep->perms.is_accept())
+		if (rep->perms->is_accept())
 			final_accept++;
 		if (opts.dump & DUMP_DFA_MIN_PARTS)
 			cerr << "\n";
@@ -1159,14 +1163,14 @@ void DFA::dump_diff_encode(ostream &os)
 void DFA::dump(ostream &os, Renumber_Map *renum)
 {
 	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
-		if (*i == start || (*i)->perms.is_accept()) {
+		if (*i == start || (*i)->perms->is_accept()) {
 			os << make_pair(*i, renum);
 			if (*i == start) {
 				os << " <== ";
-				(*i)->perms.dump_header(os);
+				(*i)->perms->dump_header(os);
 			}
-			if ((*i)->perms.is_accept())
-				(*i)->perms.dump(os);
+			if ((*i)->perms->is_accept())
+				(*i)->perms->dump(os);
 			os << "\n";
 		}
 	}
@@ -1184,16 +1188,16 @@ void DFA::dump(ostream &os, Renumber_Map *renum)
 				if (first) {
 					first = false;
 					os << make_pair(*i, renum) << " perms: ";
-					if ((*i)->perms.is_accept())
-						(*i)->perms.dump(os);
+					if ((*i)->perms->is_accept())
+						(*i)->perms->dump(os);
 					else
 						os << "none";
 					os << "\n";
 				}
 				os << "    "; j->first.dump(os) << " -> " <<
 					make_pair(j->second, renum);
-				if ((j)->second->perms.is_accept())
-					os << " ", (j->second)->perms.dump(os);
+				if ((j)->second->perms->is_accept())
+					os << " ", (j->second)->perms->dump(os);
 				os << "\n";
 			}
 		}
@@ -1202,8 +1206,8 @@ void DFA::dump(ostream &os, Renumber_Map *renum)
 			if (first) {
 				first = false;
 				os << make_pair(*i, renum) << " perms: ";
-				if ((*i)->perms.is_accept())
-					(*i)->perms.dump(os);
+				if ((*i)->perms->is_accept())
+					(*i)->perms->dump(os);
 				else
 					os << "none";
 				os << "\n";
@@ -1217,8 +1221,8 @@ void DFA::dump(ostream &os, Renumber_Map *renum)
 				}
 			}
 			os << "] -> " << make_pair((*i)->otherwise, renum);
-			if ((*i)->otherwise->perms.is_accept())
-				os << " ", (*i)->otherwise->perms.dump(os);
+			if ((*i)->otherwise->perms->is_accept())
+				os << " ", (*i)->otherwise->perms->dump(os);
 			os << "\n";
 		}
 	}
@@ -1240,9 +1244,9 @@ void DFA::dump_dot_graph(ostream & os)
 		if (*i == start) {
 			os << "\t\tstyle=bold" << "\n";
 		}
-		if ((*i)->perms.is_accept()) {
+		if ((*i)->perms->is_accept()) {
 			os << "\t\tlabel=\"" << **i << "\\n";
-			(*i)->perms.dump(os);
+			(*i)->perms->dump(os);
 			os << "\"\n";
 		}
 		os << "\t]" << "\n";

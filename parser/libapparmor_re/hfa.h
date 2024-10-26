@@ -103,7 +103,7 @@ public:
 
 
 	/* returns true if perm is no longer accept */
-	int apply_and_clear_deny(void)
+	bool apply_and_clear_deny(void)
 	{
 		if (deny) {
 			allow &= ~deny;
@@ -120,7 +120,7 @@ public:
 			deny = 0;
 			return !is_accept();
 		}
-		return 0;
+		return false;
 	}
 
 	bool operator<(perms_t const &rhs)const
@@ -138,7 +138,81 @@ public:
 		return quiet < rhs.quiet;
 	}
 
+	bool operator==(perms_t const &rhs)const
+	{
+		if (allow != rhs.allow)
+			return false;
+		if (deny != rhs.deny)
+			return false;
+		if (prompt != rhs.prompt)
+			return false;
+		if (audit != rhs.audit)
+			return false;
+		return quiet == rhs.quiet;
+	}
+	bool operator!=(perms_t const &rhs)const
+	{
+		return !(*this == rhs);
+	}
 	perm32_t allow, deny, prompt, audit, quiet;
+};
+
+struct deref_less_than_perms {
+	bool operator()(perms_t * const &lhs, perms_t * const &rhs)const
+		{
+			return *lhs < *rhs;
+		}
+};
+
+// a dedup cache for permissions
+class perms_t_Cache: public CacheStats {
+public:
+	std::set<perms_t *, deref_less_than_perms> cache;
+
+	typedef std::set<perms_t *>::iterator iterator;
+	iterator begin() { return cache.begin(); }
+	iterator end() { return cache.end(); }
+
+	perms_t_Cache(void): cache() { };
+	~perms_t_Cache() { clear(); };
+
+	virtual unsigned long size(void) const { return cache.size(); }
+
+	void clear()
+	{
+		for (iterator i = cache.begin();
+		     i != cache.end(); i++) {
+			delete *i;
+		}
+		cache.clear();
+		CacheStats::clear();
+	}
+
+	// will delete perms if not inserted into cache
+	perms_t *insert(perms_t *perms)
+	{
+		if (!perms)
+			return NULL;
+		std::pair<iterator,bool> uniq;
+		uniq = cache.insert(perms);
+		if (uniq.second == false) {
+			delete perms;
+			dup++;
+		}
+		return (*uniq.first);
+	}
+
+	perms_t *insert(const perms_t &perms)
+	{
+		perms_t *tmp = new perms_t(perms);
+		return insert(tmp);
+	}
+
+	perms_t *insert(optflags const &opts, NodeVec *match, bool filedfa)
+	{
+		perms_t *tmp = new perms_t(opts, match, filedfa);
+		return insert(tmp);
+	}
 };
 
 /*
@@ -203,11 +277,12 @@ struct DiffDag {
  */
 class State {
 public:
-	State(optflags const &opts, int l, ProtoState &n, State *other,
-	      bool filedfa):
-		label(l), flags(0), idx(0), perms(opts, n.anodes, filedfa),
-		trans()
+	State(perms_t_Cache &cache, optflags const &opts, int l, ProtoState &n,
+	      State *other, bool filedfa):
+		label(l), flags(0), idx(0), trans()
 	{
+		perms = cache.insert(opts, n.anodes, filedfa);
+
 		if (other)
 			otherwise = other;
 		else
@@ -246,19 +321,27 @@ public:
 	int make_relative(State *rel, int upper_bound);
 	void flatten_relative(State *, int upper_bound);
 
-	int apply_and_clear_deny(void) { return perms.apply_and_clear_deny(); }
+	bool apply_and_clear_deny(perms_t_Cache &cache)
+	{
+		perms_t *tmp = new perms_t(*perms);
+
+		bool res = tmp->apply_and_clear_deny();
+		perms = cache.insert(tmp);
+		return res;
+	}
+
 	void map_perms_to_accept(perm32_t &accept1, perm32_t &accept2,
 				 perm32_t &accept3)
 	{
-		accept1 = perms.allow;
-		accept2 = PACK_AUDIT_CTL(perms.audit, perms.quiet);
-		accept3 = perms.prompt;
+		accept1 = perms->allow;
+		accept2 = PACK_AUDIT_CTL(perms->audit, perms->quiet);
+		accept3 = perms->prompt;
 	}
 
 	int label;
 	int flags;
 	int idx;
-	perms_t perms;
+	perms_t *perms;
 	StateTrans trans;
 	State *otherwise;
 
@@ -373,6 +456,7 @@ public:
 	int ord_range;
 	int upper_bound;
 	Node *root;
+	perms_t_Cache uniq_perms;
 	State *nonmatching, *start;
 	Partition states;
 	bool filedfa;
