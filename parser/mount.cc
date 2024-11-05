@@ -297,8 +297,8 @@ static struct mnt_keyword_table mnt_opts_table[] = {
 	{"nostrictatime",	0, MS_STRICTATIME},
 	{"lazytime",		MS_LAZYTIME, 0},
 	{"nolazytime",		0, MS_LAZYTIME},
-	{"user",		0, (unsigned int) MS_NOUSER},
-	{"nouser",		(unsigned int) MS_NOUSER, 0},
+	{"user",		0, MS_NOUSER},
+	{"nouser",		MS_NOUSER, 0},
 
 	{NULL, 0, 0}
 };
@@ -387,7 +387,7 @@ static bool conflicting_flags(unsigned int flags, unsigned int inv)
 {
 	if (flags & inv) {
 		for (int i = 0; i < 31; i++) {
-			unsigned int mask = 1 << i;
+			unsigned int mask = 1U << i;
 			if ((flags & inv) & mask) {
 				cerr << "conflicting flag values = "
 				     << flags << ", " << inv << "\n";
@@ -712,9 +712,9 @@ static bool build_mnt_flags(char *buffer, int size, unsigned int flags,
 		return true;
 	}
 	for (i = 0; i <= 31; ++i) {
-		if ((opt_flags) & (1 << i))
+		if ((opt_flags) & (1U << i))
 			len = snprintf(p, size, "(\\x%02x|)", i + 1);
-		else if (flags & (1 << i))
+		else if (flags & (1U << i))
 			len = snprintf(p, size, "\\x%02x", i + 1);
 		else	/* no entry = not set */
 			continue;
