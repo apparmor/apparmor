@@ -66,7 +66,7 @@
 #define MS_NOIVERSION	0
 #define MS_STRICTATIME	(1 << 24)
 #define MS_LAZYTIME	(1 << 25)
-#define MS_NOUSER	(1 << 31)
+#define MS_NOUSER	(1U << 31)
 #define MS_USER		0
 
 /* Only use MS_REC when defining these macros. Please use the macros from here

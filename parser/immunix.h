@@ -62,7 +62,7 @@
 
 #define AA_CHANGE_HAT			(1 << 30)
 #define AA_ONEXEC			(1 << 30)
-#define AA_CHANGE_PROFILE		(1 << 31)
+#define AA_CHANGE_PROFILE		(1U << 31)
 #define AA_SHARED_PERMS			(AA_CHANGE_HAT | AA_CHANGE_PROFILE)
 
 #define AA_EXEC_MODIFIERS		(AA_EXEC_MOD_0 | AA_EXEC_MOD_1 | \
