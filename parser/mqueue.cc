@@ -30,7 +30,7 @@ int parse_mqueue_perms(const char *str_perms, perm32_t *perms, int fail)
 	return parse_X_perms("mqueue", AA_VALID_MQUEUE_PERMS, str_perms, perms, fail);
 }
 
-static bool is_all_digits(char *str)
+static bool is_all_digits(const char *str)
 {
 	const char *s = str;
 	while (*str && isdigit(*str))
