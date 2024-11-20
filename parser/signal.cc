@@ -166,6 +166,11 @@ void signal_rule::move_conditionals(struct cond_entry *conds)
 		if (!cond_ent->eq)
 			yyerror("keyword \"in\" is not allowed in signal rules\n");
 		if (strcmp(cond_ent->name, "set") == 0) {
+			/* This sets cond_ent->vals to NULL, unconditionally.
+			 * extract_sigs would return a non-NULL ptr on an invalid entry,
+			 * but instead it calls yyerror, which does exit(1), so this never
+			 * happens.
+			 */
 			extract_sigs(&cond_ent->vals);
 		} else if (strcmp(cond_ent->name, "peer") == 0) {
 			move_conditional_value("signal", &peer_label, cond_ent);
