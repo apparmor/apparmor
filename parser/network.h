@@ -142,8 +142,10 @@ public:
 	bool is_none = false;
 
 	void free_conds() {
-		if (sip)
+		if (sip) {
 			free(sip);
+			sip = NULL;
+		}
 		if (sport) {
 			free(sport);
 			sport = NULL;
