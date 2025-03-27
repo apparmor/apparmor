@@ -546,7 +546,8 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 	sd_write_uint32(buf, 0);
 	sd_write_structend(buf);
 
-	sd_serialize_identity(buf, profile->identities);
+	if (features_supports_identity_names)
+		sd_serialize_identity(buf, profile->identities);
 
 	sd_serialize_xattrs(buf, profile->xattrs);
 

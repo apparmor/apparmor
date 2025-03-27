@@ -1008,6 +1008,9 @@ void set_supported_features()
 	features_supports_flag_disconnected_ipc = features_intersect(kernel_features,
 								     policy_features,
 								     "domain/disconnected.ipc");
+	features_supports_identity_names = features_intersect(kernel_features,
+							      policy_features,
+							      "domain/identity");
 }
 
 static bool do_print_cache_dir(aa_features *features, int dirfd, const char *path)

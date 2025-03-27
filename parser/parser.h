@@ -321,6 +321,7 @@ extern int features_supports_networkv8;
 extern bool features_supports_networkv9;
 extern bool features_supports_inetv8;
 extern bool features_supports_inetv9;
+extern int features_supports_identity_names;
 extern int kernel_supports_policydb;
 extern int kernel_supports_diff_encode;
 extern int features_supports_mount;
