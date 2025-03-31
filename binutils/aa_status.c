@@ -21,6 +21,7 @@
 #include <dirent.h>
 #include <regex.h>
 #include <libintl.h>
+#include <glob.h>
 #define _(s) gettext(s)
 
 #include <sys/apparmor.h>
@@ -80,6 +81,7 @@ static void free_filters(filters_t *filters)
 struct profile {
 	char *name;
 	char *status;
+	char *identities;
 };
 
 static void free_profiles(struct profile *profiles, size_t n) {
@@ -89,6 +91,9 @@ static void free_profiles(struct profile *profiles, size_t n) {
 		n--;
 		free(profiles[n].name);
 		free(profiles[n].status);
+		if (profiles[n].identities)
+			free(profiles[n].identities);
+
 	}
 	free(profiles);
 }
@@ -188,6 +193,76 @@ static int open_profiles(FILE **fp)
 	return 0;
 }
 
+static char *get_identities(const char* profile_name) {
+	autofree char *mountpoint = NULL;
+	autofree char *base_path = NULL;
+	DIR *dir = NULL;
+	struct dirent *entry;
+	const int size = 4096;
+	int res_size;
+	char *result = NULL;
+	char identity_path[size];
+	FILE *f = NULL;
+
+	if (aa_find_mountpoint(&mountpoint) == -1) {
+		eprintf(_("Error: Could not find apparmor mountpoint.\n"));
+		goto out;
+	}
+
+	if (asprintf(&base_path, "%s/policy/profiles", mountpoint) == -1) {
+		eprintf(_("Error: Memory allocation failed for profiles path.\n"));
+		goto out;
+	}
+
+	dir = opendir(base_path);
+	if (!dir) {
+		eprintf(_("Error: Could not open profiles directory %s: %s\n"), base_path, strerror(errno));
+		goto out;
+	}
+
+	while ((entry = readdir(dir)) != NULL) {
+		size_t name_len = strlen(profile_name);
+
+		if (strncmp(entry->d_name, profile_name, name_len) == 0 && entry->d_name[name_len] == '.') {
+			snprintf(identity_path, sizeof(identity_path), "%s/%s/identity", base_path, entry->d_name);
+
+			f = fopen(identity_path, "r");
+			if (f == NULL)
+				goto out;
+
+			result = malloc(size);
+			if (!result) {
+				eprintf("Error: Could not allocate %d bytes\n", size);
+				goto out;
+			}
+
+			if (!fgets(result, size, f)) {
+				eprintf("Error: cannot read identities\n");
+				free(result);
+				result = NULL;
+				goto out;
+			}
+
+			res_size = strlen(result);
+			if (res_size <= 1) {	/* no result or '\n': no identity */
+				free(result);
+				result = NULL;
+			} else {
+				result[res_size - 1] = '\0';	/* To delete '\n' */
+			}
+
+			goto out;
+		}
+	}
+
+out:
+	if (f)
+		fclose(f);
+	if (dir)
+		closedir(dir);
+	return result;
+}
+
 /**
  * get_profiles - get a listing of profiles on the system
  * @fp: opened apparmor profiles file
@@ -234,6 +309,8 @@ static int get_profiles(FILE *fp, struct profile **profiles, size_t *n) {
 		// steal name and status
 		_profiles[*n].name = name;
 		_profiles[*n].status = status;
+		_profiles[*n].identities = get_identities(name);
+
 		name = NULL;
 		status = NULL;
 		*n = *n + 1;
@@ -290,6 +367,8 @@ static int filter_profiles(struct profile *profiles,
 			}
 			_filtered[*nfiltered].name = strdup(profiles[i].name);
 			_filtered[*nfiltered].status = strdup(profiles[i].status);
+			_filtered[*nfiltered].identities = profiles[i].identities ? strdup(profiles[i].identities): NULL;
+
 			*filtered = _filtered;
 			*nfiltered = *nfiltered + 1;
 		}
@@ -620,7 +699,11 @@ static int detailed_profiles(FILE *outf, filters_t *filters, bool json,
 				       is_first ? "" : ", ", filtered[j].name, profile_statuses[i]);
 				is_first = 0;
 			} else {
-				dfprintf(outf, "   %s\n", filtered[j].name);
+				if(filtered[j].identities)
+					dfprintf(outf, "   %s (%s)\n", filtered[j].name, filtered[j].identities);
+				else
+					dfprintf(outf, "   %s\n", filtered[j].name);
+
 			}
 		}
 
