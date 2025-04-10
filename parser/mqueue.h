@@ -69,6 +69,12 @@
 #define AA_VALID_MQUEUE_PERMS (AA_VALID_POSIX_MQ_PERMS | \
 			       AA_VALID_SYSV_MQ_PERMS)
 
+/* read and write needed with create because mq_open can be called
+ * with O_CREAT | O_RDWR, which all show up in the requested perms at
+ * the same time during creation
+ */
+#define AA_MQUEUE_CREATE_PERMS (AA_MQUEUE_CREATE | AA_MQUEUE_READ | \
+				AA_MQUEUE_WRITE)
 // warning getting into overlap area
 
 /* Type of mqueue - can be explicit or implied by rule id/path */
