@@ -148,6 +148,8 @@ ostream &mqueue_rule::dump(ostream &os)
 		os << ")";
 	}
 
+	if (label)
+		os << " label=" << label;
 	if (qname)
 		os << " " << qname;
 
