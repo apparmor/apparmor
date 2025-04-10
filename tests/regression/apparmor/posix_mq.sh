@@ -160,14 +160,19 @@ for username in "root" "$userid" ; do
     do_tests "confined receiver $username - unconfined sender" pass pass pass pass $usercmd
 
 
+    labelres="xpass"
+    if [ "$(kernel_features ipc/posix_mqueue/label)" = "true" ]; then
+        labelres="pass"
+    fi
+
     # queue label
     genprofile "qual=deny:cap:sys_resource" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:label=$receiver" "$sender:px" "$pipe:rw" -- "image=$sender" "mqueue:label=$receiver" "$pipe:rw"
-    do_tests "confined $username - mqueue label 1" xpass xpass xpass xpass $usercmd
+    do_tests "confined $username - mqueue label 1" $labelres $labelres $labelres $labelres $usercmd
 
 
     # queue name and label
     genprofile "qual=deny:cap:sys_resource" "cap:setuid" "cap:fowner" "network:netlink" "mqueue:(create,read,delete):type=posix:label=$receiver:$queuename" "$sender:px" "$pipe:rw" -- "image=$sender" "mqueue:(open,write):type=posix:label=$receiver:$queuename" "$pipe:rw"
-    do_tests "confined $username - mqueue label 2" xpass xpass xpass xpass $usercmd
+    do_tests "confined $username - mqueue label 2" $labelres $labelres $labelres $labelres $usercmd
 
     # ensure we are cleaned up for next pass
     removeprofile
