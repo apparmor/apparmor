@@ -26,6 +26,8 @@ include <tunables/global>
 
   capability dac_override,
 
+  /usr/X11R6/bin/acroread mr,
+
   /{usr/,}bin/basename mixr,
   /{usr/,}bin/bash mix,
   /{usr/,}bin/cat mixr,

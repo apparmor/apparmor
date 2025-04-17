@@ -31,11 +31,10 @@ profile zgrep /usr/bin/{x,}zgrep {
   /usr/bin/rm ix,
   /usr/bin/sed Cx -> sed,
   /usr/bin/xz Cx -> helper,
-  /usr/bin/xzgrep r,
   /usr/bin/zgrep Cx -> helper,
   /usr/bin/zstd Cx -> helper,
   owner /tmp/zgrep* rw,
-  /usr/bin/zgrep r,
+  /usr/bin/{x,}zgrep r,
 
   deny /etc/nsswitch.conf r,
   deny /etc/passwd r,

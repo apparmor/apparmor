@@ -19,6 +19,8 @@ include <tunables/global>
   @{HOME}/.plan          r,
   @{HOME}/.project       r,
 
+  /usr/sbin/in.fingerd mr,
+
   /usr/bin/finger        mix,
   /var/log/lastlog       r,
   /{,var/}run/utmp       rk,

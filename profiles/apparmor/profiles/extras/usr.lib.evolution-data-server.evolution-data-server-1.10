@@ -33,6 +33,7 @@ include <tunables/global>
   /usr/lib/GConf/**.so mr,
   /usr/lib/GConf/2/gconfd-2 Pxr,
   /usr/lib64/GConf/2/gconfd-2 Pxr,
+  /usr/lib/evolution-data-server/evolution-data-server-1.10 mr,
   /usr/lib/evolution-data-server/evolution-data-server-* rmix,
   /usr/lib/evolution-data-server*/extensions r,
   /usr/lib/evolution-data-server*/extensions/lib*.so r,

@@ -17,6 +17,8 @@ profile transmission-daemon /usr/bin/transmission-daemon flags=(complain,attach_
   network inet  stream,
   network inet6 stream,
 
+  /usr/bin/transmission-daemon mr,
+
   owner @{PROC}/@{pid}/mounts r,
   @{PROC}/sys/kernel/random/uuid r,
 
@@ -42,6 +44,8 @@ profile transmission-cli /usr/bin/transmission-cli flags=(complain) {
   include <abstractions/transmission-common>
   include <abstractions/consoles>
 
+  /usr/bin/transmission-cli mr,
+
   # Site-specific additions and overrides. See local/README for details.
   include if exists <local/transmission>
   include if exists <local/transmission-cli>
@@ -52,6 +56,8 @@ profile transmission-gtk /usr/bin/transmission-gtk flags=(complain,attach_discon
   include <abstractions/dbus-session-strict>
   include <abstractions/dconf>
   include <abstractions/gnome>
+
+  /usr/bin/transmission-gtk mr,
 
   owner @{run}/user/*/dconf/user w,
 
@@ -77,6 +83,8 @@ profile transmission-qt /usr/bin/transmission-qt flags=(complain) {
   include <abstractions/X>
   include <abstractions/qt5>
   include <abstractions/qt5-settings-write>
+
+  /usr/bin/transmission-qt mr,
 
   # Site-specific additions and overrides. See local/README for details.
   include if exists <local/transmission>

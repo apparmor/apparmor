@@ -21,6 +21,8 @@ include <tunables/global>
   capability dac_override,
   capability dac_read_search,
 
+  /usr/sbin/oidentd mr,
+
   /etc/oidentd.conf        r,
   /etc/oidentd_masq.conf   r,
   @{PROC}/net/tcp          r,

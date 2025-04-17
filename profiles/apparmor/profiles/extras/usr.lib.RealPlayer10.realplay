@@ -41,6 +41,7 @@ include <tunables/global>
   @{HOME}/ r,
   @{HOME}/.realplayerrc rw,
 
+  /usr/lib/RealPlayer10/realplay mr,
   /usr/lib/RealPlayer10/** mr,
   /usr/lib/RealPlayer10/realplay.bin Pxr,
   /usr/lib/firefox/firefox.sh Pxr,
