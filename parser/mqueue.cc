@@ -148,6 +148,8 @@ ostream &mqueue_rule::dump(ostream &os)
 		os << ")";
 	}
 
+	if (label)
+		os << " label=" << label;
 	if (qname)
 		os << " " << qname;
 
@@ -238,6 +240,19 @@ int mqueue_rule::gen_policy_re(Profile &prof)
 						audit == AUDIT_FORCE ? map_mqueue_perms(perms) : 0, 1,
 						vec, parseopts, false))
 				goto fail;
+
+			/* create should be allowed when label is present since the
+			 * queue needs to be created to have a label associated to it
+			 */
+			if (perms & AA_MQUEUE_CREATE &&
+			    !prof.policy.rules->add_rule_vec(
+						priority,
+						rule_mode,
+						map_mqueue_perms(perms & AA_MQUEUE_CREATE_PERMS),
+						audit == AUDIT_FORCE ? map_mqueue_perms(perms & AA_MQUEUE_CREATE_PERMS) : 0, 1,
+						vec, parseopts, false))
+				goto fail;
+
 			/* also provide label match with perm */
 			if (!prof.policy.rules->add_rule_vec(priority,
 						rule_mode,
@@ -282,6 +297,19 @@ int mqueue_rule::gen_policy_re(Profile &prof)
 						audit == AUDIT_FORCE ? map_mqueue_perms(perms) : 0, 1,
 						vec, parseopts, false))
 				goto fail;
+
+			/* create should be allowed when label is present since the
+			 * queue needs to be created to have a label associated to it
+			 */
+			if (perms & AA_MQUEUE_CREATE &&
+			    !prof.policy.rules->add_rule_vec(
+						priority,
+						rule_mode,
+						map_mqueue_perms(perms & AA_MQUEUE_CREATE_PERMS),
+						audit == AUDIT_FORCE ? map_mqueue_perms(perms & AA_MQUEUE_CREATE_PERMS) : 0, 1,
+						vec, parseopts, false))
+				goto fail;
+
 			/* also provide label match with perm */
 			if (!prof.policy.rules->add_rule_vec(priority,
 						rule_mode,
