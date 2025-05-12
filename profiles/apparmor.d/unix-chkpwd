@@ -17,6 +17,8 @@ profile unix-chkpwd /{,usr/}{,s}bin/unix_chkpwd {
 
   # To write records to the kernel auditing log.
   capability audit_write,
+  # To read shadow with 000 permissions.
+  capability dac_read_search,
 
   network netlink raw,
 
