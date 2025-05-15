@@ -92,6 +92,43 @@ backends:
 exclude:
     - .git
     - "*.o"
+    - "*.a"
+    - "*.la"
+    - "*.lo"
+    - "*.so"
+    - "*.so.*"
+    - .deps
+    - .libs
+    # Generated autotool content
+    - aclocal.m4
+    - autom4te.cache
+    - config.guess
+    - config.log
+    - config.status
+    - config.sub
+    - configure
+    - depcomp
+    - missing
+    - ylwrap
+    # Generated automake makefiles
+    - Makefile.in
+    - libraries/libapparmor/Makefile
+    - libraries/libapparmor/doc/Makefile
+    - libraries/libapparmor/include/Makefile
+    - libraries/libapparmor/include/sys/Makefile
+    - libraries/libapparmor/src/Makefile
+    - libraries/libapparmor/swig/Makefile
+    - libraries/libapparmor/swig/perl/Makefile
+    - libraries/libapparmor/swig/python/Makefile
+    - libraries/libapparmor/swig/python/test/Makefile
+    - libraries/libapparmor/swig/ruby/Makefile
+    - libraries/libapparmor/testsuite/Makefile
+    - libraries/libapparmor/testsuite/config/Makefile
+    - libraries/libapparmor/testsuite/lib/Makefile
+    - libraries/libapparmor/testsuite/libaalogparse.test/Makefile
+    - libraries/libapparmor/testsuite/test_multi.multi
+    # Generated wrapper scripts
+    - libraries/libapparmor/testsuite/test_multi.multi
     # Files related to spread and image-garden.
     - "*.qcow2"
     - "*.iso"
