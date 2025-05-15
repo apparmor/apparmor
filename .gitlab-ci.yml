@@ -215,7 +215,16 @@ coverity:
   script:
     # Prepare the image, for real.
     - printf '\e[0K%s:%s:%s[collapsed=true]\r\e[0K%s\n' section_start "$(date +%s)" prepare_image "Prepare image"
-    - image-garden make "$GARDEN_SYSTEM.$ARCH.run" "$GARDEN_SYSTEM.$ARCH.qcow2" "$GARDEN_SYSTEM.seed.iso" "$GARDEN_SYSTEM.user-data" "$GARDEN_SYSTEM.meta-data"
+    # If there's nothing to do then remove all the files that we would normally
+    # cache so that GitLab skips the cache upload step. This saves significant
+    # time required to re-compress and upload unchanged content.
+    - |
+      if image-garden make --question "$GARDEN_SYSTEM.$ARCH.run" "$GARDEN_SYSTEM.$ARCH.qcow2" "$GARDEN_SYSTEM.seed.iso" "$GARDEN_SYSTEM.user-data" "$GARDEN_SYSTEM.meta-data"; then
+        rm -f "$GARDEN_SYSTEM".* efi-code.*.img efi-vars.*.img
+        rm -rf "$GARDEN_DL_DIR"
+      else
+        image-garden make "$GARDEN_SYSTEM.$ARCH.run" "$GARDEN_SYSTEM.$ARCH.qcow2" "$GARDEN_SYSTEM.seed.iso" "$GARDEN_SYSTEM.user-data" "$GARDEN_SYSTEM.meta-data"
+      fi
     - printf '\e[0K%s:%s:%s\r\e[0K\n' section_end "$(date +%s)" prepare_image
   cache:
     # Cache the base image (pre-customization).
