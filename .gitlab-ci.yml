@@ -202,6 +202,10 @@ coverity:
     CACHE_POLICY: pull-push
     CACHE_COMPRESSION_LEVEL: fastest
   before_script:
+    # Restore the mtime of the .image-garden.mk file. This helps make determine
+    # if there's actually something to do correctly. Git does not preserve the
+    # mtime of files during checkout.
+    - git restore-mtime .image-garden.mk
     # Prepare the image in dry-run mode. This helps in debugging cache misses
     # when files are not cached correctly by the runner, causing the build section
     # below to always do hevy-duty work.
@@ -268,6 +272,10 @@ image-ubuntu-cloud-24.04-x86_64:
     SPREAD_ARGS: "garden:$GARDEN_SYSTEM:"
     SPREAD_GOARCH: amd64
   before_script:
+    # Restore the mtime of the .image-garden.mk file. This helps make determine
+    # if there's actually something to do correctly. Git does not preserve the
+    # mtime of files during checkout.
+    - git restore-mtime .image-garden.mk
     # Prepare the image in dry-run mode. This helps in debugging cache misses
     # when files are not cached correctly by the runner, causing the build section
     # below to always do hevy-duty work.
