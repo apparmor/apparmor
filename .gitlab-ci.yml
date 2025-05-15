@@ -16,6 +16,7 @@ stages:
   - spread
 
 .ubuntu-common:
+  interruptible: true
   before_script:
     # Install build-dependencies by loading the package list from the ubuntu/debian cloud-init profile.
     - printf '\e[0K%s:%s:%s[collapsed=true]\r\e[0K%s\n' section_start "$(date +%s)" install_deps "Installing dependencies..."
@@ -163,6 +164,7 @@ variables:
 
 coverity:
   stage: .post
+  interruptible: true
   extends:
     - .ubuntu-common
   script:
@@ -187,6 +189,7 @@ coverity:
 
 .image-garden-x86_64:
   stage: spread
+  interruptible: true
   # TODO: use tagged release once container tagging is improved upstream.
   image: registry.gitlab.com/zygoon/image-garden:latest
   tags:
