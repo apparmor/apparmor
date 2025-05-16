@@ -218,6 +218,10 @@ coverity:
     # If there's nothing to do then remove all the files that we would normally
     # cache so that GitLab skips the cache upload step. This saves significant
     # time required to re-compress and upload unchanged content.
+    # The idea for how to do is is documented at
+    # https://olex.biz/2025/04/gitlab-ci-prevent-cache-reupload-without-changes/
+    # The GitLab issue requesting a proper feature is
+    # https://gitlab.com/gitlab-org/gitlab/-/issues/226068
     - |
       if image-garden make --question "$GARDEN_SYSTEM.$ARCH.run" "$GARDEN_SYSTEM.$ARCH.qcow2" "$GARDEN_SYSTEM.seed.iso" "$GARDEN_SYSTEM.user-data" "$GARDEN_SYSTEM.meta-data"; then
         rm -f "$GARDEN_SYSTEM".* efi-code.*.img efi-vars.*.img
