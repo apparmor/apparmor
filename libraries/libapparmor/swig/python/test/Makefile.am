@@ -15,6 +15,7 @@ PYTHON_DIST_BUILD_PATH = '$(builddir)/../build/$$($(PYTHON) buildpath.py)'
 TESTS	= test_python.py
 TESTS_ENVIRONMENT = \
   LD_LIBRARY_PATH='$(top_builddir)/src/.libs:$(PYTHON_DIST_BUILD_PATH)' \
-  PYTHONPATH='$(PYTHON_DIST_BUILD_PATH)'
+  PYTHONPATH='$(PYTHON_DIST_BUILD_PATH)' \
+  PYTHONDONTWRITEBYTECODE='1'
 
 endif
