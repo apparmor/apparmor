@@ -1,3 +1,9 @@
+spec:
+  inputs:
+    build-test-images:
+      default: false
+      type: boolean
+      description: Explicitly build virtual machine images used by integration tests.
 ---
 image: ubuntu:latest
 
@@ -269,8 +275,7 @@ image-ubuntu-cloud-24.04-x86_64:
           - .image-garden.mk
           - .gitlab-ci.yml
         compare_to: "refs/heads/master"
-    - if: $CI_COMMIT_BRANCH
-      when: manual
+    - if: $CI_COMMIT_BRANCH && "$[[ inputs.build-test-images ]]" == "true"
 
 .spread-x86_64:
   extends: .image-garden-x86_64
