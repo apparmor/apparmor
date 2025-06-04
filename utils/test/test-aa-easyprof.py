@@ -112,8 +112,6 @@ class T(unittest.TestCase):
 
     def setUp(self):
         """Setup for tests"""
-        global topdir
-
         self.tmpdir = os.path.realpath(tempfile.mkdtemp(prefix='test-aa-easyprof'))
 
         # Copy everything into place
