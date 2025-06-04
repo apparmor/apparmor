@@ -1449,6 +1449,9 @@ int main(void)
 	int rc = 0;
 	int retval;
 
+	// Default is parser_common.c, but it should be this source file instead
+	progname = __FILE__;
+
 	retval = test_filter_slashes();
 	if (retval != 0)
 		rc = retval;
