@@ -19,12 +19,31 @@
 #ifndef __AA_COND_EXPR_H
 #define __AA_COND_EXPR_H
 
+#include <set>
+#include <string>
+
+typedef enum {
+	EQ_OP,
+	NE_OP,
+	IN_OP,
+	GT_OP,
+	GE_OP,
+	LT_OP,
+	LE_OP,
+	BOOLEAN_OP,
+	DEFINED_OP,
+} cond_op;
+
 class cond_expr {
 private:
 	bool result;
 public:
 	cond_expr(bool result);
-	cond_expr(const char *var, bool defined);
+	cond_expr(const char *var, cond_op op);
+	cond_expr(const char *var, cond_op op, const char *cond_id);
+	std::set<std::string> get_set(const char *var);
+	template <typename T>
+	void compare(cond_op op, T lhs, T rhs);
 	virtual ~cond_expr()
 	{
 	};

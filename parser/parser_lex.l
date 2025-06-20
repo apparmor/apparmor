@@ -299,7 +299,11 @@ ADD_ASSIGN	\+=
 ARROW		->
 LT_EQUAL	<=
 LT		<
+GT_EQUAL	>=
 GT		>
+EQ_OP		==
+NE_OP		!=
+IN_OP		in
 
 /* IF adding new state please update state_names table and default rule (just
  * above the state_names table) at the eof.
@@ -649,15 +653,39 @@ GT		>
 	}
 }
 
+<INITIAL,EXPR_MODE>{
+	{SET_VARIABLE}	{
+		yylval.set_var = strdup(yytext);
+		RETURN_TOKEN(TOK_SET_VAR);
+	}
+
+	{BOOL_VARIABLE}	{
+		yylval.bool_var = strdup(yytext);
+		RETURN_TOKEN(TOK_BOOL_VAR);
+	}
+}
+
 <EXPR_MODE>{
+	{OPEN_BRACE}	{ POP_AND_RETURN(TOK_OPEN); }
+
 	{OPEN_PAREN}	{ RETURN_TOKEN(TOK_OPENPAREN); }
 	{CLOSE_PAREN}	{ RETURN_TOKEN(TOK_CLOSEPAREN); }
 	and		{ RETURN_TOKEN(TOK_AND); }
 	or		{ RETURN_TOKEN(TOK_OR); }
 	not		{ RETURN_TOKEN(TOK_NOT); }
-	defined		{ RETURN_TOKEN(TOK_DEFINED); }
+	defined	{ RETURN_TOKEN(TOK_DEFINED); }
+	{EQ_OP}	{ RETURN_TOKEN(TOK_EQ_OP); }
+	{NE_OP}	{ RETURN_TOKEN(TOK_NE_OP); }
+	{IN_OP}	{ RETURN_TOKEN(TOK_IN_OP); }
+	{GT}		{ RETURN_TOKEN(TOK_GT); }
+	{GT_EQUAL}	{ RETURN_TOKEN(TOK_GE); }
+	{LT}		{ RETURN_TOKEN(TOK_LT); }
+	{LT_EQUAL}	{ RETURN_TOKEN(TOK_LE); }
 
-	{OPEN_BRACE}	{ POP_AND_RETURN(TOK_OPEN); }
+	({IDS_NOEQ}|{LABEL}|{QUOTED_ID}) {
+		yylval.id = processid(yytext, yyleng);
+		RETURN_TOKEN(TOK_ID);
+	}
 }
 
 #include{WS}+if{WS}+exists/{WS}.*\r?\n	{
@@ -706,18 +734,6 @@ all/({WS}|[^[:alnum:]_]) {
 {EQUALS}	{ PUSH_AND_RETURN(ASSIGN_MODE, TOK_EQUALS); }
 
 {ADD_ASSIGN}	{ PUSH_AND_RETURN(ASSIGN_MODE, TOK_ADD_ASSIGN); }
-
-<INITIAL,EXPR_MODE>{
-	{SET_VARIABLE}	{
-		yylval.set_var = strdup(yytext);
-		RETURN_TOKEN(TOK_SET_VAR);
-	}
-
-	{BOOL_VARIABLE}	{
-		yylval.bool_var = strdup(yytext);
-		RETURN_TOKEN(TOK_BOOL_VAR);
-	}
-}
 
 {OPEN_BRACE}	{ RETURN_TOKEN(TOK_OPEN); }
 

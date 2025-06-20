@@ -144,11 +144,15 @@ B<QUALIFIER BLOCK> = I<QUALIFIERS> I<BLOCK>
 
 B<INTEGER> = (+ | -)? [[:digit:]]+
 
-B<IF_BLOCK> = 'if' I<EXPR> I<BLOCK> [ 'else' I<BLOCK> ]
+B<IF_BLOCK> = 'if' I<EXPR> I<BLOCK> [ ( 'else' 'if'  I<EXPR> I<BLOCK> )* ] [ 'else' I<BLOCK> ]
 
 B<EXPR> = ( I<EXPR> ( 'and' | 'or' ) I<EXPR> | 'not' I<EXPR> | '(' I<EXPR> ')' | I<FACTOR> )
 
-B<FACTOR> = ( 'defined' I<VARIABLE> | [ 'defined' ] I<BOOL_VAR> )
+B<FACTOR> = ( 'defined' I<VARIABLE> | [ 'defined' ] I<BOOL_VAR> | ( I<TEXT> | I<VARIABLE> ) I<OPERATOR> ( I<TEXT> | I<VARIABLE> ) )
+
+B<OPERATOR> = ( 'in' | '==' | '!=' | '>' | '>=' | '<' | '<=' )
+
+B<BLOCK> = '{' ( I<RULES> )* '}'
 
 B<ACCESS TYPE> = ( 'allow' | 'deny' )
 
@@ -2226,17 +2230,53 @@ wrapped in an I<if> condition block with the condition expression
 being controlled by setting variable values.
 
 The condition expression can be composed of variables, boolean
-variables, a B<defined> check, open '(' and close ')' parentheses, and
-the boolean operators B<and>, B<or>, and B<not>. Boolean operators are
-evaluated left to write with priority in order of the following list.
+variables, a B<defined> check, the comparison operators B<in>, B<==>,
+B<!=>, B<>>, B<>=>, B<<>, and B<<=>, open '(' and close ')' parentheses,
+and the boolean operators B<and>, B<or>, and B<not>. Boolean operators
+are evaluated left to write with priority in order of the
+following list.
 
 =over 4
+
+=item B<in>	- tests whether the left text or variable is a subset of
+the text or variable on the right. The subset check is done by a full
+match, therefore partial string matches would not evaluate to true.
+
+=item B<==>	- tests whether both text or variable evaluate to the same
+value.
+
+=item B<!=>	- tests whether both text or variable evaluate to
+different values.
+
+=item B<>>	- tests whether the left text or variable is greater than
+the right text or variable.
+Comparisons between integers and set variables will fail to compile
+unless the variable contents are exactly one value, an integer. Other
+comparison will be strictly lexicographical.
+
+=item B<>=>	- tests whether the left text or variable is greater than
+or equal to the right text or variable.
+Comparisons between integers and set variables will fail to compile
+unless the variable contents are exactly one value, an integer. Other
+comparison will be strictly lexicographical.
+
+=item B<<>	- tests whether the left text or variable is lesser than
+the right text or variable.
+Comparisons between integers and set variables will fail to compile
+unless the variable contents are exactly one value, an integer. Other
+comparison will be strictly lexicographical.
+
+=item B<<=>	- tests whether the left text or variable is lesser than
+or equal to the right text or variable.
+Comparisons between integers and set variables will fail to compile
+unless the variable contents are exactly one value, an integer. Other
+comparison will be strictly lexicographical.
 
 =item B<defined> - tests whether the following variable or boolean
 variable has been defined/created.
 
 =item B<parentheses> - open '(' and close ')' paretheses are used to
-to group operations by priority.
+group operations by priority.
 
 =item B<not>	- boolean B<not> operator, negates the value of the
 following expression.
@@ -2249,15 +2289,38 @@ being combined with B<or> can be true for the result to be true.
 
 =back
 
-Currently set variables can only be included in the conditional
-expression when used with the defined check.
-
 An example of a profile conditional
 
 	if ${distro_mods} and defined @{HOME} {
 	  /@{HOME}/.foo_file  rw,
 	} else {
 	  /home/*/.foo_file  rw,
+	}
+
+Since lexicographical comparisons using the B<>>, B<>=>, B<<>, B<<=>
+operators could lead to mistakes when comparing integers, comparisons
+between variables and integers will fail to compile unless the
+variable contains an integer.
+
+Eg.
+
+	@{BAR} = /home/user/ /home/user2/
+	@{BAR} += /home/user3/
+	@{TEST_VERSION} = 2
+	@{BAZ} = 10
+
+	/usr/bin/foo {
+	  if /home/user/ in @{BAR} {
+	    /** r,
+	  }
+	  if @{TEST_VERSION} >= @{BAZ} {
+	    /** w,
+	  } else if 10 > @{TEST_VERSION} {
+	    /** rw,
+	  }
+	  if @{BAZ} <= 10 {
+	    /** rw,
+	  }
 	}
 
 =head1 FILES
