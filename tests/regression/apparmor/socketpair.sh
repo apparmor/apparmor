@@ -19,7 +19,7 @@ bin=$pwd
 
 . "$bin/prologue.inc"
 
-requires_kernel_features network/af_unix
+requires_any_of_kernel_features network/af_unix network_v9/af_unix
 
 do_test()
 {
@@ -43,6 +43,20 @@ if [ "$(kernel_features network/af_unix)" = "true" -a "$(parser_supports 'unix,'
 	af_unix_create="unix:(create,getopt)"
 	af_unix_create_label="unix:(send,receive)"
 	af_unix_inherit="unix:(getopt,send,receive)"
+fi
+
+if [ "$(kernel_features network_v9/af_unix)" = "true" ] ; then
+	# can get a stack from socket being passed to new confinement
+	np1_result="$test//&$np1"
+	np1_np2_result="$test//&$np1//&$np2"
+        mixed_enforce="mixed"
+        mixed_complain="mixed"
+else
+	# old abi did not update the label to new task confinements using it
+	np1_result="$np1"
+	np1_np2_result="$np2"
+        mixed_enforce="enforce"
+        mixed_complain="complain"
 fi
 
 # Ensure everything works as expected when unconfined
@@ -76,7 +90,7 @@ do_test "complain" pass "$test" "enforce"
 # NOTE: due to label crosscheck, parent needs 'rw' access
 genprofile $af_unix_create ${af_unix_create_label} $aa_enabled $exec 'change_profile->':$np1 -- \
            image=$np1 addimage:$test $af_unix_inherit $aa_enabled
-do_test "confined exec transition" pass "$test" "enforce" "$np1"
+do_test "confined exec transition" pass "$test" "enforce" "$np1" "$np1_result" "enforce"
 
 # af_unix_create is set to non-null at the top of the test script if
 # the kernel advertises supporting unix sockets
@@ -92,17 +106,27 @@ fi
 # NOTE: The test still calls aa_change_onexec(), so change_profile -> $test
 #       is still needed
 genprofile $af_unix_create $exec $aa_enabled 'change_profile->':$test
-do_test "confined exec no transition" pass "$test" "enforce" "$test"
+do_test "confined exec no transition" pass "$test" "enforce" "$test" "$test" "enforce"
 
 # Ensure correct complain mode after passing fd pair across exec
 genprofile flag:complain $af_unix_create $aa_enabled $exec 'change_profile->':$np1 -- \
 	   image=$np1 addimage:$test $af_unix_inherit $aa_enabled
-do_test "confined exec transition from complain" pass "$test" "complain" "$np1"
+do_test "confined exec transition from complain" pass "$test" "complain" "$np1" "$np1_result" "$mixed_complain"
+
+# Ensure correct complain mode after passing fd pair across exec
+genprofile flag:complain $af_unix_create $aa_enabled $exec 'change_profile->':$np1 -- \
+	   image=$np1 flag:complain addimage:$test $af_unix_inherit $aa_enabled
+do_test "confined exec transition from complain" pass "$test" "complain" "$np1" "$np1_result" "complain"
 
 # Ensure correct enforce mode after passing fd pair across exec
 genprofile $af_unix_create ${af_unix_create_label} $aa_enabled $exec 'change_profile->':$np1 -- \
 	   image=$np1 addimage:$test flag:complain $af_unix_inherit $aa_enabled
-do_test "confined exec transition to complain" pass "$test" "enforce" "$np1"
+do_test "confined exec transition to complain" pass "$test" "enforce" "$np1" "$np1_result" "$mixed_enforce"
+
+genprofile $af_unix_create ${af_unix_create_label} $aa_enabled $exec 'change_profile->':$np1 -- \
+	   image=$np1 addimage:$test $af_unix_inherit $aa_enabled
+do_test "confined exec transition to complain" pass "$test" "enforce" "$np1" "$np1_result" "enforce"
+
 
 # af_unix_create is set to non-null at the top of the test script if
 # the kernel advertises supporting unix sockets
@@ -110,7 +134,7 @@ if [ -n "${af_unix_create}" ] ; then
 	# Ensure label crosscheck enforced in complain mode after passing fd pair across exec
 	genprofile $af_unix_create $aa_enabled $exec 'change_profile->':$np1 -- \
 		   image=$np1 addimage:$test flag:complain $af_unix_inherit $aa_enabled
-	do_test "confined exec transition to complain, crosscheck rejection" fail "$test" "enforce" "$np1"
+	do_test "confined exec transition to complain, crosscheck rejection" fail "$test" "enforce" "$np1" "$np1_result" "enforce"
 fi
 
 # Ensure correct labeling after passing fd pair across 2 execs
@@ -118,16 +142,17 @@ gp_args="$af_unix_create ${af_unix_create_label} $aa_enabled $exec change_profil
 	 image=$np1 addimage:$test $af_unix_inherit $aa_enabled $exec change_profile->:$np2 -- \
 	 image=$np2 addimage:$test $af_unix_inherit $aa_enabled"
 genprofile $gp_args
-do_test "confined 2 exec transitions" pass "$test" "enforce" "$np1" "$np2"
+do_test "confined 2 exec transitions" pass "$test" "enforce" "$np1" "$np1_result" "enforce" "$np2" "$np1_np2_result" "enforce"
 
 # Test the test
-do_test "confined 2 exec transitions bad con" fail "$test" "enforce" "$np1" "$np1"
-do_test "confined 2 exec transitions bad mode" fail "$test" "complain" "$np1" "$np2"
+do_test "confined 2 exec transitions bad con" fail "$test" "enforce" "$np1" "$test//&$np1" "enforce" "$np1" "$test//&$np1//&$np2" "enforce"
+do_test "confined 2 exec transitions bad mode" fail "$test" "complain" "$np1" "$np1_result" "enforce" "$np2" "$np1_np2_result" "enforce"
 
 # Ensure correct labeling after passing fd pair across exec to unconfined
 genprofile $af_unix_create $aa_enabled $exec 'change_profile->':unconfined
-do_test "confined exec transition to unconfined" pass "$test" "enforce" "unconfined"
+do_test "confined exec transition to unconfined" pass "$test" "enforce" "unconfined" "$test" "enforce"
 
 # Ensure correct labeling after passing fd pair across exec from unconfined
+# doesn't change because of unconfined delegation
 genprofile image=$np1 addimage:$test $af_unix_inherit $aa_enabled
-do_test "unconfined exec transition ton confined" pass "unconfined" "(null)" "$np1"
+do_test "unconfined exec transition to confined" pass "unconfined" "(null)" "$np1" "unconfined" "(null)"
