@@ -4,7 +4,7 @@
 abi <abi/4.0>,
 include <tunables/global>
 
-profile QtWebEngineProcess /usr/lib/@{multiarch}/qt{5,6}/libexec/QtWebEngineProcess flags=(unconfined) {
+profile QtWebEngineProcess /usr/lib{,64,exec}/{,@{multiarch}/}qt{,5,6}/{,libexec/}QtWebEngineProcess flags=(unconfined) {
   userns,
 
   # Site-specific additions and overrides. See local/README for details.

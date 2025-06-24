@@ -18,9 +18,7 @@ profile plasmashell /usr/bin/plasmashell {
   ptrace,
 
   # allow executing QtWebEngineProcess with full permissions including userns (using profile stacking to avoid no_new_privs issues)
-  /usr/lib/x86_64-linux-gnu/qt[56]/libexec/QtWebEngineProcess cx -> &plasmashell//QtWebEngineProcess,
-  /usr/libexec/qt[56]/QtWebEngineProcess                      cx -> &plasmashell//QtWebEngineProcess,
-  /usr/lib/qt6/libexec/QtWebEngineProcess                     cx -> &plasmashell//QtWebEngineProcess,
+  priority=1 /usr/lib{,64,exec}/{,@{multiarch}/}qt{,5,6}/{,libexec/}QtWebEngineProcess cx -> &plasmashell//QtWebEngineProcess,
 
   # allow to execute all other programs under their own profile, or to run unconfined
   /** pux,
