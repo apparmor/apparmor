@@ -176,7 +176,7 @@ class BaseRule(metaclass=ABCMeta):
         else:
             return self.get_clean(depth)
 
-    def is_covered(self, other_rule, check_allow_deny=True, check_audit=False):
+    def is_covered(self, other_rule, check_allow_deny=True, check_audit=False, check_priority=True):
         """check if other_rule is covered by this rule object"""
 
         if type(other_rule) is not type(self):
@@ -192,6 +192,9 @@ class BaseRule(metaclass=ABCMeta):
             return False
 
         if other_rule.audit and not self.audit:
+            return False
+
+        if check_priority and (self.priority or 0) > (other_rule.priority or 0):
             return False
 
         # still here? -> then the common part is covered, check rule-specific things now
@@ -250,13 +253,14 @@ class BaseRule(metaclass=ABCMeta):
         """compare if rule_obj == self
            Calls _is_equal_localvars() to compare rule-specific variables"""
 
-        if (self.priority != rule_obj.priority
+        if ((self.priority or 0) != (rule_obj.priority or 0)
                 or self.audit != rule_obj.audit
                 or self.deny != rule_obj.deny):
             return False
 
         if strict and (
-            self.allow_keyword != rule_obj.allow_keyword
+            self.priority != rule_obj.priority
+            or self.allow_keyword != rule_obj.allow_keyword
             or self.comment != rule_obj.comment
             or self.raw_rule != rule_obj.raw_rule
         ):

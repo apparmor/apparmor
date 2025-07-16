@@ -171,6 +171,22 @@ class IOUringIsCoveredTest(AATest):
         self.assertFalse(obj.is_covered(IOUringRule(IOUringRule.ALL, 'foo')))
         self.assertFalse(obj.is_covered(IOUringRule(('sqpoll'), IOUringRule.ALL)))
 
+    def test_is_covered_priority(self):
+        obj = IOUringRule(IOUringRule.ALL, 'ba*', priority=0)
+        prio_obj = IOUringRule(IOUringRule.ALL, 'ba*', priority=1)
+        self.assertTrue(obj.is_covered(prio_obj))
+        self.assertFalse(prio_obj.is_covered(obj))
+
+    def test_is_covered_priority_2(self):
+        obj = IOUringRule(IOUringRule.ALL, 'ba*')
+        obj2 = IOUringRule(IOUringRule.ALL, 'ba*', priority=0)
+        self.assertTrue(obj.is_covered(obj2))
+        self.assertTrue(obj2.is_covered(obj))
+        self.assertTrue(obj.is_equal(obj2))
+        self.assertTrue(obj2.is_equal(obj))
+        self.assertFalse(obj.is_equal(obj2, strict=True))
+        self.assertFalse(obj2.is_equal(obj, strict=True))
+
 
 class IOUringLogprofHeaderTest(AATest):
     tests = (

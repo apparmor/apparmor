@@ -135,6 +135,13 @@ class UnixIsCoveredTest(AATest):
             self.assertFalse(obj.is_covered(UnixRule(*test)), test)
             self.assertFalse(obj.is_equal(UnixRule(*test)))
 
+    def test_is_covered_priority(self):
+        obj = UnixRule(('accept', 'rw'), {'type': 'F*', 'protocol': 'AA'}, {'addr': 'AA'}, {'addr': 'AA', 'label': 'bb'}, priority=0)
+        prio_obj = UnixRule(('accept', 'rw'), {'type': 'F*', 'protocol': 'AA'}, {'addr': 'AA'}, {'addr': 'AA', 'label': 'bb'}, priority=1)
+
+        self.assertTrue(obj.is_covered(prio_obj))
+        self.assertFalse(prio_obj.is_covered(obj))
+
 
 class UnixLogprofHeaderTest(AATest):
     tests = (

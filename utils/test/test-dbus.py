@@ -719,6 +719,17 @@ class DbusCoveredTest_11(DbusCoveredTest):
     )
 
 
+class DbusCoveredTest_Priority(DbusCoveredTest):
+    rule = 'dbus send,'
+
+    tests = (
+        #   rule                         equal  strict equal  covered  covered exact
+        ('priority=-1 dbus send,',       (False, False,       False,   False)),
+        ('priority=1 dbus send,',        (False, False,       True,    True)),
+        ('priority=0 dbus send,',        (True,  False,       True,    True)),
+    )
+
+
 class DbusCoveredTest_Invalid(AATest):
     def AASetup(self):
         #                        access               bus        path         name          interface    member        peername      peerlabel
