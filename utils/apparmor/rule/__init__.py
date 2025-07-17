@@ -194,7 +194,7 @@ class BaseRule(metaclass=ABCMeta):
         if other_rule.audit and not self.audit:
             return False
 
-        if check_priority and (self.priority or 0) > (other_rule.priority or 0):
+        if check_priority and (self.priority or 0) < (other_rule.priority or 0):
             return False
 
         # still here? -> then the common part is covered, check rule-specific things now

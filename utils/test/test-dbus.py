@@ -724,8 +724,8 @@ class DbusCoveredTest_Priority(DbusCoveredTest):
 
     tests = (
         #   rule                         equal  strict equal  covered  covered exact
-        ('priority=-1 dbus send,',       (False, False,       False,   False)),
-        ('priority=1 dbus send,',        (False, False,       True,    True)),
+        ('priority=1 dbus send,',        (False, False,       False,   False)),
+        ('priority=-1 dbus send,',       (False, False,       True,    True)),
         ('priority=0 dbus send,',        (True,  False,       True,    True)),
     )
 

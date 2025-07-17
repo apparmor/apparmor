@@ -16,7 +16,7 @@ import unittest
 import apparmor.aa  # needed to set global vars in some tests
 from apparmor.aa import (
     change_profile_flags, check_for_apparmor, create_new_profile, get_file_perms, get_interpreter_and_abstraction, get_profile_flags,
-    merged_to_split, parse_profile_data, propose_file_rules, set_options_audit_mode, set_options_owner_mode, split_to_merged)
+    merged_to_split, parse_profile_data, propose_file_rules, set_options_audit_mode, set_options_owner_mode, split_to_merged, is_known_rule)
 from apparmor.aare import AARE
 from apparmor.common import AppArmorBug, AppArmorException, is_skippable_file
 from apparmor.rule.file import FileRule
@@ -763,6 +763,23 @@ class AaTest_split_to_merged(AATest):
 
         self.assertEqual(list(result.keys()), [expected])
         self.assertTrue(result[expected])
+
+
+class AaTest_is_known_rule(AATest):
+    tests = (
+        (FileRule.create_instance("priority=-1 audit deny /foo r,"),    True),
+        (FileRule.create_instance("priority=1 audit deny /foo r,"),     False)
+    )
+
+    def _run_test(self, params, expected):
+        d = '/foo xattrs=(user.bar=bar) flags=(complain) {\n}\n'
+        fr = FileRule.create_instance("audit deny /foo r,")
+
+        prof = parse_profile_data(d.split(), 'somefile', False, False)
+        prof['/foo']['file'].add(fr)
+
+        self.assertEqual(is_known_rule(prof['/foo'], 'file', params), expected)
+        self.assertEqual(prof['/foo']['file'].is_covered(params), expected)
 
 
 setup_aa(apparmor.aa)
