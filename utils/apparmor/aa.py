@@ -35,13 +35,14 @@ from apparmor.common import (
 from apparmor.profile_list import ProfileList, preamble_ruletypes
 from apparmor.profile_storage import ProfileStorage, add_or_remove_flag, ruletypes
 from apparmor.regex import (
-    RE_HAS_COMMENT_SPLIT, RE_PROFILE_CHANGE_HAT, RE_PROFILE_CONDITIONAL,
-    RE_PROFILE_CONDITIONAL_BOOLEAN, RE_PROFILE_CONDITIONAL_VARIABLE, RE_PROFILE_END,
+    RE_HAS_COMMENT_SPLIT, RE_PROFILE_CHANGE_HAT, RE_PROFILE_CONDITIONAL_START,
+    RE_PROFILE_CONDITIONAL_ELSE, RE_PROFILE_END,
     RE_PROFILE_HAT_DEF, RE_PROFILE_START, RE_METADATA_LOGPROF_SUGGEST,
     RE_RULE_HAS_COMMA, parse_profile_start_line, re_match_include)
 from apparmor.rule.abi import AbiRule
 from apparmor.rule.file import FileRule
 from apparmor.rule.include import IncludeRule
+from apparmor.rule.conditional import ConditionalBlock
 from apparmor.logparser import ReadLog
 from apparmor.translations import init_translation
 
@@ -1789,28 +1790,57 @@ def attach_profile_data(profiles, profile_data):
         profiles[p] = deepcopy(profile_data[p])
 
 
-def parse_profile_data(data, file, do_include, in_preamble):
+def parse_conditional(conditional_block, profile_data, data, lineno, file, do_include, in_preamble, profname, profile, debug_lineno):
+    cond_storage = ProfileStorage(profile_data[profname]['info']['profile'],
+                                  profile_data[profname]['info']['hat'],
+                                  profile_data[profname]['info']['calledby'] + ' in cond')
+    ret_lineno, ret_profile_data, end_of_block = parse_block(data[lineno + 1:], file, do_include, in_preamble, profname, profile, cond_storage, debug_lineno, in_if=True)
+    conditional_block.store_profile_data(ret_profile_data)
+    lineno = lineno + ret_lineno
+
+    if conditional_block.result:
+        for cond_profname in ret_profile_data:
+            if ret_profile_data[cond_profname]['in_cond']:
+                if profile_data.get(cond_profname, False):
+                    cond_prof_info = ret_profile_data[cond_profname].data['info']
+                    cond_prof_name = combine_name(cond_prof_info['profile'], cond_prof_info['hat'])
+                    raise AppArmorException(
+                        'Profile %(profile)s defined twice in %(file)s, last found in line %(line)s'
+                        % {'file': file, 'line': debug_lineno + 1, 'profile': cond_prof_name})
+                profile_data[cond_profname] = ret_profile_data[cond_profname]
+
+    if not end_of_block:
+        i = 1
+        if lineno + i < len(data):
+            next_line = data[lineno + i].strip()
+            matches = RE_PROFILE_CONDITIONAL_ELSE.search(next_line)
+            if matches and matches.group('close'):
+                data[lineno + i] = data[lineno + i].replace('}', '', 1)
+    else:
+        profile_data[profname]['cond_block'].add(conditional_block)
+        conditional_block = None
+
+    return lineno, conditional_block
+
+
+def parse_block(data, file, do_include, in_preamble, profname, profile, prof_storage, src_lineno, in_if=False):
     profile_data = {}
-    profile = None
     hat = None
-    profname = None
     in_contained_hat = None
     parsed_profiles = []
     initial_comment = ''
     lastline = None
+    conditional_block = None
 
-    active_profiles.init_file(file)
-
-    if do_include:
-        profile = file
-        hat = None
-        profname = combine_profname((profile, hat))
-        profile_data[profname] = ProfileStorage(profile, hat, 'parse_profile_data() do_include')
+    if do_include or profname and profname not in profile_data:
+        profile_data[profname] = prof_storage
         profile_data[profname]['filename'] = file
-
-    for lineno, line in enumerate(data):
-        line = line.strip()
+    lineno = 0
+    while lineno < len(data):
+        line = data[lineno].strip()
+        debug_lineno = src_lineno + lineno
         if not line:
+            lineno += 1
             continue
         # we're dealing with a multiline statement
         if lastline:
@@ -1818,11 +1848,13 @@ def parse_profile_data(data, file, do_include, in_preamble):
             lastline = None
 
         # is line handled by a *Rule class?
-        (rule_name, rule_obj) = match_line_against_rule_classes(line, profile, file, lineno, in_preamble)
+        (rule_name, rule_obj) = match_line_against_rule_classes(line, profile, file, debug_lineno, in_preamble)
         if rule_name:
             if in_preamble:
                 active_profiles.add_rule(file, rule_name, rule_obj)
             else:
+                if profname not in profile_data:
+                    profile_data[profname] = prof_storage
                 profile_data[profname][rule_name].add(rule_obj)
 
             if rule_name == 'inc_ie':
@@ -1844,16 +1876,16 @@ def parse_profile_data(data, file, do_include, in_preamble):
 
             in_preamble = False
 
-            (profile, hat, prof_storage) = ProfileStorage.parse(line, file, lineno, profile, hat)
-
+            (profile, hat, prof_storage) = ProfileStorage.parse(line, file, debug_lineno, profile, hat)
             if profile == hat:
                 hat = None
             profname = combine_profname((profile, hat))
 
             if profile_data.get(profname, False):
+                print(file)
                 raise AppArmorException(
                     'Profile %(profile)s defined twice in %(file)s, last found in line %(line)s'
-                    % {'file': file, 'line': lineno + 1, 'profile': combine_name(profile, hat)})
+                    % {'file': file, 'line': debug_lineno + 1, 'profile': combine_name(profile, hat)})
 
             profile_data[profname] = prof_storage
 
@@ -1863,12 +1895,11 @@ def parse_profile_data(data, file, do_include, in_preamble):
 
             initial_comment = ''
 
-        elif RE_PROFILE_END.search(line):
-            # If profile ends and we're not in one
-            if not profile:
-                raise AppArmorException(
-                    _('Syntax Error: Unexpected End of Profile reached in file: %(file)s line: %(line)s')
-                    % {'file': file, 'line': lineno + 1})
+            ret_lineno, ret_profile_data, end_of_block = parse_block(data[lineno + 1:], file, do_include, in_preamble, profname, profile, prof_storage, debug_lineno + 1, in_if)
+            profile_data[profname]['in_cond'] = in_if
+            lineno = lineno + ret_lineno
+
+            profile_data = {**profile_data, **ret_profile_data}
 
             if in_contained_hat:
                 hat = None
@@ -1882,32 +1913,49 @@ def parse_profile_data(data, file, do_include, in_preamble):
 
             initial_comment = ''
 
-        elif RE_PROFILE_CONDITIONAL.search(line):
-            # Conditional Boolean
-            pass
+        elif RE_PROFILE_END.search(line):
+            # If profile ends and we're not in one
+            if not profile:
+                raise AppArmorException(
+                    _('Syntax Error: Unexpected End of Profile reached in file: %(file)s line: %(line)s')
+                    % {'file': file, 'line': debug_lineno + 1})
 
-        elif RE_PROFILE_CONDITIONAL_VARIABLE.search(line):
-            # Conditional Variable defines
-            pass
+            return lineno + 1, profile_data, True
 
-        elif RE_PROFILE_CONDITIONAL_BOOLEAN.search(line):
-            # Conditional Boolean defined
-            pass
+        elif RE_PROFILE_CONDITIONAL_START.search(line):
+            conditional_block = ConditionalBlock(line, active_profiles.files[file])
+            lineno, conditional_block = parse_conditional(conditional_block, profile_data, data, lineno, file, do_include, in_preamble, profname, profile, debug_lineno + 1)
+
+        elif RE_PROFILE_CONDITIONAL_ELSE.search(line):
+            if not in_if and conditional_block is None:
+                raise AppArmorException(_('Syntax Error: Unexpected else without previous if in file: %(file)s line: %(line)s')
+                                        % {'file': file, 'line': debug_lineno + 1})
+
+            matches = RE_PROFILE_CONDITIONAL_ELSE.search(line)
+            if matches.group('close'):
+                return lineno, profile_data, False  # not returning next line on purpose
+
+            if conditional_block is None:
+                raise AppArmorException(_('Syntax Error: Unexpected else found without previous if in file: %(file)s line: %(line)s')
+                                        % {'file': file, 'line': debug_lineno + 1})
+            conditional_block.add_conditional(line, active_profiles.files[file])
+            lineno, conditional_block = parse_conditional(conditional_block, profile_data, data, lineno, file, do_include, in_preamble, profname, profile, debug_lineno + 1)
 
         elif RE_PROFILE_CHANGE_HAT.search(line):
             matches = RE_PROFILE_CHANGE_HAT.search(line).groups()
 
             if not profile:
                 raise AppArmorException(_('Syntax Error: Unexpected change hat declaration found in file: %(file)s line: %(line)s')
-                                        % {'file': file, 'line': lineno + 1})
+                                        % {'file': file, 'line': debug_lineno + 1})
 
             aaui.UI_Important(_('Ignoring no longer supported change hat declaration "^%(hat)s," found in file: %(file)s line: %(line)s')
-                              % {'hat': matches[0], 'file': file, 'line': lineno + 1})
+                              % {'hat': matches[0], 'file': file, 'line': debug_lineno + 1})
 
         elif line.startswith('#'):
             # Handle initial comments
             if not profile:
                 if line.startswith('# Last Modified:'):
+                    lineno += 1
                     continue
                 else:
                     initial_comment = initial_comment + line + '\n'
@@ -1931,14 +1979,16 @@ def parse_profile_data(data, file, do_include, in_preamble):
         else:
             raise AppArmorException(
                 _('Syntax Error: Unknown line found in file %(file)s line %(lineno)s:\n    %(line)s')
-                % {'file': file, 'lineno': lineno + 1, 'line': line})
+                % {'file': file, 'lineno': debug_lineno, 'line': line})
+
+        lineno += 1
 
     if lastline:
         # lastline gets merged into line (and reset to None) when reading the next line.
         # If it isn't empty, this means there's something unparsable at the end of the profile
         raise AppArmorException(
             _('Syntax Error: Unknown line found in file %(file)s line %(lineno)s:\n    %(line)s')
-            % {'file': file, 'lineno': lineno + 1, 'line': lastline})
+            % {'file': file, 'lineno': debug_lineno + 1, 'line': lastline})
 
     # Below is not required I'd say
     if not do_include:
@@ -1957,6 +2007,30 @@ def parse_profile_data(data, file, do_include, in_preamble):
         raise AppArmorException(
             _("Syntax Error: Missing '}' or ','. Reached end of file %(file)s while inside profile %(profile)s")
             % {'file': file, 'profile': profile})
+
+    return lineno, profile_data, False
+
+
+def parse_profile_data(data, file, do_include, in_preamble):
+    profile_data = {}
+    profile = None
+    hat = None
+    profname = None
+    prof_storage = None
+
+    active_profiles.init_file(file)
+
+    if do_include:
+        profile = file
+        hat = None
+        profname = combine_profname((profile, hat))
+        prof_storage = ProfileStorage(profile, hat, 'parse_profile_data() do_include')
+
+    _lineno, profile_data, end_of_block = parse_block(data, file, do_include, in_preamble, profname, profile, prof_storage, 0)
+
+    for prof in list(profile_data):  # get the keys
+        if profile_data[prof]['in_cond']:
+            profile_data.pop(prof)
 
     return profile_data
 

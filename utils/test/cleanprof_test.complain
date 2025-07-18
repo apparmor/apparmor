@@ -107,3 +107,20 @@ profile foo//bar {
 /usr/bin/a/simple/cleanprof/test/profile//child {
        /home/test-child r,
           }
+
+profile uniquename /attach {
+    if not not
+    not not
+    not not defined $foo {
+          /bin/true rix,
+    }       else if x in @xy {
+      if   @{asdf}  >   " a test"  {
+            /greaterthan r,
+      } else {
+  file,
+      }
+      /bin/false rix,
+    }    else        {
+           /dev/null r,
+         }
+}

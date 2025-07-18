@@ -1,0 +1,10 @@
+#=DESCRIPTION trying to use undefined boolean
+#=EXRESULT FAIL
+
+$FOO=true
+
+/bin/true {
+  if $BAR {
+    /bin/true rix,
+  }
+}

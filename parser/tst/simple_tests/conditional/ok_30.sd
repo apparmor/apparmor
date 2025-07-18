@@ -1,0 +1,11 @@
+#=DESCRIPTION conditional within profile
+#=EXRESULT PASS
+
+$FOO=true
+@{BAR}=10
+
+/bin/true {
+  if $FOO and @{BAR} >= 10 {
+      /bin/true rix,
+  }
+}
