@@ -9,8 +9,8 @@
 
   owner /dev/shm/libv4l-* rw,
         /dev/video[0-9]* rw,
-  @{sys}/devices/pci[0-9]*/**/usb[0-9]/**/video4linux/video[0-9]*/dev r,
-  @{sys}/devices/pci[0-9]*/**/usb[0-9]/**/{modalias,speed} r,
+  @{sys}/devices/@{pci_bus}/**/usb[0-9]/**/video4linux/video[0-9]*/dev r,
+  @{sys}/devices/@{pci_bus}/**/usb[0-9]/**/{modalias,speed} r,
 
   @{sys}/devices/virtual/dmi/id/sys_vendor r,
   @{sys}/devices/virtual/dmi/id/product_{name,version} r,

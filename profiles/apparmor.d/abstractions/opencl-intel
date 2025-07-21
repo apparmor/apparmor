@@ -15,7 +15,7 @@
   # System files
 
   /dev/dri/card[0-9]* rw, # beignet/libcl.so
-  @{sys}/devices/pci[0-9]*/**/{class,config,resource,revision} r, # libcl.so -> libdrm_intel.so -> libpciaccess.so (move to dri-enumerate ?)
+  @{sys}/devices/@{pci_bus}/**/{class,config,resource,revision} r, # libcl.so -> libdrm_intel.so -> libpciaccess.so (move to dri-enumerate ?)
   /usr/lib/@{multiarch}/beignet/** r,
 
 

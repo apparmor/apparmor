@@ -16,10 +16,10 @@
   @{sys}/bus/pci/slots/ r, # libpocl.so -> hwloc_topology_load() from libhwloc.so
   @{sys}/bus/{cpu,node}/devices/ r, # libpocl.so -> libhwlock.so
   @{sys}/class/net/ r, # libpocl.so -> hwloc_pci_traverse_lookuposdevices_cb() from libhwloc.so
-  @{sys}/devices/pci[0-9]*/**/ r, # for libpocl ->  hwloc_linux_lookup_block_class() from libhwloc.so
-  @{sys}/devices/pci[0-9]*/**/block/*/dev r, # libpocl.so -> hwloc_linux_lookup_host_block_class() from libhwloc.so
-  @{sys}/devices/pci[0-9]*/**/{class,local_cpus} r, # libpocl.so -> libhwlock.so
-  @{sys}/devices/pci[0-9]*/*/net/*/address r, # libpocl.so ->  hwloc_pci_traverse_lookuposdevices_cb() from libhwloc.so
+  @{sys}/devices/@{pci_bus}/**/ r, # for libpocl ->  hwloc_linux_lookup_block_class() from libhwloc.so
+  @{sys}/devices/@{pci_bus}/**/block/*/dev r, # libpocl.so -> hwloc_linux_lookup_host_block_class() from libhwloc.so
+  @{sys}/devices/@{pci_bus}/**/{class,local_cpus} r, # libpocl.so -> libhwlock.so
+  @{sys}/devices/@{pci_bus}/*/net/*/address r, # libpocl.so ->  hwloc_pci_traverse_lookuposdevices_cb() from libhwloc.so
   @{sys}/devices/system/cpu/ r, # libpocl.so -> libnuma.so
   @{sys}/devices/system/cpu/cpu[0-9]*/cache/index[0-9]*/* r, # libpocl.so -> libhwloc.so
   @{sys}/devices/system/cpu/cpu[0-9]*/online r, # libpocl.so -> libhwlock.so
