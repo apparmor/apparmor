@@ -282,79 +282,52 @@ void AltNode::normalize(int dir)
 		child[!dir]->normalize(dir);
 }
 
-//charset conversion is disabled for now,
-//it hinders tree optimization in some cases, so it need to be either
-//done post optimization, or have extra factoring rules added
-#if 0
-static Node *merge_charset(Node *a, Node *b)
+static bool is_char_or_charset(Node *n)
 {
-	if (dynamic_cast<CharNode *>(a) && dynamic_cast<CharNode *>(b)) {
+	return n->is_type(node_type_t::CHAR | node_type_t::CHARSET);
+}
+
+static void insert_chars(Chars &to, Node *from)
+{
+	if (from->is_type(node_type_t::CHAR)) {
+		to.insert(static_cast<CharNode *>(from)->c);
+	} else {
+		Chars &chars = static_cast<CharSetNode *>(from)->chars;
+		for (Chars::iterator i = chars.begin(); i != chars.end(); i++)
+			to.insert(*i);
+	}
+}
+
+/*
+ * merge the chars of the two children of alt node t into a single
+ * CharSetNode, reusing a child CharSetNode if there is one.
+ * a | b -> [ab],  a | [bc] -> [abc],  [abc] | [acd] -> [abcd]
+ *
+ * Releases t, and returns the merged node.
+ */
+static Node *merge_charset(Node *t, int dir)
+{
+	Node *a = t->child[dir];
+	Node *b = t->child[!dir];
+	CharSetNode *set;
+
+	if (a->is_type(node_type_t::CHARSET)) {
+		set = static_cast<CharSetNode *>(a);
+		insert_chars(set->chars, b);
+		t->child[dir] = NULL;
+	} else if (b->is_type(node_type_t::CHARSET)) {
+		set = static_cast<CharSetNode *>(b);
+		insert_chars(set->chars, a);
+		t->child[!dir] = NULL;
+	} else {
 		Chars chars;
-		chars.insert(dynamic_cast<CharNode *>(a)->c);
-		chars.insert(dynamic_cast<CharNode *>(b)->c);
-		CharSetNode *n = new CharSetNode(chars);
-		return n;
-	} else if (dynamic_cast<CharNode *>(a) &&
-		   dynamic_cast<CharSetNode *>(b)) {
-		Chars *chars = &dynamic_cast<CharSetNode *>(b)->chars;
-		chars->insert(dynamic_cast<CharNode *>(a)->c);
-		return b;
-	} else if (dynamic_cast<CharSetNode *>(a) &&
-		   dynamic_cast<CharSetNode *>(b)) {
-		Chars *from = &dynamic_cast<CharSetNode *>(a)->chars;
-		Chars *to = &dynamic_cast<CharSetNode *>(b)->chars;
-		for (Chars::iterator i = from->begin(); i != from->end(); i++)
-			to->insert(*i);
-		return b;
+		insert_chars(chars, a);
+		insert_chars(chars, b);
+		set = new CharSetNode(chars);
 	}
-	//return ???;
+	t->release();
+	return set;
 }
-
-static Node *alt_to_charsets(Node *t, int dir)
-{
-/*
-	Node *first = NULL;
-	Node *p = t;
-	Node *i = t;
-	for (;dynamic_cast<AltNode *>(i);) {
-		if (dynamic_cast<CharNode *>(i->child[dir]) ||
-		    dynamic_cast<CharNodeSet *>(i->child[dir])) {
-			if (!first) {
-				first = i;
-				p = i;
-				i = i->child[!dir];
-			} else {
-				first->child[dir] = merge_charset(first->child[dir],
-						      i->child[dir]);
-				p->child[!dir] = i->child[!dir];
-				Node *tmp = i;
-				i = tmp->child[!dir];
-				tmp->child[!dir] = NULL;
-				tmp->release();
-			}
-		} else {
-			p = i;
-			i = i->child[!dir];
-		}
-	}
-	// last altnode of chain check other dir as well
-	if (first && (dynamic_cast<charNode *>(i) ||
-		      dynamic_cast<charNodeSet *>(i))) {
-		
-	}
-*/
-
-/*
-		if (dynamic_cast<CharNode *>(t->child[dir]) ||
-		    dynamic_cast<CharSetNode *>(t->child[dir]))
-		    char_test = true;
-			    (char_test &&
-			     (dynamic_cast<CharNode *>(i->child[dir]) ||
-			      dynamic_cast<CharSetNode *>(i->child[dir])))) {
-*/
-	return t;
-}
-#endif
 
 static Node *basic_alt_factor(Node *t, int dir)
 {
@@ -368,6 +341,10 @@ static Node *basic_alt_factor(Node *t, int dir)
 		t->release();
 		return tmp;
 	}
+	// a | b -> [ab],  a | [bc] -> [abc],  [abc] | [acd] -> [abcd]
+	if (is_char_or_charset(t->child[dir]) &&
+	    is_char_or_charset(t->child[!dir]))
+		return merge_charset(t, dir);
 	// (ab) | (ac) -> a(b|c)
 	if (t->child[dir]->is_type(node_type_t::CAT) &&
 	    t->child[!dir]->is_type(node_type_t::CAT) &&
