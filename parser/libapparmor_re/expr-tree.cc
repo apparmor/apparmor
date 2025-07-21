@@ -569,24 +569,245 @@ static void count_tree_nodes(Node *t, struct node_counts *counts)
 #include "stdint.h"
 #include "apparmor_re.h"
 
+/*
+ * Vector based tree simplification (-O expr-vector)
+ *
+ * Instead of rotating binary Cat and Alt nodes and factoring them pair
+ * wise, flatten chains of Cat and Alt nodes into a single node with a
+ * vector of children. The children of an Alt node can then be sorted,
+ * so that duplicates and nodes that can be factored are adjacent and
+ * can be handled as a range.
+ *
+ * dir follows the old algorithm: dir == 1 (right) orders and factors
+ * Cat nodes by their last child (suffix), dir == 0 (left) by their
+ * first child (prefix).
+ */
+
+struct vec_stats {
+	int flattened;		/* Cat/Alt nodes spliced into their parent */
+	int eps;		/* eps nodes removed from Cat nodes */
+	int chars;		/* char/charset nodes merged into a charset */
+	int dups;		/* duplicate Alt alternatives removed */
+	int collapsed;		/* Cat/Alt nodes replaced by their only child */
+};
+
+static bool same_nchild_type(Node *a, Node *b)
+{
+	return (a->is_type(node_type_t::ALT) && b->is_type(node_type_t::ALT)) ||
+		(a->is_type(node_type_t::CAT) && b->is_type(node_type_t::CAT));
+}
+
+/*
+ * Splice the children of any child of the same type as @n (Alt in Alt,
+ * Cat in Cat) into @n, recursively, preserving order. This is done
+ * top down without recursion, so long chains don't use the C stack.
+ */
+static void flatten_node(Node *n, struct vec_stats &st)
+{
+	std::vector<Node *> out;
+	/* work is used as a stack, so push in reverse to keep order */
+	std::vector<Node *> work(n->child.rbegin(), n->child.rend());
+
+	while (!work.empty()) {
+		Node *c = work.back();
+		work.pop_back();
+		if (same_nchild_type(n, c)) {
+			work.insert(work.end(), c->child.rbegin(),
+				    c->child.rend());
+			c->child.clear();
+			c->release();
+			st.flattened++;
+		} else {
+			out.push_back(c);
+		}
+	}
+	n->child.swap(out);
+}
+
+/* replace @n by its only child */
+static Node *collapse_node(Node *n, struct vec_stats &st)
+{
+	Node *c = n->child[0];
+
+	n->child.clear();
+	n->release();
+	st.collapsed++;
+	return c;
+}
+
+/*
+ * Total ordering used to sort Alt alternatives. For dir == 0 this is
+ * cmp(). For dir == 1 Cat nodes are compared from their last child
+ * backwards, so that Cat nodes with a common suffix are adjacent.
+ */
+static int vec_cmp(Node *a, Node *b, int dir)
+{
+	if (!dir || !a->is_type(node_type_t::CAT) || !b->is_type(node_type_t::CAT))
+		return a->cmp(b);
+
+	std::vector<Node *>::reverse_iterator i = a->child.rbegin();
+	std::vector<Node *>::reverse_iterator j = b->child.rbegin();
+	for ( ; i != a->child.rend() && j != b->child.rend(); i++, j++) {
+		int tmp = (*i)->cmp(*j);
+		if (tmp != 0)
+			return tmp;
+	}
+	if (a->child.size() < b->child.size())
+		return -1;
+	else if (a->child.size() > b->child.size())
+		return 1;
+	return 0;
+}
+
+struct vec_less {
+	int dir;
+	vec_less(int dir): dir(dir) { }
+	bool operator()(Node *a, Node *b) const
+	{
+		return vec_cmp(a, b, dir) < 0;
+	}
+};
+
+/* aE -> a, and children that are Cat nodes are spliced in */
+static Node *simplify_vec_cat(Node *n, struct vec_stats &st)
+{
+	/* children may have simplified into Cat nodes */
+	flatten_node(n, st);
+
+	std::vector<Node *>::iterator i;
+	for (i = n->child.begin(); i != n->child.end(); ) {
+		if ((*i)->is_type(node_type_t::EPS)) {
+			(*i)->release();	/* NOP for epsnode */
+			i = n->child.erase(i);
+			st.eps++;
+		} else {
+			i++;
+		}
+	}
+
+	if (n->child.empty()) {
+		n->release();
+		return &epsnode;
+	}
+	if (n->child.size() == 1)
+		return collapse_node(n, st);
+	return n;
+}
+
+/*
+ * Merge all char and charset alternatives into a single node.
+ * a | b | [cd] -> [abcd]
+ */
+static void merge_alt_chars(Node *n, struct vec_stats &st)
+{
+	Chars chars;
+	int count = 0;
+	std::vector<Node *>::iterator i;
+
+	for (i = n->child.begin(); i != n->child.end(); i++) {
+		if (is_char_or_charset(*i))
+			count++;
+	}
+	if (count < 2)
+		return;
+
+	std::vector<Node *> out;
+	for (i = n->child.begin(); i != n->child.end(); i++) {
+		if (is_char_or_charset(*i)) {
+			insert_chars(chars, *i);
+			(*i)->release();
+		} else {
+			out.push_back(*i);
+		}
+	}
+	/* a single char is always represented by a CharNode */
+	if (chars.size() == 1)
+		out.push_back(new CharNode(*chars.begin()));
+	else
+		out.push_back(new CharSetNode(chars));
+	n->child.swap(out);
+	st.chars += count - 1;
+}
+
+/* merge chars, sort, and remove duplicate alternatives */
+static Node *simplify_vec_alt(Node *n, int dir, struct vec_stats &st)
+{
+	/* children may have simplified into Alt nodes */
+	flatten_node(n, st);
+	merge_alt_chars(n, st);
+
+	std::sort(n->child.begin(), n->child.end(), vec_less(dir));
+
+	/* (a | a) -> a, duplicates are now adjacent */
+	std::vector<Node *> out;
+	std::vector<Node *>::iterator i;
+	for (i = n->child.begin(); i != n->child.end(); i++) {
+		if (!out.empty() && out.back()->cmp(*i) == 0) {
+			(*i)->release();
+			st.dups++;
+		} else {
+			out.push_back(*i);
+		}
+	}
+	n->child.swap(out);
+
+	if (n->child.size() == 1)
+		return collapse_node(n, st);
+	return n;
+}
+
+/*
+ * Simplify the tree bottom up. Returns @t or its replacement.
+ * Recursion depth is bounded by the nesting of different node types,
+ * as chains of the same type are flattened before recursing.
+ */
+static Node *simplify_vec(Node *t, int dir, struct vec_stats &st)
+{
+	/* shared subtrees are opaque to simplification */
+	if (!t->is_type(node_type_t::INNER) || t->is_type(node_type_t::SHAREDTREE))
+		return t;
+
+	if (t->is_type(node_type_t::ONECHILD)) {
+		t->child[0] = simplify_vec(t->child[0], dir, st);
+		return t;
+	}
+
+	flatten_node(t, st);
+	std::vector<Node *>::iterator i;
+	for (i = t->child.begin(); i != t->child.end(); i++)
+		*i = simplify_vec(*i, dir, st);
+
+	if (t->is_type(node_type_t::CAT))
+		return simplify_vec_cat(t, st);
+	return simplify_vec_alt(t, dir, st);
+}
+
+static Node *simplify_tree_vec(Node *t, optflags const &opts)
+{
+	struct vec_stats st = { 0, 0, 0, 0, 0 };
+
+	/* same pass order as the old algorithm, default right then left */
+	int dir = (opts.control & CONTROL_DFA_TREE_LEFT) ? 0 : 1;
+	for (int count = 0; count < 2; count++, dir = !dir)
+		t = simplify_vec(t, dir, st);
+
+	if (opts.dump & DUMP_DFA_TREE_STATS)
+		fprintf(stderr,
+			"expr-vector: flattened %d, eps %d, chars %d, dups %d, collapsed %d\n",
+			st.flattened, st.eps, st.chars, st.dups,
+			st.collapsed);
+	return t;
+}
+
 // maximum number of passes to iterate on the expression tree doing
 // simplification passes. Simplification may exit sooner if no changes
 // are made.
 #define MAX_PASSES 1
-Node *simplify_tree(Node *t, optflags const &opts)
+static Node *simplify_tree_old(Node *t, optflags const &opts)
 {
 	bool update = true;
 	int i;
 
-	if (opts.dump & DUMP_DFA_TREE_STATS) {
-		struct node_counts counts = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-		count_tree_nodes(t, &counts);
-		fprintf(stderr,
-			"expr tree: c %d, [] %d, [^] %d, | %d, + %d, * %d, . %d, cat %d\n",
-			counts.charnode, counts.charset, counts.notcharset,
-			counts.alt, counts.plus, counts.star, counts.any,
-			counts.cat);
-	}
 	for (i = 0; update && i < MAX_PASSES; i++) {
 		update = false;
 		//default to right normalize first as this reduces the number
@@ -614,6 +835,24 @@ Node *simplify_tree(Node *t, optflags const &opts)
 				dir--;
 		}
 	}
+	return t;
+}
+
+Node *simplify_tree(Node *t, optflags const &opts)
+{
+	if (opts.dump & DUMP_DFA_TREE_STATS) {
+		struct node_counts counts = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+		count_tree_nodes(t, &counts);
+		fprintf(stderr,
+			"expr tree: c %d, [] %d, [^] %d, | %d, + %d, * %d, . %d, cat %d\n",
+			counts.charnode, counts.charset, counts.notcharset,
+			counts.alt, counts.plus, counts.star, counts.any,
+			counts.cat);
+	}
+	if (opts.control & CONTROL_DFA_TREE_VECTOR)
+		t = simplify_tree_vec(t, opts);
+	else
+		t = simplify_tree_old(t, opts);
 	if (opts.dump & DUMP_DFA_TREE_STATS) {
 		struct node_counts counts = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 		count_tree_nodes(t, &counts);
