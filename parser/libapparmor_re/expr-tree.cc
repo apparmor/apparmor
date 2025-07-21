@@ -32,6 +32,7 @@
  * enough that it can be used with minimal overhead.
  */
 
+#include <algorithm>
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -198,7 +199,7 @@ void Node::dump_syntax_tree(ostream &os) const
 
 static Node *simplify_eps_pair(Node *t)
 {
-	if (t->is_type(node_type_t::TWOCHILD) &&
+	if (t->is_type(node_type_t::NCHILD) &&
 	    t->child[0] == &epsnode &&
 	    t->child[1] == &epsnode) {
 		t->release();
@@ -221,7 +222,7 @@ static void rotate_node(Node *t, int dir)
 }
 
 /* return False if no work done */
-int TwoChildNode::normalize_eps(int dir)
+int NChildNode::normalize_eps(int dir)
 {
 	if ((&epsnode == child[dir]) &&
 	    (&epsnode != child[!dir])) {
@@ -521,24 +522,25 @@ int debug_tree(Node *t)
 	int nodes = 1;
 
 	if (!t->is_type(node_type_t::IMPORTANT)) {
-		if (t->child[0])
-			nodes += debug_tree(t->child[0]);
-		if (t->child[1])
-			nodes += debug_tree(t->child[1]);
+		std::vector<Node *>::iterator i;
+		for (i = t->child.begin(); i != t->child.end(); i++) {
+			if (*i)
+				nodes += debug_tree(*i);
+		}
 	}
 	return nodes;
 }
 
 static void count_tree_nodes(Node *t, struct node_counts *counts)
 {
-	if (t->is_type(node_type_t::ALT)) {
-		counts->alt++;
-		count_tree_nodes(t->child[0], counts);
-		count_tree_nodes(t->child[1], counts);
-	} else if (t->is_type(node_type_t::CAT)) {
-		counts->cat++;
-		count_tree_nodes(t->child[0], counts);
-		count_tree_nodes(t->child[1], counts);
+	if (t->is_type(node_type_t::NCHILD)) {
+		if (t->is_type(node_type_t::ALT))
+			counts->alt++;
+		else
+			counts->cat++;
+		std::vector<Node *>::iterator i;
+		for (i = t->child.begin(); i != t->child.end(); i++)
+			count_tree_nodes(*i, counts);
 	} else if (t->is_type(node_type_t::PLUS)) {
 		counts->plus++;
 		count_tree_nodes(t->child[0], counts);
@@ -629,7 +631,7 @@ void flip_tree(Node *node)
 	for (depth_first_traversal i(node); i; i++) {
 		if ((*i)->is_type(node_type_t::CAT)) {
 			CatNode *cat = static_cast<CatNode *>(*i);
-			swap(cat->child[0], cat->child[1]);
+			std::reverse(cat->child.begin(), cat->child.end());
 		}
 	}
 }

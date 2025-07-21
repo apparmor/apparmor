@@ -245,7 +245,7 @@ enum class node_type_t : uint32_t {
 	NODE = 0,
 	INNER = (1u << 0),
 	ONECHILD = (1u << 1),
-	TWOCHILD = (1u << 2),
+	NCHILD = (1u << 2),
 	LEAF = (1u << 3),
 	EPS = (1u << 4),
 	IMPORTANT = (1u << 5),
@@ -257,15 +257,16 @@ enum class node_type_t : uint32_t {
 	STAR = (1u << 11),
 	OPTIONAL = (1u << 12),
 	PLUS = (1u << 13),
-	CAT = (1u << 14),
-	ALT = (1u << 15),
-	SHARED = (1u << 16),
-	ACCEPT = (1u << 17),
-	MATCHFLAG = (1u << 18),
-	EXACTMATCHFLAG = (1u << 19),
-	DENYMATCHFLAG = (1u << 20),
-	PROMPTMATCHFLAG = (1u << 21),
-	SHAREDTREE = (1u << 22),
+	ALT = (1u << 14),
+	SHARED = (1u << 15),
+	ACCEPT = (1u << 16),
+	MATCHFLAG = (1u << 17),
+	EXACTMATCHFLAG = (1u << 18),
+	DENYMATCHFLAG = (1u << 19),
+	PROMPTMATCHFLAG = (1u << 20),
+	SHAREDTREE = (1u << 21),
+	// CAT NODE needs to be last for factoring
+	CAT = (1u << 22),
 };
 
 constexpr inline node_type_t operator|(node_type_t lhs, node_type_t rhs)
@@ -299,13 +300,8 @@ public:
 		label(0) { }
 	Node(Node *left, Node *right): child{left, right},
 		type_flags(node_type_t::NODE), label(0) { }
-	virtual ~Node()
-	{
-		if (child[0])
-			child[0]->release();
-		if (child[1])
-			child[1]->release();
-	}
+	/* children are released by OneChildNode and NChildNode */
+	virtual ~Node() { }
 
 	/**
 	 * nullable, firstpos, lastpos, and followpos are used to convert the
@@ -351,16 +347,26 @@ public:
 	 */
 	virtual bool contains_oob() const { return false; }
 
-	virtual int eq(const Node *other) const = 0;
+	/*
+	 * cmp provides a total ordering of nodes, returning < 0, 0, or > 0.
+	 * Nodes are ordered first by type, and then by subclasses on their
+	 * contents. cmp() == 0 iff the nodes are equivalent.
+	 */
+	virtual int cmp(const Node *other) const
+	{
+		uint32_t a = static_cast<uint32_t>(type_flags);
+		uint32_t b = static_cast<uint32_t>(other->type_flags);
+
+		if (a < b)
+			return -1;
+		else if (a > b)
+			return 1;
+		return 0;
+	}
+	virtual int eq(const Node *other) const { return cmp(other) == 0; }
 	virtual ostream &dump(ostream &os) const = 0;
 	void dump_syntax_tree(ostream &os) const;
-	virtual void normalize(int dir)
-	{
-		if (child[dir])
-			child[dir]->normalize(dir);
-		if (child[!dir])
-			child[!dir]->normalize(dir);
-	}
+	virtual void normalize(int dir __attribute__ ((unused))) {}
 	/* return false if no work done */
 	virtual int normalize_eps(int dir __attribute__((unused))) { return 0; }
 
@@ -402,15 +408,91 @@ public:
 	{
 		type_flags |= node_type_t::ONECHILD;
 	};
+	virtual ~OneChildNode()
+	{
+		if (child[0])
+			child[0]->release();
+	};
+	void normalize(int dir) override
+	{
+		if (child[0])
+			child[0]->normalize(dir);
+	}
+	bool contains_oob() const override {
+		return child[0]->contains_oob();
+	}
+
+	int cmp(const Node *other) const override
+	{
+		int tmp = InnerNode::cmp(other);
+		if (tmp != 0)
+			return tmp;
+
+		return child[0]->cmp(other->child[0]);
+	}
 };
 
-class TwoChildNode: public InnerNode {
+
+class NChildNode: public InnerNode {
 public:
-	TwoChildNode(Node *left, Node *right): InnerNode(left, right)
+	NChildNode(Node *left, Node *right): InnerNode(left, right)
 	{
-		type_flags |= node_type_t::TWOCHILD;
+		type_flags |= node_type_t::NCHILD;
 	};
+	virtual ~NChildNode()
+	{
+		std::vector<Node *>::iterator it;
+		for (it = child.begin(); it != child.end(); it++) {
+			/* old factoring NULLs out children before release */
+			if (*it)
+				(*it)->release();
+		}
+	};
+
+	void normalize(int dir) override
+	{
+		std::vector<Node *>::iterator it;
+		for (it = child.begin(); it != child.end(); it++)
+			(*it)->normalize(dir);
+	}
 	int normalize_eps(int dir) override;
+
+	bool contains_oob() const override {
+		std::vector<Node *>::const_iterator it;
+		for (it = child.begin(); it != child.end(); it++) {
+			if ((*it)->contains_oob())
+				return true;
+		}
+		return false;
+	}
+
+	// assumes ordered as desired/sorted, this really only affects
+	// alt nodes. But is not different than the TwoChild node treating
+	// (a|b) as not equal to (b|a). Sorting alt node vectors before
+	// comparing removes the ambiguity
+	int cmp(const Node *other) const override
+	{
+		int tmp = InnerNode::cmp(other);
+		if (tmp != 0)
+			return tmp;
+
+		std::vector<Node *>::const_iterator left;
+		std::vector<Node *>::const_iterator right;
+
+		if (child.size() < other->child.size())
+			return -1;
+		else if (child.size() > other->child.size())
+			return 1;
+
+		left = child.begin();
+		right = other->child.begin();
+		for ( ; left != child.end(); left++, right++) {
+			tmp = (*left)->cmp(*right);
+			if (tmp != 0)
+				return tmp;
+		}
+		return 0;
+	}
 };
 
 class LeafNode: public Node {
@@ -441,12 +523,6 @@ public:
 		return true;
 	}
 
-	int eq(const Node *other) const override
-	{
-		if (other->is_type(node_type_t::EPS))
-			return 1;
-		return 0;
-	}
 	ostream &dump(ostream &os) const override
 	{
 		return os << "[]";
@@ -496,13 +572,14 @@ public:
 		}
 		(*x)->insert(followpos.begin(), followpos.end());
 	}
-	int eq(const Node *other) const override
+	int cmp(const Node *other) const override
 	{
-		if (other->is_type(node_type_t::CHAR)) {
-			const CharNode *o = static_cast<const CharNode *>(other);
-			return c == o->c;
-		}
-		return 0;
+		int tmp = CNode::cmp(other);
+		if (tmp != 0)
+			return tmp;
+
+		const CharNode *o = static_cast<const CharNode *>(other);
+		return c.c - o->c.c;
 	}
 	ostream &dump(ostream &os) const override
 	{
@@ -546,21 +623,25 @@ public:
 			(*x)->insert(followpos.begin(), followpos.end());
 		}
 	}
-	int eq(const Node *other) const override
+	int cmp(const Node *other) const override
 	{
-		if (!other->is_type(node_type_t::CHARSET))
-			return 0;
+		int tmp = CNode::cmp(other);
+		if (tmp != 0)
+			return tmp;
 
 		const CharSetNode *o = static_cast<const CharSetNode *>(other);
-		if (chars.size() != o->chars.size())
-			return 0;
+		if (chars.size() < o->chars.size())
+			return -1;
+		else if (chars.size() > o->chars.size())
+			return 1;
 
 		for (Chars::const_iterator i = chars.begin(), j = o->chars.begin();
 		     i != chars.end() && j != o->chars.end(); i++, j++) {
-			if (*i != *j)
-				return 0;
+			tmp = i->c - j->c;
+			if (tmp != 0)
+				return tmp;
 		}
-		return 1;
+		return 0;
 	}
 	ostream &dump(ostream &os) const override
 	{
@@ -619,21 +700,25 @@ public:
 						  followpos.end());
 		}
 	}
-	int eq(const Node *other) const override
+	int cmp(const Node *other) const override
 	{
-		if (!other->is_type(node_type_t::NOTCHARSET))
-			return 0;
+		int tmp = CNode::cmp(other);
+		if (tmp != 0)
+			return tmp;
 
 		const NotCharSetNode *o = static_cast<const NotCharSetNode *>(other);
-		if (chars.size() != o->chars.size())
-			return 0;
+		if (chars.size() < o->chars.size())
+			return -1;
+		else if (chars.size() > o->chars.size())
+			return 1;
 
 		for (Chars::const_iterator i = chars.begin(), j = o->chars.begin();
 		     i != chars.end() && j != o->chars.end(); i++, j++) {
-			if (*i != *j)
-				return 0;
+			tmp = i->c - j->c;
+			if (tmp != 0)
+				return tmp;
 		}
-		return 1;
+		return 0;
 	}
 	ostream &dump(ostream &os) const override
 	{
@@ -679,12 +764,6 @@ public:
 			if (i->first.c >= 0)
 				i->second->insert(followpos.begin(), followpos.end());
 	}
-	int eq(const Node *other) const override
-	{
-		if (other->is_type(node_type_t::ANYCHAR))
-			return 1;
-		return 0;
-	}
 	ostream &dump(ostream &os) const override { return os << "."; }
 };
 
@@ -710,20 +789,12 @@ public:
 
 		return true;	/* nullable */
 	}
-	int eq(const Node *other) const override
-	{
-		if (other->is_type(node_type_t::STAR))
-			return child[0]->eq(other->child[0]);
-		return 0;
-	}
 	ostream &dump(ostream &os) const override
 	{
 		os << '(';
 		child[0]->dump(os);
 		return os << ")*";
 	}
-
-	bool contains_oob() const override { return child[0]->contains_oob(); }
 };
 
 /* Match a node zero or one times. */
@@ -739,18 +810,17 @@ public:
 
 		return true;	/* nullable */
 	}
-	int eq(const Node *other) const override
-	{
-		if (other->is_type(node_type_t::OPTIONAL))
-			return child[0]->eq(other->child[0]);
-		return 0;
-	}
 	ostream &dump(ostream &os) const override
 	{
 		os << '(';
 		child[0]->dump(os);
 		return os << ")?";
 	}
+	/* OptionalNode has never reported oob from its child, keep that
+	 * so min_match_len() is unchanged by the move to OneChildNode.
+	 * TODO: decide whether this should report child[0]->contains_oob()
+	 */
+	bool contains_oob() const override { return false; }
 };
 
 /* Match a node one or more times. (This is a unary operator.) */
@@ -775,18 +845,12 @@ public:
 
 		return nullable;
 	}
-	int eq(const Node *other) const override {
-		if (other->is_type(node_type_t::PLUS))
-			return child[0]->eq(other->child[0]);
-		return 0;
-	}
 	ostream &dump(ostream &os) const override {
 		os << '(';
 		child[0]->dump(os);
 		return os << ")+";
 	}
 	int min_match_len() const override { return child[0]->min_match_len(); }
-	bool contains_oob() const override { return child[0]->contains_oob(); }
 };
 
 /*
@@ -831,128 +895,160 @@ public:
 		return child[0]->compute_pos(firstpos, lastpos);
 	}
 	/* only equal to itself */
-	int eq(const Node *other) const override { return (this == other); }
+	int cmp(const Node *other) const override
+	{
+		int tmp = Node::cmp(other);
+		if (tmp != 0)
+			return tmp;
+
+		if (this < other)
+			return -1;
+		else if (this > other)
+			return 1;
+		return 0;
+	}
 	void normalize(int dir __attribute__((unused))) override { }
 	ostream &dump(ostream &os) const override
 	{
 		return child[0]->dump(os);
 	}
 	int min_match_len() const override { return child[0]->min_match_len(); }
-	bool contains_oob() const override { return child[0]->contains_oob(); }
 
 	unsigned int refcount;
 };
 
 /* Match a pair of consecutive nodes. */
-class CatNode: public TwoChildNode {
+class CatNode: public NChildNode {
 public:
-	CatNode(Node *left, Node *right): TwoChildNode(left, right)
+	CatNode(Node *left, Node *right): NChildNode(left, right)
 	{
 		type_flags |= node_type_t::CAT;
 	}
 	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
 	{
+		/* being careful about the construction we can reduce the
+		 * number of sets being built in computing_pos.
+		 * The set of cat nodes is treated as left normalized for
+		 * purpose of pos computation
+		 *
+		 *                   .
+		 *                  / \
+		 *                 .   f[4]
+		 *                / \
+		 *               .   e[3]
+		 *              / \
+		 *             /   \
+		 *            /     \
+		 *           /       \
+		 *          .         |[2]
+		 *         / \       / \
+		 *     [0]*   *[1]  c   d
+		 *        |   |
+		 *        a   b
+		 * The computed firstpos, lastpos from the previous iteration
+		 * are the left, firstpos/lastpos of the next iteration
+		 */
+
 		NodeSet left_lastpos;
-		NodeSet right_firstpos;
 
-		bool lnullable = child[0]->compute_pos(firstpos, left_lastpos);
-		bool rnullable = child[1]->compute_pos(right_firstpos, lastpos);
+		std::vector<Node *>::iterator it = child.begin();
+		bool nullable = (*it)->compute_pos(firstpos, left_lastpos);
 
-		for (NodeSet::iterator i = left_lastpos.begin();
-		     i != left_lastpos.end(); i++) {
-			(*i)->followpos.insert(right_firstpos.begin(),
-					       right_firstpos.end());
+		for (it++; it != child.end(); it++) {
+			NodeSet right_firstpos, right_lastpos;
+
+			bool rnullable = (*it)->compute_pos(right_firstpos,
+							    right_lastpos);
+
+			for (NodeSet::iterator i = left_lastpos.begin();
+			     i != left_lastpos.end(); i++) {
+				(*i)->followpos.insert(right_firstpos.begin(),
+						       right_firstpos.end());
+			}
+
+			/* children so far are all nullable */
+			if (nullable)
+				merge_into(firstpos, right_firstpos);
+
+			/* left_lastpos becomes lastpos of children so far */
+			if (rnullable)
+				merge_into(right_lastpos, left_lastpos);
+			left_lastpos.swap(right_lastpos);
+
+			nullable = nullable && rnullable;
 		}
+		merge_into(lastpos, left_lastpos);
 
-		if (lnullable)
-			merge_into(firstpos, right_firstpos);
-
-		if (rnullable)
-			merge_into(lastpos, left_lastpos);
-
-		return lnullable && rnullable;
-	}
-	int eq(const Node *other) const override
-	{
-		if (other->is_type(node_type_t::CAT)) {
-			if (!child[0]->eq(other->child[0]))
-				return 0;
-			return child[1]->eq(other->child[1]);
-		}
-		return 0;
+		return nullable;
 	}
 	ostream &dump(ostream &os) const override
 	{
-		child[0]->dump(os);
-		child[1]->dump(os);
+		std::vector<Node *>::const_iterator it;
+		for (it = child.begin(); it != child.end(); it++) {
+			(*it)->dump(os);
+		}
 		return os;
 	}
 	void normalize(int dir) override;
 	int min_match_len() const override
 	{
-		int len = child[0]->min_match_len();
-		if (child[0]->contains_oob()) {
-			// oob characters are used to indicate when the DFA transitions
-			// from matching the path to matching the xattrs. If the left child
-			// contains an oob character, the right side doesn't contribute to
-			// the path match.
-			return len;
+		int len = 0;
+		std::vector<Node *>::const_iterator it;
+		for (it = child.begin(); it != child.end(); it++) {
+			len += (*it)->min_match_len();
+			if ((*it)->contains_oob()) {
+				// oob characters are used to indicate when
+				// the DFA transitions from matching the path
+				// to matching the xattrs. If the left child
+				// contains an oob character, the nodes to
+				// the right don't contribute to the path match.
+				return len;
+			}
 		}
-		return len + child[1]->min_match_len();
-	}
-	bool contains_oob() const override
-	{
-		return child[0]->contains_oob() || child[1]->contains_oob();
+		return len;
 	}
 };
 
 /* Match one of two alternative nodes. */
-class AltNode: public TwoChildNode {
+class AltNode: public NChildNode {
 public:
-	AltNode(Node *left, Node *right): TwoChildNode(left, right)
+	AltNode(Node *left, Node *right): NChildNode(left, right)
 	{
 		type_flags |= node_type_t::ALT;
 	}
 	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
 	{
-		/* both children must be computed, so don't short circuit */
-		bool nullable = child[0]->compute_pos(firstpos, lastpos);
-		nullable |= child[1]->compute_pos(firstpos, lastpos);
+		/* all children must be computed, so don't short circuit */
+		bool nullable = false;
+		std::vector<Node *>::iterator it;
+		for (it = child.begin(); it != child.end(); it++)
+			nullable |= (*it)->compute_pos(firstpos, lastpos);
 
 		return nullable;
-	}
-	int eq(const Node *other) const override
-	{
-		if (other->is_type(node_type_t::ALT)) {
-			if (!child[0]->eq(other->child[0]))
-				return 0;
-			return child[1]->eq(other->child[1]);
-		}
-		return 0;
 	}
 	ostream &dump(ostream &os) const override
 	{
 		os << '(';
-		child[0]->dump(os);
-		os << '|';
-		child[1]->dump(os);
+		std::vector<Node *>::const_iterator it;
+		for (it = child.begin(); it != child.end(); it++) {
+			if (it != child.begin())
+				os << '|';
+			(*it)->dump(os);
+		}
 		os << ')';
 		return os;
 	}
 	void normalize(int dir) override;
 	int min_match_len() const override
 	{
-		int m1, m2;
-		m1 = child[0]->min_match_len();
-		m2 = child[1]->min_match_len();
-		if (m1 < m2) {
-			return m1;
+		int m = child[0]->min_match_len();
+		std::vector<Node *>::const_iterator it;
+		for (it = ++child.begin(); it != child.end(); it++) {
+			int n = (*it)->min_match_len();
+			if (n < m)
+				m = n;
 		}
-		return m2;
-	}
-	bool contains_oob() const override
-	{
-		return child[0]->contains_oob() || child[1]->contains_oob();
+		return m;
 	}
 };
 
@@ -976,6 +1072,19 @@ public:
 
 	/* requires shared nodes to be common by pointer */
 	int eq(const Node *other) const override { return (this == other); }
+	/* must be consistent with eq(), only the same node compares equal */
+	int cmp(const Node *other) const override
+	{
+		int tmp = ImportantNode::cmp(other);
+		if (tmp != 0)
+			return tmp;
+
+		if (this < other)
+			return -1;
+		else if (this > other)
+			return 1;
+		return 0;
+	}
 };
 
 /**
@@ -996,6 +1105,25 @@ public:
 	}
 	
 	ostream &dump(ostream &os) const override { return os << "< 0x" << std::hex << perms << std::dec << '>'; }
+
+	/* order by content so sorting is stable across runs, fall back
+	 * to SharedNode::cmp so only the same node compares equal
+	 */
+	int cmp(const Node *other) const override
+	{
+		int tmp = Node::cmp(other);
+		if (tmp != 0)
+			return tmp;
+
+		const MatchFlag *o = static_cast<const MatchFlag *>(other);
+		if (priority != o->priority)
+			return priority < o->priority ? -1 : 1;
+		if (perms != o->perms)
+			return perms < o->perms ? -1 : 1;
+		if (audit != o->audit)
+			return audit < o->audit ? -1 : 1;
+		return SharedNode::cmp(other);
+	}
 
 	int priority;
 	perm32_t perms;
