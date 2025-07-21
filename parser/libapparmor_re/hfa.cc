@@ -484,15 +484,10 @@ DFA::DFA(Node *root, optflags const &opts, bool buildfiledfa): root(root), filed
 	 */
 	for (depth_first_traversal i(root); i; i++) {
 		(*i)->followpos.clear();
-		(*i)->compute_nullable();
-		(*i)->compute_firstpos();
-		(*i)->compute_lastpos();
 	}
 
-	if (opts.dump & DUMP_DFA_PROGRESS)
-		fprintf(stderr, "Creating dfa: followpos\r");
 	for (depth_first_traversal i(root); i; i++) {
-		(*i)->compute_followpos();
+		(*i)->compute_pos();
 	}
 
 	nonmatching = add_new_state(opts, new NodeSet, NULL);

@@ -307,8 +307,8 @@ public:
 	}
 
 	/**
-	 * firstpos, lastpos, and followpos are used to convert the syntax tree
-	 * to a DFA.
+	 * nullable, firstpos, lastpos, and followpos are used to convert the
+	 * syntax tree to a DFA.
 	 *
 	 * firstpos holds nodes that can match the first character of a string
 	 * that matches the syntax tree. For the regex 'a*bcd', firstpos holds
@@ -330,10 +330,7 @@ public:
 	 * See the "Dragon Book" 2nd Edition section 3.9.2 for an in-depth
 	 * explanation.
 	 */
-	virtual void compute_nullable() { }
-	virtual void compute_firstpos() = 0;
-	virtual void compute_lastpos() = 0;
-	virtual void compute_followpos() { }
+	virtual void compute_pos() = 0;
 
 	/*
 	 * min_match_len determines the smallest string that can match the
@@ -429,8 +426,8 @@ public:
 		 */
 	}
 
-	void compute_firstpos() override { }
-	void compute_lastpos() override { }
+	void compute_pos() override { }
+
 	int eq(const Node *other) const override
 	{
 		if (other->is_type(node_type_t::EPS))
@@ -451,8 +448,11 @@ public:
 class ImportantNode: public LeafNode {
 public:
 	ImportantNode(): LeafNode() { type_flags |= node_type_t::IMPORTANT; }
-	void compute_firstpos() override { firstpos.insert(this); }
-	void compute_lastpos() override { lastpos.insert(this); }
+	void compute_pos() override
+	{
+		firstpos.insert(this);
+		lastpos.insert(this);
+	}
 	virtual void follow(Cases &cases) const = 0;
 	virtual int is_accept(void) const = 0;
 };
@@ -680,10 +680,11 @@ public:
 	{
 		type_flags |= (node_type_t::STAR | node_type_t::NULLABLE);
 	}
-	void compute_firstpos() override { firstpos = child[0]->firstpos; }
-	void compute_lastpos() override { lastpos = child[0]->lastpos; }
-	void compute_followpos() override
+	void compute_pos() override
 	{
+		firstpos = child[0]->firstpos;
+		lastpos = child[0]->lastpos;
+
 		NodeSet from = child[0]->lastpos, to = child[0]->firstpos;
 		for (NodeSet::iterator i = from.begin(); i != from.end(); i++) {
 			(*i)->followpos.insert(to.begin(), to.end());
@@ -712,8 +713,11 @@ public:
 	{
 		type_flags |= (node_type_t::OPTIONAL | node_type_t::NULLABLE);
 	}
-	void compute_firstpos() override { firstpos = child[0]->firstpos; }
-	void compute_lastpos() override { lastpos = child[0]->lastpos; }
+	void compute_pos() override
+	{
+		firstpos = child[0]->firstpos;
+		lastpos = child[0]->lastpos;
+	}
 	int eq(const Node *other) const override
 	{
 		if (other->is_type(node_type_t::OPTIONAL))
@@ -735,16 +739,15 @@ public:
 	{
 		type_flags |= node_type_t::PLUS;
 	}
-	void compute_nullable() override {
+	void compute_pos() override
+	{
 		// The nullable bit is only ever set so no need for else branch
 		if (has_type(child[0]->type_flags, node_type_t::NULLABLE)) {
 			type_flags |= node_type_t::NULLABLE;
 		}
-	}
-	void compute_firstpos() override { firstpos = child[0]->firstpos; }
-	void compute_lastpos() override { lastpos = child[0]->lastpos; }
-	void compute_followpos() override
-	{
+		firstpos = child[0]->firstpos;
+		lastpos = child[0]->lastpos;
+
 		NodeSet from = child[0]->lastpos, to = child[0]->firstpos;
 		for (NodeSet::iterator i = from.begin(); i != from.end(); i++) {
 			(*i)->followpos.insert(to.begin(), to.end());
@@ -801,14 +804,14 @@ public:
 	 * the same each time as the context is the same
 	 * TODO: cache firstpos/lastpos so the subtree is only walked once
 	 */
-	void compute_nullable() override
+	void compute_pos() override
 	{
 		// The nullable bit is only ever set so no need for else branch
 		if (has_type(child[0]->type_flags, node_type_t::NULLABLE))
 			type_flags |= node_type_t::NULLABLE;
+		firstpos = child[0]->firstpos;
+		lastpos = child[0]->lastpos;
 	}
-	void compute_firstpos() override { firstpos = child[0]->firstpos; }
-	void compute_lastpos() override { lastpos = child[0]->lastpos; }
 	/* only equal to itself */
 	int eq(const Node *other) const override { return (this == other); }
 	void normalize(int dir __attribute__((unused))) override { }
@@ -829,7 +832,7 @@ public:
 	{
 		type_flags |= node_type_t::CAT;
 	}
-	void compute_nullable() override
+	void compute_pos() override
 	{
 		/*
 		 * To check that both children are nullable, we can bitwise-AND
@@ -842,23 +845,17 @@ public:
 			     node_type_t::NULLABLE)) {
 			type_flags |= node_type_t::NULLABLE;
 		}
-	}
-	void compute_firstpos() override
-	{
+
 		if (has_type(child[0]->type_flags, node_type_t::NULLABLE))
 			firstpos = child[0]->firstpos + child[1]->firstpos;
 		else
 			firstpos = child[0]->firstpos;
-	}
-	void compute_lastpos() override
-	{
+
 		if (has_type(child[1]->type_flags, node_type_t::NULLABLE))
 			lastpos = child[0]->lastpos + child[1]->lastpos;
 		else
 			lastpos = child[1]->lastpos;
-	}
-	void compute_followpos() override
-	{
+
 		NodeSet from = child[0]->lastpos, to = child[1]->firstpos;
 		for (NodeSet::iterator i = from.begin(); i != from.end(); i++) {
 			(*i)->followpos.insert(to.begin(), to.end());
@@ -905,7 +902,7 @@ public:
 	{
 		type_flags |= node_type_t::ALT;
 	}
-	void compute_nullable() override
+	void compute_pos() override
 	{
 		/*
 		 * To check that either child is nullable, we can bitwise-OR
@@ -918,14 +915,10 @@ public:
 			     node_type_t::NULLABLE)) {
 			type_flags |= node_type_t::NULLABLE;
 		}
-	}
-	void compute_lastpos() override
-	{
-		lastpos = child[0]->lastpos + child[1]->lastpos;
-	}
-	void compute_firstpos() override
-	{
+
 		firstpos = child[0]->firstpos + child[1]->firstpos;
+
+		lastpos = child[0]->lastpos + child[1]->lastpos;
 	}
 	int eq(const Node *other) const override
 	{
