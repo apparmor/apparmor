@@ -485,11 +485,15 @@ DFA::DFA(Node *root, optflags const &opts, bool buildfiledfa): root(root), filed
 	for (depth_first_traversal i(root); i; i++)
 		(*i)->followpos.clear();
 
-	NodeSet firstpos, lastpos;
-	(void) root->compute_pos(firstpos, lastpos);
+	/* root lastpos is not needed, drop it as soon as compute is done */
+	NodeSet *firstpos = new NodeSet;
+	{
+		NodeSet lastpos;
+		(void) root->compute_pos(*firstpos, lastpos);
+	}
 
 	nonmatching = add_new_state(opts, new NodeSet, NULL);
-	start = add_new_state(opts, new NodeSet(firstpos), nonmatching);
+	start = add_new_state(opts, firstpos, nonmatching);
 
 	/* the work_queue contains the states that need to have their
 	 * transitions computed.  This could be done with a recursive

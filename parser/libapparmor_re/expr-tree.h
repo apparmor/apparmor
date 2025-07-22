@@ -195,6 +195,16 @@ template<class T> std::set<T> operator+(const std::set<T> &a, const std::set<T> 
 	return c;
 }
 
+/* Move the contents of src into dst, inserting the smaller set into the
+ * larger. src is left in an unspecified state.
+ */
+template<class T> void merge_into(std::set<T> &dst, std::set<T> &src)
+{
+	if (dst.size() < src.size())
+		dst.swap(src);
+	dst.insert(src.begin(), src.end());
+}
+
 /**
  * When creating DFAs from regex trees, a DFA state is constructed from
  * a set of important nodes in the syntax tree. This includes AcceptNodes,
@@ -328,6 +338,12 @@ public:
 	 *
 	 * See the "Dragon Book" 2nd Edition section 3.9.2 for an in-depth
 	 * explanation.
+	 *
+	 * compute_pos computes followpos for the subtree, adds the subtree's
+	 * firstpos and lastpos to the passed in sets, and returns nullable.
+	 * The passed in sets may already contain the positions of other
+	 * subtrees (eg. the left side of an alternation), so a node must
+	 * not use them to compute followpos.
 	 */
 	virtual bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) = 0;
 
@@ -454,8 +470,6 @@ public:
 	ImportantNode(): LeafNode() { type_flags |= node_type_t::IMPORTANT; }
 	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
 	{
-		firstpos.clear();
-		lastpos.clear();
 		firstpos.insert(this);
 		lastpos.insert(this);
 
@@ -690,12 +704,16 @@ public:
 	}
 	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
 	{
-		(void) child[0]->compute_pos(firstpos, lastpos);
+		NodeSet first, last;
 
-		NodeSet from = lastpos, to = firstpos;
-		for (NodeSet::iterator i = from.begin(); i != from.end(); i++) {
-			(*i)->followpos.insert(to.begin(), to.end());
+		(void) child[0]->compute_pos(first, last);
+
+		for (NodeSet::iterator i = last.begin(); i != last.end(); i++) {
+			(*i)->followpos.insert(first.begin(), first.end());
 		}
+
+		merge_into(firstpos, first);
+		merge_into(lastpos, last);
 
 		return true;	/* nullable */
 	}
@@ -751,12 +769,16 @@ public:
 	}
 	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
 	{
-		bool nullable = child[0]->compute_pos(firstpos, lastpos);
+		NodeSet first, last;
 
-		NodeSet from = lastpos, to = firstpos;
-		for (NodeSet::iterator i = from.begin(); i != from.end(); i++) {
-			(*i)->followpos.insert(to.begin(), to.end());
+		bool nullable = child[0]->compute_pos(first, last);
+
+		for (NodeSet::iterator i = last.begin(); i != last.end(); i++) {
+			(*i)->followpos.insert(first.begin(), first.end());
 		}
+
+		merge_into(firstpos, first);
+		merge_into(lastpos, last);
 
 		return nullable;
 	}
@@ -843,16 +865,17 @@ public:
 		bool lnullable = child[0]->compute_pos(firstpos, left_lastpos);
 		bool rnullable = child[1]->compute_pos(right_firstpos, lastpos);
 
+		for (NodeSet::iterator i = left_lastpos.begin();
+		     i != left_lastpos.end(); i++) {
+			(*i)->followpos.insert(right_firstpos.begin(),
+					       right_firstpos.end());
+		}
+
 		if (lnullable)
-			firstpos.insert(right_firstpos.begin(), right_firstpos.end());
+			merge_into(firstpos, right_firstpos);
 
 		if (rnullable)
-			lastpos.insert(left_lastpos.begin(), left_lastpos.end());
-
-		NodeSet from = left_lastpos, to = right_firstpos;
-		for (NodeSet::iterator i = from.begin(); i != from.end(); i++) {
-			(*i)->followpos.insert(to.begin(), to.end());
-		}
+			merge_into(lastpos, left_lastpos);
 
 		return lnullable && rnullable;
 	}
@@ -899,13 +922,9 @@ public:
 	}
 	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
 	{
-		NodeSet r_firstpos, r_lastpos;
-
+		/* both children must be computed, so don't short circuit */
 		bool nullable = child[0]->compute_pos(firstpos, lastpos);
-		nullable |= child[1]->compute_pos(r_firstpos, r_lastpos);
-
-		firstpos.insert(r_firstpos.begin(), r_firstpos.end());
-		lastpos.insert(r_lastpos.begin(), r_lastpos.end());
+		nullable |= child[1]->compute_pos(firstpos, lastpos);
 
 		return nullable;
 	}
