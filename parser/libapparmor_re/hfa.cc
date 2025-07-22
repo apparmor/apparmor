@@ -482,16 +482,14 @@ DFA::DFA(Node *root, optflags const &opts, bool buildfiledfa): root(root), filed
 	 * UniquePermsCache), so can have followpos from a previous dfa.
 	 * Clear followpos for all nodes before any is computed.
 	 */
-	for (depth_first_traversal i(root); i; i++) {
+	for (depth_first_traversal i(root); i; i++)
 		(*i)->followpos.clear();
-	}
 
-	for (depth_first_traversal i(root); i; i++) {
-		(*i)->compute_pos();
-	}
+	NodeSet firstpos, lastpos;
+	(void) root->compute_pos(firstpos, lastpos);
 
 	nonmatching = add_new_state(opts, new NodeSet, NULL);
-	start = add_new_state(opts, new NodeSet(root->firstpos), nonmatching);
+	start = add_new_state(opts, new NodeSet(firstpos), nonmatching);
 
 	/* the work_queue contains the states that need to have their
 	 * transitions computed.  This could be done with a recursive
@@ -513,8 +511,6 @@ DFA::DFA(Node *root, optflags const &opts, bool buildfiledfa): root(root), filed
 	 * needed.
 	 */
 	for (depth_first_traversal i(root); i; i++) {
-		(*i)->firstpos.clear();
-		(*i)->lastpos.clear();
 		(*i)->followpos.clear();
 	}
 

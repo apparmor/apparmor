@@ -255,7 +255,6 @@ enum class node_type_t : uint32_t {
 	DENYMATCHFLAG = (1u << 20),
 	PROMPTMATCHFLAG = (1u << 21),
 	SHAREDTREE = (1u << 22),
-	NULLABLE = (1u << 31),
 };
 
 constexpr inline node_type_t operator|(node_type_t lhs, node_type_t rhs)
@@ -330,7 +329,7 @@ public:
 	 * See the "Dragon Book" 2nd Edition section 3.9.2 for an in-depth
 	 * explanation.
 	 */
-	virtual void compute_pos() = 0;
+	virtual bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) = 0;
 
 	/*
 	 * min_match_len determines the smallest string that can match the
@@ -357,7 +356,7 @@ public:
 	/* return false if no work done */
 	virtual int normalize_eps(int dir __attribute__((unused))) { return 0; }
 
-	NodeSet firstpos, lastpos, followpos;
+	NodeSet followpos;
 	/* child 0 is left, child 1 is right */
 	Node *child[2];
 	/*
@@ -416,7 +415,7 @@ class EpsNode: public LeafNode {
 public:
 	EpsNode(): LeafNode()
 	{
-		type_flags |= (node_type_t::EPS | node_type_t::NULLABLE);
+		type_flags |= node_type_t::EPS;
 		label = 0;
 	}
 	void release(void) override
@@ -426,7 +425,12 @@ public:
 		 */
 	}
 
-	void compute_pos() override { }
+	bool compute_pos(NodeSet &firstpos __attribute__((unused)),
+			 NodeSet &lastpos __attribute__((unused))) override
+	{
+		/* nullable, no changes is NodeSets */
+		return true;
+	}
 
 	int eq(const Node *other) const override
 	{
@@ -448,10 +452,14 @@ public:
 class ImportantNode: public LeafNode {
 public:
 	ImportantNode(): LeafNode() { type_flags |= node_type_t::IMPORTANT; }
-	void compute_pos() override
+	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
 	{
+		firstpos.clear();
+		lastpos.clear();
 		firstpos.insert(this);
 		lastpos.insert(this);
+
+		return false; 		/* nullable */
 	}
 	virtual void follow(Cases &cases) const = 0;
 	virtual int is_accept(void) const = 0;
@@ -678,17 +686,18 @@ class StarNode: public OneChildNode {
 public:
 	StarNode(Node *left): OneChildNode(left)
 	{
-		type_flags |= (node_type_t::STAR | node_type_t::NULLABLE);
+		type_flags |= node_type_t::STAR;
 	}
-	void compute_pos() override
+	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
 	{
-		firstpos = child[0]->firstpos;
-		lastpos = child[0]->lastpos;
+		(void) child[0]->compute_pos(firstpos, lastpos);
 
-		NodeSet from = child[0]->lastpos, to = child[0]->firstpos;
+		NodeSet from = lastpos, to = firstpos;
 		for (NodeSet::iterator i = from.begin(); i != from.end(); i++) {
 			(*i)->followpos.insert(to.begin(), to.end());
 		}
+
+		return true;	/* nullable */
 	}
 	int eq(const Node *other) const override
 	{
@@ -711,12 +720,13 @@ class OptionalNode: public OneChildNode {
 public:
 	OptionalNode(Node *left): OneChildNode(left)
 	{
-		type_flags |= (node_type_t::OPTIONAL | node_type_t::NULLABLE);
+		type_flags |= node_type_t::OPTIONAL;
 	}
-	void compute_pos() override
+	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
 	{
-		firstpos = child[0]->firstpos;
-		lastpos = child[0]->lastpos;
+		(void) child[0]->compute_pos(firstpos, lastpos);
+
+		return true;	/* nullable */
 	}
 	int eq(const Node *other) const override
 	{
@@ -739,19 +749,16 @@ public:
 	{
 		type_flags |= node_type_t::PLUS;
 	}
-	void compute_pos() override
+	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
 	{
-		// The nullable bit is only ever set so no need for else branch
-		if (has_type(child[0]->type_flags, node_type_t::NULLABLE)) {
-			type_flags |= node_type_t::NULLABLE;
-		}
-		firstpos = child[0]->firstpos;
-		lastpos = child[0]->lastpos;
+		bool nullable = child[0]->compute_pos(firstpos, lastpos);
 
-		NodeSet from = child[0]->lastpos, to = child[0]->firstpos;
+		NodeSet from = lastpos, to = firstpos;
 		for (NodeSet::iterator i = from.begin(); i != from.end(); i++) {
 			(*i)->followpos.insert(to.begin(), to.end());
 		}
+
+		return nullable;
 	}
 	int eq(const Node *other) const override {
 		if (other->is_type(node_type_t::PLUS))
@@ -804,13 +811,9 @@ public:
 	 * the same each time as the context is the same
 	 * TODO: cache firstpos/lastpos so the subtree is only walked once
 	 */
-	void compute_pos() override
+	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
 	{
-		// The nullable bit is only ever set so no need for else branch
-		if (has_type(child[0]->type_flags, node_type_t::NULLABLE))
-			type_flags |= node_type_t::NULLABLE;
-		firstpos = child[0]->firstpos;
-		lastpos = child[0]->lastpos;
+		return child[0]->compute_pos(firstpos, lastpos);
 	}
 	/* only equal to itself */
 	int eq(const Node *other) const override { return (this == other); }
@@ -832,34 +835,26 @@ public:
 	{
 		type_flags |= node_type_t::CAT;
 	}
-	void compute_pos() override
+	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
 	{
-		/*
-		 * To check that both children are nullable, we can bitwise-AND
-		 * both of the type_flags together and then check if the
-		 * node_type_t::NULLABLE bit is set on the result.
-		 *
-		 * The nullable bit is only ever set so no need for else branch
-		 */
-		if (has_type(child[0]->type_flags & child[1]->type_flags,
-			     node_type_t::NULLABLE)) {
-			type_flags |= node_type_t::NULLABLE;
-		}
+		NodeSet left_lastpos;
+		NodeSet right_firstpos;
 
-		if (has_type(child[0]->type_flags, node_type_t::NULLABLE))
-			firstpos = child[0]->firstpos + child[1]->firstpos;
-		else
-			firstpos = child[0]->firstpos;
+		bool lnullable = child[0]->compute_pos(firstpos, left_lastpos);
+		bool rnullable = child[1]->compute_pos(right_firstpos, lastpos);
 
-		if (has_type(child[1]->type_flags, node_type_t::NULLABLE))
-			lastpos = child[0]->lastpos + child[1]->lastpos;
-		else
-			lastpos = child[1]->lastpos;
+		if (lnullable)
+			firstpos.insert(right_firstpos.begin(), right_firstpos.end());
 
-		NodeSet from = child[0]->lastpos, to = child[1]->firstpos;
+		if (rnullable)
+			lastpos.insert(left_lastpos.begin(), left_lastpos.end());
+
+		NodeSet from = left_lastpos, to = right_firstpos;
 		for (NodeSet::iterator i = from.begin(); i != from.end(); i++) {
 			(*i)->followpos.insert(to.begin(), to.end());
 		}
+
+		return lnullable && rnullable;
 	}
 	int eq(const Node *other) const override
 	{
@@ -902,23 +897,17 @@ public:
 	{
 		type_flags |= node_type_t::ALT;
 	}
-	void compute_pos() override
+	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
 	{
-		/*
-		 * To check that either child is nullable, we can bitwise-OR
-		 * both of the type_flags together and then check if the
-		 * node_type_t::NULLABLE bit is set on the result.
-		 *
-		 * The nullable bit is only ever set so no need for else branch
-		 */
-		if (has_type(child[0]->type_flags | child[1]->type_flags,
-			     node_type_t::NULLABLE)) {
-			type_flags |= node_type_t::NULLABLE;
-		}
+		NodeSet r_firstpos, r_lastpos;
 
-		firstpos = child[0]->firstpos + child[1]->firstpos;
+		bool nullable = child[0]->compute_pos(firstpos, lastpos);
+		nullable |= child[1]->compute_pos(r_firstpos, r_lastpos);
 
-		lastpos = child[0]->lastpos + child[1]->lastpos;
+		firstpos.insert(r_firstpos.begin(), r_firstpos.end());
+		lastpos.insert(r_lastpos.begin(), r_lastpos.end());
+
+		return nullable;
 	}
 	int eq(const Node *other) const override
 	{

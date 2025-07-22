@@ -148,7 +148,7 @@ void Node::dump_syntax_tree(ostream &os) const
 			else
 				os << (*i)->child[0]->label << **i
 				   << (*i)->child[1]->label;
-			os << '\t' << (*i)->firstpos << (*i)->lastpos << endl;
+			os << '\t' << endl;
 		}
 	}
 	os << endl;
