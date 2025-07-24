@@ -359,7 +359,7 @@ class ReadLog:
             self.hashlog[aamode][full_profile]['change_hat'][e['name2']] = True
             return
 
-        elif e['operation'] == 'change_profile':
+        elif e['operation'] == 'change_profile' or e['operation'] == 'change_onexec':
             ChangeProfileRule.hashlog_from_event(self.hashlog[aamode][full_profile]['change_profile'], e)
             return
 
