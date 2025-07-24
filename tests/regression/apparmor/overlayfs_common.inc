@@ -61,11 +61,15 @@ mkdir "${overlayfs_workdir}"
 # Concretely: kernel overlayfs propagates changes, fuse-overlayfs doesn't
 fallocate -l 16K "${overlayfs_lower}/lower_file"
 touch "${overlayfs_lower}/lower_file_2"
+touch "${overlayfs_lower}/lower_file_nope"
 fallocate -l 16K "${overlayfs_upper}/upper_file"
 touch "${overlayfs_upper}/upper_file_2"
+touch "${overlayfs_upper}/upper_file_nope"
 # echo is also a builtin, making things a bit more complicated
 cp "$(type -P echo)" "${overlayfs_lower}/lower_echo"
 cp "$(type -P echo)" "${overlayfs_upper}/upper_echo"
+cp "$(type -P echo)" "${overlayfs_lower}/lower_echo_nope"
+cp "$(type -P echo)" "${overlayfs_upper}/upper_echo_nope"
 
 if [ "$1" == "fuse" ]; then
     fuse-overlayfs -o lowerdir="${overlayfs_lower}",upperdir="${overlayfs_upper}",workdir="${overlayfs_workdir}" "${mount_target}"|| fatalerror 'Unable to set up overlayfs'
@@ -77,6 +81,9 @@ fallocate -l 16K "${mount_target}/overlay_file"
 
 settest overlayfs "${bin}/complain"
 
+# Note about stat and xattr:
+# - stat is not LSM mediated (pass)
+# - xattr is LSM mediated but we lack the mount info in the hook (xpass)
 genprofile "${mount_target}/lower_file:r" "${mount_target}/upper_file:r" "${mount_target}/overlay_file:r"
 runchecktest "Read file in overlayfs mount (lower)" pass read "${mount_target}/lower_file"
 runchecktest "Stat file in overlayfs mount (lower)" pass stat "${mount_target}/lower_file"
@@ -84,6 +91,12 @@ runchecktest "Xattr file in overlayfs mount (lower)" pass xattr "${mount_target}
 runchecktest "Read file in overlayfs mount (upper)" pass read "${mount_target}/upper_file"
 runchecktest "Stat file in overlayfs mount (upper)" pass stat "${mount_target}/upper_file"
 runchecktest "Xattr file in overlayfs mount (upper)" pass xattr "${mount_target}/upper_file"
+runchecktest "!Read file in overlayfs mount (lower)" fail read "${mount_target}/lower_file_nope"
+runchecktest "!Stat file in overlayfs mount (lower)" pass stat "${mount_target}/lower_file_nope"
+runchecktest "!Xattr file in overlayfs mount (lower)" xfail xattr "${mount_target}/lower_file_nope"
+runchecktest "!Read file in overlayfs mount (upper)" fail read "${mount_target}/upper_file_nope"
+runchecktest "!Stat file in overlayfs mount (upper)" pass stat "${mount_target}/upper_file_nope"
+runchecktest "!Xattr file in overlayfs mount (upper)" xfail xattr "${mount_target}/upper_file_nope"
 runchecktest "Read file in overlayfs mount (overlay)" pass read "${mount_target}/overlay_file"
 runchecktest "Stat file in overlayfs mount (overlay)" pass stat "${mount_target}/overlay_file"
 runchecktest "Xattr file in overlayfs mount (overlay)" pass xattr "${mount_target}/overlay_file"
@@ -92,6 +105,9 @@ genprofile "${mount_target}/lower_file:w" "${mount_target}/upper_file:w" "${moun
 runchecktest "Write file in overlayfs mount (lower)" pass write "${mount_target}/lower_file"
 runchecktest "Write file in overlayfs mount (upper)" pass write "${mount_target}/upper_file"
 runchecktest "Write file in overlayfs mount (creat)" pass write "${mount_target}/overlay_file_new"
+runchecktest "!Write file in overlayfs mount (lower)" fail write "${mount_target}/lower_file_nope"
+runchecktest "!Write file in overlayfs mount (upper)" fail write "${mount_target}/upper_file_nope"
+runchecktest "!Write file in overlayfs mount (creat)" fail write "${mount_target}/overlay_file_new_nope"
 
 genprofile "${mount_target}/old_overlay_file:rw" "${mount_target}/new_overlay_file:w"
 touch "${mount_target}/old_overlay_file"
@@ -121,6 +137,8 @@ genprofile "${mount_target}/*_echo:ix"
 runchecktest "Exec in overlayfs mount (lower)" pass exec "${mount_target}/lower_echo" PASS
 runchecktest "Exec in overlayfs mount (upper)" pass exec "${mount_target}/upper_echo" PASS
 runchecktest "Exec in overlayfs mount (overlay)" pass exec "${mount_target}/overlay_echo" PASS
+runchecktest "!Exec in overlayfs mount (lower)" fail exec "${mount_target}/lower_echo_nope" PASS
+runchecktest "!Exec in overlayfs mount (upper)" fail exec "${mount_target}/upper_echo_nope" PASS
 
 if [ "$1" == "fuse" ]; then
     fusermount -u "${mount_target}" && rmdir "${mount_target}"
