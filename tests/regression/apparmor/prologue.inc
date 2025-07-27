@@ -130,14 +130,36 @@ requires_query_interface()
 	fi
 }
 
+is_option()
+{
+	case $1 in
+	-* ) return 0
+	esac
+
+	return 1
+}
+
 # parser_supports() - test if the parser supports the following rules
 # $@: rules to test, use quotes if the rule contains whitespace
 # Returns: 0 and output "true" if all rules supported
 #          1 and error message if compiler does not support rule
 parser_supports()
 {
+	local opts;
+
+	if is_option "$1" ; then
+		while [ $# > 0 -a "--" != "$1" ]; do
+			opts="$opts $1"
+			shift
+		done
+		if [ $# -gt 0 ] ; then
+			# shift --
+			shift
+		fi
+	fi
+
 	for R in "$@" ; do
-		echo "/test { $R }" | $subdomain ${parser_args} -qQT 2>/dev/null 1>/dev/null
+		echo "/test { $R }" | $subdomain ${parser_args} $opts -qQT 2>/dev/null 1>/dev/null
 		if [ $? -ne 0 ] ; then
 			echo "Compiler does not support rule '$R'"
 			return 1;
