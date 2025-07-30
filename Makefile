@@ -55,7 +55,7 @@ snapshot: clean
 coverity: snapshot
 	cd $(SNAPSHOT_NAME)/libraries/libapparmor && ./configure --with-python
 	$(foreach dir, libraries/libapparmor utils, \
-		cov-build --dir $(COVERITY_DIR) --no-command --fs-capture-search $(SNAPSHOT_NAME)/$(dir); \
+		coverity capture --dir $(COVERITY_DIR) --project-dir $(SNAPSHOT_NAME)/$(dir); \
 		mv $(COVERITY_DIR)/build-log.txt $(COVERITY_DIR)/build-log-python-$(subst /,.,$(dir)).txt ;)
 	cov-build --dir $(COVERITY_DIR) -- sh -c \
 	"$(foreach dir, $(filter-out utils profiles tests, $(DIRS)), \
