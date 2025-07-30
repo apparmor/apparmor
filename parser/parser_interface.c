@@ -383,13 +383,11 @@ void sd_serialize_rlimits(std::ostringstream &buf, struct aa_rlimits *limits)
 	sd_write_structend(buf);
 }
 
-void sd_serialize_xtable(std::ostringstream &buf, char **table,
-			 size_t min_size)
+void sd_serialize_xtable(std::ostringstream &buf, char **table)
 {
 	size_t count;
-	size_t size;
 
-	if (!table[4] && min_size == 0)
+	if (!table[4])
 		return;
 	sd_write_struct(buf, "xtable");
 	count = 0;
@@ -398,9 +396,7 @@ void sd_serialize_xtable(std::ostringstream &buf, char **table,
 			count++;
 	}
 
-	size = max(min_size, count);
-
-	sd_write_array(buf, NULL, size);
+	sd_write_array(buf, NULL, count);
 	for (size_t i = 4; i < count + 4; i++) {
 		size_t len = strlen(table[i]) + 1;
 
@@ -412,13 +408,6 @@ void sd_serialize_xtable(std::ostringstream &buf, char **table,
 			strsep(&tmp, ":");
 		}
 		sd_write_strn(buf, table[i], len, NULL);
-	}
-	if (min_size > count) {
-		//fprintf(stderr, "Adding padding to xtable count %lu, min %lu\n", count, min_size);
-		for (; count < min_size; count++) {
-			/* fill with null strings */
-			sd_write_strn(buf, "\000", 1, NULL);
-		}
 	}
 
 	sd_write_arrayend(buf);
@@ -546,38 +535,17 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 		sd_serialize_dfa(buf, profile->policy.dfa, profile->policy.size,
 				 profile->policy.perms_table);
 		if (kernel_supports_permstable32) {
-			sd_serialize_xtable(buf, profile->exec_table,
-				profile->uses_prompt_rules &&
-				prompt_compat_mode == PROMPT_COMPAT_PERMSV1 ?
-					profile->policy.perms_table.size() : 0);
+			sd_serialize_xtable(buf, profile->exec_table);
 
 		}
 		sd_write_structend(buf);
 	}
 
-	/* either have a single dfa or lists of different entry types */
-	if (profile->uses_prompt_rules && prompt_compat_mode == PROMPT_COMPAT_PERMSV1) {
-		/* special compat mode to work around verification problem */
-		sd_serialize_dfa(buf, profile->policy.dfa, profile->policy.size,
-				 profile->policy.perms_table);
-		sd_write_name(buf,  "dfa_start");
-		sd_write_uint32(buf, profile->policy.file_start);
-		if (profile->policy.dfa) {
-			// fprintf(stderr, "profile %s: policy xtable\n", profile->name);
-			// TODO: this is dummy exec make dependent on V1
-			sd_serialize_xtable(buf, profile->exec_table,
-					    //permstable32_v1 workaround
-					    profile->policy.perms_table.size());
-		}
-	} else {
-		sd_serialize_dfa(buf, profile->dfa.dfa, profile->dfa.size,
-				 profile->dfa.perms_table);
-		if (profile->dfa.dfa) {
-			// fprintf(stderr, "profile %s: dfa xtable\n", profile->name);
-			sd_serialize_xtable(buf, profile->exec_table,
-					    //??? work around
-					    profile->dfa.perms_table.size());
-		}
+	sd_serialize_dfa(buf, profile->dfa.dfa, profile->dfa.size,
+			 profile->dfa.perms_table);
+	if (profile->dfa.dfa) {
+		// fprintf(stderr, "profile %s: dfa xtable\n", profile->name);
+		sd_serialize_xtable(buf, profile->exec_table);
 	}
 	sd_write_structend(buf);
 }
