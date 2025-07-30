@@ -284,7 +284,7 @@ suites:
         summary: Unit tests for the Python utilities.
         prepare: |
             # Generate apparmor profiles that the tests rely on.
-            make -C "$SPREAD_PATH"/parser/tst gen_xtrans gen_dbus
+            make -C "$SPREAD_PATH"/parser/tst gen_tests
             # Spread does not support programmatically generated test variants.
             # Ensure that the list baked into utils/test/task.yaml contains all
             # the files matching utils/test/test-*.py
