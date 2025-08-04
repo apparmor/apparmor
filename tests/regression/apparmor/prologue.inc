@@ -99,14 +99,16 @@ requires_kernel_features()
 
 requires_any_of_kernel_features()
 {
+	local features
 	while [ $# -gt 0 ]; do
 		local res=$(kernel_features "$1")
 		if [ "$res" = "true" ] ; then
 			return 0;
 		fi
+		features="$features $1"
 		shift
 	done
-	echo "$res. Skipping tests ..."
+	echo "Required feature(s): $features not available. Skipping tests ..."
 	exit 0
 }
 
