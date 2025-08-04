@@ -174,8 +174,8 @@ class IOUringIsCoveredTest(AATest):
     def test_is_covered_priority(self):
         obj = IOUringRule(IOUringRule.ALL, 'ba*', priority=0)
         prio_obj = IOUringRule(IOUringRule.ALL, 'ba*', priority=1)
-        self.assertTrue(obj.is_covered(prio_obj))
-        self.assertFalse(prio_obj.is_covered(obj))
+        self.assertFalse(obj.is_covered(prio_obj))
+        self.assertTrue(prio_obj.is_covered(obj))
 
     def test_is_covered_priority_2(self):
         obj = IOUringRule(IOUringRule.ALL, 'ba*')
