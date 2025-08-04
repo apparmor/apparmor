@@ -133,8 +133,10 @@ static void process_entries(const void *nodep, VISIT value, int level unused)
 		if (entry->link_name &&
 		    strncmp((*t)->from, entry->link_name, len) == 0) {
 			char *n = do_alias(*t, entry->link_name);
-			if (!n)
+			if (!n) {
+				free_cod_entries(dup);
 				return;
+			}
 			if (!dup)
 				dup = copy_cod_entry(entry);
 			free(dup->link_name);
