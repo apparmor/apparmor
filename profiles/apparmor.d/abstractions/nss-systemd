@@ -25,6 +25,7 @@
   @{run}/systemd/userdb/io.systemd.Home rw,               # systemd-home dirs
   @{run}/systemd/userdb/io.systemd.NameServiceSwitch rw,  # UNIX/glibc NSS
   @{run}/systemd/userdb/io.systemd.Machine rw,            # systemd-machined
+  @{run}/systemd/userdb/org.gnome.DisplayManager rw,      # GDM implements a user database for its greeter
 
   @{PROC}/sys/kernel/random/boot_id r,
 
