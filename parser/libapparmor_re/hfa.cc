@@ -393,7 +393,17 @@ void DFA::update_state_transitions(optflags const &opts, State *state)
 	 */
 	for (Cases::iterator j = cases.begin(); j != cases.end(); j++) {
 		State *target;
-		target = add_new_state(opts, j->second, nonmatching);
+		try {
+			target = add_new_state(opts, j->second, nonmatching);
+		} catch (int error) {
+			/* when add_new_state fails, there could still
+			 * be NodeSets in the rest of cases, so clean
+			 * them up before re-throwing the exception */
+			for (Cases::iterator k = ++j; k != cases.end(); k++) {
+				delete k->second;
+			}
+			throw error;
+		}
 
 		/* Don't insert transition that the otherwise transition
 		 * already covers
