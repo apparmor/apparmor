@@ -370,6 +370,15 @@ class DFA {
 	NodeMap node_map;
 	list<State *> work_queue;
 
+	void cleanup(void) {
+		anodes_cache.clear();
+		nnodes_cache.clear();
+
+		for (Partition::iterator i = states.begin(); i != states.end(); i++) {
+			delete *i;
+		}
+		states.clear();
+	}
 public:
 	DFA(Node *root, optflags const &flags, bool filedfa);
 	virtual ~DFA();

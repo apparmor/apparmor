@@ -326,7 +326,16 @@ State *DFA::add_new_state(optflags const &opts, NodeSet *anodes,
 
 	ProtoState proto;
 	proto.init(nnodev, anodev);
-	State *state = new State(opts, node_map.size(), proto, other, filedfa);
+	State *state;
+	try {
+		state = new State(opts, node_map.size(), proto, other, filedfa);
+	} catch(int error) {
+		/* this function is called in the DFA object creation,
+		 * and the exception prevents the destructor from
+		 * being called, so call the helper here */
+		cleanup();
+		throw error;
+	}
 	pair<NodeMap::iterator,bool> x = node_map.insert(proto, state);
 	if (x.second == false) {
 		delete state;
@@ -514,11 +523,7 @@ DFA::DFA(Node *root, optflags const &opts, bool buildfiledfa): root(root), filed
 
 DFA::~DFA()
 {
-	anodes_cache.clear();
-	nnodes_cache.clear();
-
-	for (Partition::iterator i = states.begin(); i != states.end(); i++)
-		delete *i;
+	cleanup();
 }
 
 State *DFA::match_len(State *state, const char *str, size_t len)
