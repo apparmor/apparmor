@@ -28,8 +28,8 @@ bin=$pwd
 
 . "$bin/prologue.inc"
 . "$bin/unix_socket.inc"
-requires_kernel_features policy/versions/v7
-requires_kernel_features network/af_unix
+requires_any_of_kernel_features policy/versions/v7 policy/versions/v8 policy/versions/v9
+requires_any_of_kernel_features network/af_unix network_v9/af_unix
 requires_parser_support "unix,"
 
 settest unix_socket
