@@ -39,6 +39,7 @@
 #include <set>
 #include <stack>
 #include <ostream>
+#include <vector>
 
 #include <stdint.h>
 
@@ -293,20 +294,11 @@ constexpr inline bool has_type(node_type_t flags, node_type_t type)
 /* An abstract node in the syntax tree. */
 class Node {
 public:
-	Node(): type_flags(node_type_t::NODE), label(0)
-	{
-		child[0] = child[1] = 0;
-	}
-	Node(Node *left): type_flags(node_type_t::NODE), label(0)
-	{
-		child[0] = left;
-		child[1] = 0;
-	}
-	Node(Node *left, Node *right): type_flags(node_type_t::NODE), label(0)
-	{
-		child[0] = left;
-		child[1] = right;
-	}
+	Node(): child(2), type_flags(node_type_t::NODE), label(0) { }
+	Node(Node *left): child{left, NULL}, type_flags(node_type_t::NODE),
+		label(0) { }
+	Node(Node *left, Node *right): child{left, right},
+		type_flags(node_type_t::NODE), label(0) { }
 	virtual ~Node()
 	{
 		if (child[0])
@@ -374,7 +366,8 @@ public:
 
 	NodeSet followpos;
 	/* child 0 is left, child 1 is right */
-	Node *child[2];
+	std::vector<Node *> child;
+
 	/*
 	 * Bitmap that stores supported pointer casts for the Node, composed
 	 * by node_type_t flags. This is used by is_type() as a substitute
