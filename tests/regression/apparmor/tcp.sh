@@ -21,7 +21,7 @@ bin=$pwd
 # need to be able to query the parser if it supports the
 # kernel feature
 . "$bin/prologue.inc"
-requires_any_of_kernel_features network network_v8
+requires_any_of_kernel_features network network_v8 network_v9
 
 port=34567
 ip="127.0.0.1"
