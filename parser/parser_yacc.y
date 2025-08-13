@@ -1007,7 +1007,7 @@ factor:	TOK_DEFINED TOK_SET_VAR
 
 factor:	TOK_DEFINED TOK_BOOL_VAR
 	{
-		cond_expr *conds = new cond_expr($2, BOOLEAN_OP);
+		cond_expr *conds = new cond_expr($2, DEFINED_OP);
 		PDEBUG("Matched: defined set expr %s value %d\n", $2, conds->eval());
 		$$ = conds;
 		free($2);

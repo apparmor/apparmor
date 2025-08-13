@@ -1,0 +1,8 @@
+#=DESCRIPTION conditional within profile
+#=EXRESULT PASS
+
+/bin/true {
+  if defined $UNKNOWN {
+      /bin/true rix,
+  }
+}
