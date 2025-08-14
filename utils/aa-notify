@@ -646,6 +646,7 @@ def main():
     parser = argparse.ArgumentParser(description=_('Display AppArmor notifications or messages for DENIED entries.'))
     parser.add_argument('-p', '--poll', action='store_true', help=_('poll AppArmor logs and display notifications'))
     parser.add_argument('--display', type=str, help=_('set the DISPLAY environment variable (might be needed if sudo resets $DISPLAY)'))
+    parser.add_argument('--xauthority', type=str, help=_('set the XAUTHORITY environment variable (might be needed if sudo resets XAUTHORITY)'))
     parser.add_argument('-f', '--file', type=str, help=_('search FILE for AppArmor messages'))
     parser.add_argument('-l', '--since-last', action='store_true', help=_('display stats since last login'))
     parser.add_argument('-s', '--since-days', type=int, metavar=('NUM'), help=_('show stats for last NUM days (can be used alone or with -p)'))
@@ -873,6 +874,8 @@ def main():
 
     if args.display:
         os.environ['DISPLAY'] = args.display
+    if args.xauthority:
+        os.environ['XAUTHORITY'] = args.xauthority
 
     if args.poll:
         # Exit immediately if show_notifications is no or any of the options below
