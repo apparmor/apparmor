@@ -35,6 +35,10 @@
   owner @{HOME}/.gtkrc r,
   owner @{HOME}/.gtkrc-2.0 r,
   owner @{HOME}/.gtk-bookmarks r,
+
+  owner @{HOME}/.cache/gtk-4.0/ rw,
+  owner @{HOME}/.cache/gtk-4.0/vulkan-pipeline-cache/{,*} rw,
+
   owner @{HOME}/.config/gtkrc r,
   owner @{HOME}/.config/gtkrc-2.0 r,
   owner @{HOME}/.config/gtk-{3,4}.0/ rw,
