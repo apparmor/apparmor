@@ -1401,32 +1401,63 @@ static inline int diff_qualifiers(perm32_t perm1, perm32_t perm2)
 		(perm1 & AA_EXEC_TYPE) != (perm2 & AA_EXEC_TYPE));
 }
 
-/* update a single permission based on priority - only called if match->perm | match-> audit bit set */
-static int pri_update_perm(optflags const &opts, vector<int> &priority, int i,
-			   MatchFlag *match, perms_t &perms, perms_t &exact,
-			   bool filedfa)
+// only applied if filedfa
+static void add_implied_ix_mmap(optflags const &opts, vector<int> &priority,
+				perm32_t &mask, int pri)
 {
+	// ix implies EXEC_MMAP
+	if (mask & AA_EXEC_INHERIT) {
+		//USER_EXEC_MAP = 6
+		if (priority[EXEC_MMAP_SHIFT] <= pri) {
+			if (opts.dump & DUMP_DFA_PERMS)
+				cerr << "    " << "[6]<=" << priority[6] <<  " < " << pri << " adding implied m to " << hex << "mask: " << mask << dec;
+			mask |= AA_USER_EXEC_MMAP;
+			priority[6] = pri;
+		} else if (opts.dump & DUMP_DFA_PERMS)
+				cerr << "    " << "[6]>" << priority[6] <<  " < " << pri << " skipping adding implied m to " << hex << "mask: " << mask << dec;
+
+	} else if (mask & AA_OTHER_EXEC_INHERIT) {
+		// ix implies EXEC_MMAP
+		//OTHER_EXEC_MAP = 20 = 6 (EXEC_MMAP_SHIFT) + 14 (AA_OTHER_SHIFT)
+		if (priority[EXEC_MMAP_SHIFT + AA_OTHER_SHIFT] <= pri) {
+			if (opts.dump & DUMP_DFA_PERMS)
+				cerr << "    " << "[20]<=" << priority[20] <<  " < " << pri << " adding implied m to " << hex << "mask: " << mask << dec;
+			mask |= AA_OTHER_EXEC_MMAP;
+			priority[20] = pri;
+		}  else if (opts.dump & DUMP_DFA_PERMS)
+				cerr << "    " << "[20]>" << priority[20] <<  " < " << pri << " skipping adding implied m to " << hex << "mask: " << mask << dec;
+	}
+}
+
+/* update a single permission based on priority
+ * - only called if match->perm | match-> audit bit set
+ */
+static int pri_update_perm(optflags const &opts, vector<int> &priority, int i,
+			   MatchFlag *match, perms_t &perms, bool filedfa)
+{
+	perm32_t xmask = 0;
+	perm32_t mask = 1 << i;
+	perm32_t amask = mask;
+
 	// scaling priority *4
 	int pri = match->priority<<2;
 
 	/* use priority to get proper ordering and application of the type
-	 * of match flag.
+	 * of match flag (rule type).
 	 *
 	 * Note: this is the last use of priority, it is dropped and not
 	 *       used in the backend.
 	 */
 	if (match->is_type(NODE_TYPE_DENYMATCHFLAG))
 		pri += 3;
-	// exact match must be same priority as allow as its audit
-	// flags has the same priority.
-	// current no ALLOWMATCHFLAG it is just absence of other flags
-	// so it has to be second last in this list, using !last
-	// until this gets fixed
-	else if (match->is_type(NODE_TYPE_EXACTMATCHFLAG) ||
-		 (!match->is_type(NODE_TYPE_PROMPTMATCHFLAG)))
+	// for exec permission bits and their audit control exact match
+	// has higher priority
+	else if (match->is_type(NODE_TYPE_EXACTMATCHFLAG) &&
+		 (mask & AA_EXEC_BITS))
 		pri += 2;
-	else if (match->is_type(NODE_TYPE_PROMPTMATCHFLAG))
+	else if (!match->is_type(NODE_TYPE_PROMPTMATCHFLAG))
 		pri += 1;
+	// else prompt +0
 
 	if (priority[i] > pri) {
 		if (opts.dump & DUMP_DFA_PERMS)
@@ -1434,40 +1465,14 @@ static int pri_update_perm(optflags const &opts, vector<int> &priority, int i,
 		return 0;
 	}
 
-	perm32_t xmask = 0;
-	perm32_t mask = 1 << i;
-	perm32_t amask = mask;
-
 	// drop once we move the xindex out of the perms in the front end
 	if (filedfa) {
 		if (mask & AA_USER_EXEC) {
 			xmask = AA_USER_EXEC_TYPE;
-			// ix implies EXEC_MMAP
-			if (match->perms & AA_EXEC_INHERIT) {
-				xmask |= AA_USER_EXEC_MMAP;
-				//USER_EXEC_MAP = 6
-				if (priority[6] < pri)
-					priority[6] = pri;
-			}
 			amask = mask | xmask;
 		} else if (mask & AA_OTHER_EXEC) {
 			xmask = AA_OTHER_EXEC_TYPE;
-			// ix implies EXEC_MMAP
-			if (match->perms & AA_OTHER_EXEC_INHERIT) {
-				xmask |= AA_OTHER_EXEC_MMAP;
-				//OTHER_EXEC_MAP = 20
-				if (priority[20] < pri)
-					priority[20] = pri;
-			}
 			amask = mask | xmask;
-		} else if (((mask & AA_USER_EXEC_MMAP) &&
-			   (match->perms & AA_USER_EXEC_INHERIT)) ||
-			   ((mask & AA_OTHER_EXEC_MMAP) &&
-			    (match->perms & AA_OTHER_EXEC_INHERIT))) {
-			// if exec && ix we handled mmp above
-			if (opts.dump & DUMP_DFA_PERMS)
-				cerr << "    " << match << "[" << i << "]=" << priority[i] << " <= " << pri << " SKIPPING mmap unmasked " << hex << match->perms << "/" << match->audit << " masked " << (match->perms & amask) << "/" << (match->audit & amask) << " data " << (perms.allow & mask) << "/" << (perms.audit & mask) << " exact " << (exact.allow & mask) << "/" << (exact.audit & mask) << dec << "\n";
-			return 0;
 		}
 	}
 
@@ -1475,18 +1480,18 @@ static int pri_update_perm(optflags const &opts, vector<int> &priority, int i,
 		cerr << "  " << match << "[" << i << "]=" << priority[i] <<  " vs. " << pri << " mask: " << hex << mask << " xmask: " << xmask << " amask: " << amask << dec << "\n";
 	if (priority[i] < pri) {
 		if (opts.dump & DUMP_DFA_PERMS)
-			cerr << "    " << match << "[" << i << "]=" << priority[i] <<  " < " << pri << " clearing " << hex << (perms.allow & amask) << "/" << (perms.audit & amask) << " -> " << dec;
+			cerr << "    " << match << "[" << i << "]=" << priority[i] <<  " < " << pri << " clearing " << hex << "mask: " << amask << " from " << (perms.allow) << "/" << (perms.audit) << " -> " << dec;
 		priority[i] = pri;
 		perms.clear_bits(amask);
-		exact.clear_bits(amask);
 		if (opts.dump & DUMP_DFA_PERMS)
-			cerr << hex << (perms.allow & amask) << "/" << (perms.audit & amask) << dec << "\n";
+			cerr << hex << (perms.allow) << "/" << (perms.audit) << dec << "\n";
 	}
 
 	// the if conditions in order of permission priority
 	if (match->is_type(NODE_TYPE_DENYMATCHFLAG)) {
 		if (opts.dump & DUMP_DFA_PERMS)
 			cerr << "    " << match << "[" << i << "]=" << priority[i] << " <= " << pri << " deny " << hex << (match->perms & amask) << "/" << (match->audit & amask) << dec << "\n";
+		// deny x never implies mmap so not used here
 		perms.deny |= match->perms & amask;
 		perms.quiet |= match->audit & amask;
 
@@ -1497,15 +1502,12 @@ static int pri_update_perm(optflags const &opts, vector<int> &priority, int i,
 		/* exact match only asserts dominance on the XTYPE */
 		if (opts.dump & DUMP_DFA_PERMS)
 			cerr << "    " << match << "[" << i << "]=" << priority[i] <<  " <= " << pri << " exact " << hex << (match->perms & amask) << "/" << (match->audit & amask) << dec << "\n";
-		if (filedfa &&
-		    !is_merged_x_consistent(exact.allow, match->perms & amask)) {
+		if (filedfa && xmask && (perms.allow & amask) &&
+		    !is_merged_x_consistent(perms.allow, match->perms & amask)) {
 			if (opts.dump & DUMP_DFA_PERMS)
 				cerr << "    " << match << "[" << i << "]=" << priority[i] <<  " <= " << pri << " exact match conflict" << "\n";
 			return 1;
 		}
-		exact.allow |= match->perms & amask;
-		exact.audit |= match->audit & amask;
-
 		// dominance is only done for XTYPE so only clear that
 		// note xmask only set if setting x perm bit, so this
 		// won't clear for other bit types
@@ -1516,44 +1518,31 @@ static int pri_update_perm(optflags const &opts, vector<int> &priority, int i,
 		perms.allow |= match->perms & amask;
 		perms.audit |= match->audit & amask;
 		// can't specify exact prompt atm
-
 	} else if (!match->is_type(NODE_TYPE_PROMPTMATCHFLAG)) {
-		// allow perms, if exact has been encountered will already be set
-		// if overlaps x here, don't conflict, because exact will override
+		// allow perms, if exact has been encountered will
+		// already be set if overlaps x here, don't conflict,
+		// because exact will override
 		if (opts.dump & DUMP_DFA_PERMS)
 			cerr << "    " << match << "[" << i << "]=" << priority[i] <<  " <= " << pri << " allow " << hex << (match->perms & amask) << "/" << (match->audit & amask) << dec << "\n";
-		if (filedfa && !(exact.allow & mask) &&
+		if (filedfa && xmask && (perms.allow & amask) &&
 		    !is_merged_x_consistent(perms.allow, match->perms & amask)) {
 			if (opts.dump & DUMP_DFA_PERMS)
 				cerr << "    " << match << "[" << i << "]=" << priority[i] <<  " <= " << pri << " allow match conflict" << "\n";
 			return 1;
 		}
-		// mask off if XTYPE in xmatch
-		if ((exact.allow | exact.audit) & mask) {
-			// mask == amask & ~xmask
-			perms.allow |= match->perms & mask;
-			perms.audit |= match->audit & mask;
-		} else {
-			perms.allow |= match->perms & amask;
-			perms.audit |= match->audit & amask;
-		}
+		perms.allow |= match->perms & amask;
+		perms.audit |= match->audit & amask;
 	} else { // if (match->is_type(NODE_TYPE_PROMPTMATCHFLAG)) {
 		if (opts.dump & DUMP_DFA_PERMS)
 			cerr << "    " << match << "[" << i << "]=" << priority[i] <<  " <= " << pri << " prompt " << hex << (match->perms & amask) << "/" << (match->audit & amask) << dec << "\n";
-		if (filedfa && !((exact.allow | perms.allow) & mask) &&
+		if (filedfa && xmask && (perms.allow & amask) &&
 		    !is_merged_x_consistent(perms.allow, match->perms & amask)) {
 			if (opts.dump & DUMP_DFA_PERMS)
 				cerr << "    " << match << "[" << i << "]=" << priority[i] <<  " <= " << pri << " prompt match conflict" << "\n";
 			return 1;
 		}
-		if ((exact.allow | exact.audit | perms.allow | perms.audit) & mask) {
-			// mask == amask & ~xmask
-			perms.prompt |= match->perms & mask;
-			perms.audit |= match->audit & mask;
-		} else {
-			perms.prompt |= match->perms & amask;
-			perms.audit |= match->audit & amask;
-		}
+		perms.prompt |= match->perms & amask;
+		perms.audit |= match->audit & amask;
 	}
 
 	return 0;
@@ -1568,15 +1557,18 @@ int accept_perms(optflags const &opts, NodeVec *state, perms_t &perms,
 		 bool filedfa)
 {
 	int error = 0;
-	perms_t exact;
 	// scaling priority by *4
 	std::vector<int>  priority(sizeof(perm32_t)*8,  MIN_INTERNAL_PRIORITY<<2);	// 32 but wan't tied to perm32_t
 	perms.clear();
 
 	if (!state)
 		return error;
-	if (opts.dump & DUMP_DFA_PERMS)
-		cerr << "Building\n";
+	if (opts.dump & DUMP_DFA_PERMS) {
+		cerr << "Building Perms";
+		if (filedfa)
+			cerr << " (file)";
+		cerr << "\n";
+	}
 	for (NodeVec::iterator i = state->begin(); i != state->end(); i++) {
 		if (!(*i)->is_type(NODE_TYPE_MATCHFLAG))
 			continue;
@@ -1590,13 +1582,16 @@ int accept_perms(optflags const &opts, NodeVec *state, perms_t &perms,
 
 		for (int i = 0;  check; i++) {
 			if (check & bit) {
-				error = pri_update_perm(opts, priority, i, match, perms, exact, filedfa);
+				error = pri_update_perm(opts, priority, i, match, perms, filedfa);
 				if (error)
 					goto out;
 			}
 			check &= ~bit;
 			bit <<= 1;
 		}
+	}
+	if (filedfa && (perms.allow & AA_EXEC_BITS)) {
+		add_implied_ix_mmap(opts, priority, perms.allow, priority[0]);
 	}
 	if (opts.dump & DUMP_DFA_PERMS) {
 		cerr << "  computed: ";  perms.dump(cerr); cerr << "\n";
