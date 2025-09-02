@@ -71,7 +71,7 @@ int set_up_mount_separation() {
      * semantic change to the behavior of fs/namespace.c:dissolve_on_fput.
      */
     if (mount(NULL, "/", NULL, MS_PRIVATE | MS_REC, NULL) == -1) {
-        perror("FAIL: could not make make / mount rprivate");
+        perror("FAIL: could not make / mount rprivate");
         return -1;
     }
     return 0;
