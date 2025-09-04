@@ -17,6 +17,9 @@ profile dig /usr/bin/dig {
   include <abstractions/nameservice-strict>
   include <abstractions/private-files-strict>
   include <abstractions/ssl_certs>
+  # Temporarily needed until fd delegation lands
+  # Also needed while delegation from unconfined is broken
+  include <abstractions/consoles>
 
   /usr/bin/dig mr,
 
