@@ -624,14 +624,6 @@ static bool process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 
 	entry->pattern_type = ptype;
 
-	/* ix implies m but the apparmor module does not add m bit to
-	 * dfa states like it does for pcre
-	 */
-	if ((entry->perms >> AA_OTHER_SHIFT) & AA_EXEC_INHERIT)
-		entry->perms |= AA_OLD_EXEC_MMAP << AA_OTHER_SHIFT;
-	if ((entry->perms >> AA_USER_SHIFT) & AA_EXEC_INHERIT)
-		entry->perms |= AA_OLD_EXEC_MMAP << AA_USER_SHIFT;
-
 	/* the link bit on the first pair entry should not get masked
 	 * out by a deny rule, as both pieces of the link pair must
 	 * match.  audit info for the link is carried on the second
