@@ -2,7 +2,8 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-profile systemd-detect-virt /usr/bin/systemd-detect-virt {
+# See comments on /proc/@{pid}/ns/{cgroup,pid} for why we need the flag
+profile systemd-detect-virt /usr/bin/systemd-detect-virt flags=(attach_disconnected) {
   include <abstractions/base>
   
   /usr/bin/systemd-detect-virt mr,
@@ -37,6 +38,9 @@ profile systemd-detect-virt /usr/bin/systemd-detect-virt {
   #/proc/ns/pid/ r, # stat
   # Unsure if /proc/ r, is needed for checking whether /proc/ is set up
   #/proc/@{pid}/ns/cgroup r, # F_OK
+  # Ubuntu Plucky+ systemd-detect-virt does getattr on the symlink
+  # See further comment below for why we don't just add this rule
+  #/proc/@{pid}/ns/{cgroup,pid} r,
   #/sys/fs/cgroup/ r, # statfs
   #/sys/fs/cgroup/cgroup.events r, # F_OK
   
@@ -75,6 +79,16 @@ profile systemd-detect-virt /usr/bin/systemd-detect-virt {
   /sys/firmware/uv/prot_virt_guest r,
   # defined(__aarch64__)
   #/sys/devices/platform/arm-cca-dev r, # F_OK
+
+  # Addressing Ubuntu Plucky+Questing denial logs
+  capability net_admin,
+  @{run}/systemd/notify w,
+  @{run}/systemd/journal/socket w,
+  # getattr is called on /proc/@{pid}/ns/{cgroup,pid} above. However, these are
+  # symlinks to magic files that do not exist on the filesystem and whose paths
+  # get resolved to a disconnected "/". Until we can better mediate such magic
+  # files, we can only allow them through allowing read access to "/".
+  / r,
   
   include if exists <local/systemd-detect-virt>
 }
