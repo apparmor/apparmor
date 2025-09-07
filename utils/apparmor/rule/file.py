@@ -304,32 +304,32 @@ class FileRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def _is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, other_rule, strict):
         """compare if rule-specific variables are equal"""
 
-        if self.owner != rule_obj.owner:
+        if self.owner != other_rule.owner:
             return False
 
-        if not self._is_equal_aare(self.path, self.all_paths, rule_obj.path, rule_obj.all_paths, 'path'):
+        if not self._is_equal_aare(self.path, self.all_paths, other_rule.path, other_rule.all_paths, 'path'):
             return False
 
-        if self.perms != rule_obj.perms:
+        if self.perms != other_rule.perms:
             return False
 
-        if self.all_perms != rule_obj.all_perms:
+        if self.all_perms != other_rule.all_perms:
             return False
 
-        if self.exec_perms != rule_obj.exec_perms:
+        if self.exec_perms != other_rule.exec_perms:
             return False
 
-        if not self._is_equal_aare(self.target, self.all_targets, rule_obj.target, rule_obj.all_targets, 'target'):
+        if not self._is_equal_aare(self.target, self.all_targets, other_rule.target, other_rule.all_targets, 'target'):
             return False
 
         if strict:  # file_keyword and leading_perms are only cosmetics, but still a difference
-            if self.file_keyword != rule_obj.file_keyword:
+            if self.file_keyword != other_rule.file_keyword:
                 return False
 
-            if self.leading_perms != rule_obj.leading_perms:
+            if self.leading_perms != other_rule.leading_perms:
                 return False
 
         return True

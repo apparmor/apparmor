@@ -141,20 +141,20 @@ class ChangeProfileRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def _is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, other_rule, strict):
         """compare if rule-specific variables are equal"""
 
-        if (self.execmode != rule_obj.execmode
+        if (self.execmode != other_rule.execmode
                 and (self.execmode not in self.equiv_execmodes
-                     or rule_obj.execmode not in self.equiv_execmodes)):
+                     or other_rule.execmode not in self.equiv_execmodes)):
             return False
 
-        if (self.execcond != rule_obj.execcond
-                or self.all_execconds != rule_obj.all_execconds):
+        if (self.execcond != other_rule.execcond
+                or self.all_execconds != other_rule.all_execconds):
             return False
 
-        if (self.targetprofile != rule_obj.targetprofile
-                or self.all_targetprofiles != rule_obj.all_targetprofiles):
+        if (self.targetprofile != other_rule.targetprofile
+                or self.all_targetprofiles != other_rule.all_targetprofiles):
             return False
 
         return True

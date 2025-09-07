@@ -142,14 +142,14 @@ class PivotRootRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def _is_equal_localvars(self, rule_obj, strict):
-        if not self._is_equal_aare(self.oldroot, self.all_oldroots, rule_obj.oldroot, rule_obj.all_oldroots, 'oldroot'):
+    def _is_equal_localvars(self, other_rule, strict):
+        if not self._is_equal_aare(self.oldroot, self.all_oldroots, other_rule.oldroot, other_rule.all_oldroots, 'oldroot'):
             return False
 
-        if not self._is_equal_aare(self.newroot, self.all_newroots, rule_obj.newroot, rule_obj.all_newroots, 'newroot'):
+        if not self._is_equal_aare(self.newroot, self.all_newroots, other_rule.newroot, other_rule.all_newroots, 'newroot'):
             return False
 
-        if not self._is_equal_aare(self.profile_name, self.all_profile_names, rule_obj.profile_name, rule_obj.all_profile_names, 'profile_name'):
+        if not self._is_equal_aare(self.profile_name, self.all_profile_names, other_rule.profile_name, other_rule.all_profile_names, 'profile_name'):
             return False
 
         return True

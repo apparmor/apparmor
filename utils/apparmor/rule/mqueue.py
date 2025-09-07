@@ -190,19 +190,19 @@ class MessageQueueRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def _is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, other_rule, strict):
         '''compare if rule-specific variables are equal'''
 
-        if (self.access != rule_obj.access or self.all_access != rule_obj.all_access):
+        if (self.access != other_rule.access or self.all_access != other_rule.all_access):
             return False
 
-        if not self._is_equal_aare(self.mqueue_type, self.all_mqueue_types, rule_obj.mqueue_type, rule_obj.all_mqueue_types, 'mqueue_type'):
+        if not self._is_equal_aare(self.mqueue_type, self.all_mqueue_types, other_rule.mqueue_type, other_rule.all_mqueue_types, 'mqueue_type'):
             return False
 
-        if not self._is_equal_aare(self.label, self.all_labels, rule_obj.label, rule_obj.all_labels, 'label'):
+        if not self._is_equal_aare(self.label, self.all_labels, other_rule.label, other_rule.all_labels, 'label'):
             return False
 
-        if not self._is_equal_aare(self.mqueue_name, self.all_mqueue_names, rule_obj.mqueue_name, rule_obj.all_mqueue_names, 'mqueue_name'):
+        if not self._is_equal_aare(self.mqueue_name, self.all_mqueue_names, other_rule.mqueue_name, other_rule.all_mqueue_names, 'mqueue_name'):
             return False
 
         return True

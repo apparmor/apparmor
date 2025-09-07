@@ -135,14 +135,14 @@ class PtraceRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def _is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, other_rule, strict):
         """compare if rule-specific variables are equal"""
 
-        if (self.access != rule_obj.access
-                or self.all_access != rule_obj.all_access):
+        if (self.access != other_rule.access
+                or self.all_access != other_rule.all_access):
             return False
 
-        if not self._is_equal_aare(self.peer, self.all_peers, rule_obj.peer, rule_obj.all_peers, 'peer'):
+        if not self._is_equal_aare(self.peer, self.all_peers, other_rule.peer, other_rule.all_peers, 'peer'):
             return False
 
         return True

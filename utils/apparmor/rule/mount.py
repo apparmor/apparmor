@@ -291,14 +291,14 @@ class MountRule(BaseRule):
 
         return True
 
-    def _is_equal_localvars(self, rule_obj, strict):
-        if self.operation != rule_obj.operation:
+    def _is_equal_localvars(self, other_rule, strict):
+        if self.operation != other_rule.operation:
             return False
-        if self.fstype != rule_obj.fstype or self.options != rule_obj.options:
+        if self.fstype != other_rule.fstype or self.options != other_rule.options:
             return False
-        if not self._is_equal_aare(self.source, self.all_source, rule_obj.source, rule_obj.all_source, 'source'):
+        if not self._is_equal_aare(self.source, self.all_source, other_rule.source, other_rule.all_source, 'source'):
             return False
-        if not self._is_equal_aare(self.dest, self.all_dest, rule_obj.dest, rule_obj.all_dest, 'dest'):
+        if not self._is_equal_aare(self.dest, self.all_dest, other_rule.dest, other_rule.all_dest, 'dest'):
             return False
 
         return True

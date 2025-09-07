@@ -133,13 +133,13 @@ class IOUringRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def _is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, other_rule, strict):
         '''compare if rule-specific variables are equal'''
 
-        if (self.access != rule_obj.access or self.all_access != rule_obj.all_access):
+        if (self.access != other_rule.access or self.all_access != other_rule.all_access):
             return False
 
-        if not self._is_equal_aare(self.label, self.all_labels, rule_obj.label, rule_obj.all_labels, 'label'):
+        if not self._is_equal_aare(self.label, self.all_labels, other_rule.label, other_rule.all_labels, 'label'):
             return False
 
         return True

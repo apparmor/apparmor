@@ -249,27 +249,27 @@ class BaseRule(metaclass=ABCMeta):
         # still here? -> then it is covered
         return True
 
-    def is_equal(self, rule_obj, strict=False):
-        """compare if rule_obj == self
+    def is_equal(self, other_rule, strict=False):
+        """compare if other_rule == self
            Calls _is_equal_localvars() to compare rule-specific variables"""
 
-        if ((self.priority or 0) != (rule_obj.priority or 0)
-                or self.audit != rule_obj.audit
-                or self.deny != rule_obj.deny):
+        if ((self.priority or 0) != (other_rule.priority or 0)
+                or self.audit != other_rule.audit
+                or self.deny != other_rule.deny):
             return False
 
         if strict and (
-            self.priority != rule_obj.priority
-            or self.allow_keyword != rule_obj.allow_keyword
-            or self.comment != rule_obj.comment
-            or self.raw_rule != rule_obj.raw_rule
+            self.priority != other_rule.priority
+            or self.allow_keyword != other_rule.allow_keyword
+            or self.comment != other_rule.comment
+            or self.raw_rule != other_rule.raw_rule
         ):
             return False
 
-        if type(rule_obj) is not type(self):
-            raise AppArmorBug('Passed non-{} rule: {}'.format(self.rule_name, rule_obj))
+        if type(other_rule) is not type(self):
+            raise AppArmorBug('Passed non-{} rule: {}'.format(self.rule_name, other_rule))
 
-        return self._is_equal_localvars(rule_obj, strict)
+        return self._is_equal_localvars(other_rule, strict)
 
     def _is_equal_aare(self, self_value, self_all, other_value, other_all, cond_name):
         """check if other_* is the same as self_* - for AARE"""

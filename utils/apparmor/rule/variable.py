@@ -100,16 +100,16 @@ class VariableRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def _is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, other_rule, strict):
         """compare if rule-specific variables are equal"""
 
-        if self.varname != rule_obj.varname:
+        if self.varname != other_rule.varname:
             return False
 
-        if self.mode != rule_obj.mode:
+        if self.mode != other_rule.mode:
             return False
 
-        if self.values != rule_obj.values:
+        if self.values != other_rule.values:
             return False
 
         return True
