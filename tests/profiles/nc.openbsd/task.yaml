@@ -1,12 +1,12 @@
 summary: smoke test for the nc.openbsd profile
 execute: |
     # IPv4, IPv6
-    nc -4 -l 4321 & (echo "hi" | nc -4 -q 0 127.0.0.1 4321)
-    nc -6 -l 4321 & (echo "hi" | nc -6 -q 0 ::1 4321)
+    nc -4 -l 4321 & sleep 1 ; (echo "hi" | nc -4 -q 0 127.0.0.1 4321)
+    nc -6 -l 4321 & sleep 1 ; (echo "hi" | nc -6 -q 0 ::1 4321)
 
     # UNIX sockets
-    nc -l -U /tmp/socket & (echo "hi" | nc -q 0 -U /tmp/socket)
-    nc -l -U '@tmpsocket' & (echo "hi" | nc -q 0 -U '@tmpsocket')
+    nc -l -U /tmp/socket & sleep 1 ; (echo "hi" | nc -q 0 -U /tmp/socket)
+    nc -l -U '@tmpsocket' & sleep 1 ; (echo "hi" | nc -q 0 -U '@tmpsocket')
 
     # The profile is attached based on the program path.
     "$SPREAD_PATH"/tests/bin/actual-profile-of nc.openbsd | MATCH 'nc.openbsd \(enforce\)'
