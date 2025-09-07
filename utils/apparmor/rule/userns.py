@@ -79,11 +79,11 @@ class UserNamespaceRule(BaseRule):
                    allow_keyword=allow_keyword, comment=comment, priority=priority)
 
     @staticmethod
-    def hashlog_from_event(hl, e):
-        if e['denied_mask']:
-            hl[e['denied_mask'][7:]] = True  # [7:] removes the 'userns_' prefix
+    def hashlog_from_event(hl, ev):
+        if ev['denied_mask']:
+            hl[ev['denied_mask'][7:]] = True  # [7:] removes the 'userns_' prefix
         else:
-            hl[e['request_mask'][7:]] = True  # To support transition to special profiles
+            hl[ev['request_mask'][7:]] = True  # To support transition to special profiles
 
     @classmethod
     def from_hashlog(cls, hl):

@@ -162,12 +162,12 @@ class UnixRule(BaseRule):
         return True
 
     @staticmethod
-    def hashlog_from_event(hl, e):
-        rule = (e['sock_type'], None)  # Protocol is not supported yet.
-        local = (e['addr'], None, e['attr'], None)
-        peer = (e['peer_addr'], e['peer_profile'])
+    def hashlog_from_event(hl, ev):
+        rule = (ev['sock_type'], None)  # Protocol is not supported yet.
+        local = (ev['addr'], None, ev['attr'], None)
+        peer = (ev['peer_addr'], ev['peer_profile'])
 
-        hl[e['denied_mask']][rule][local][peer] = True
+        hl[ev['denied_mask']][rule][local][peer] = True
 
     @classmethod
     def from_hashlog(cls, hl):

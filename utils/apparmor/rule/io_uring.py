@@ -154,8 +154,8 @@ class IOUringRule(BaseRule):
         )
 
     @staticmethod
-    def hashlog_from_event(hl, e):
-        hl[e['denied_mask']][e['peer_profile']] = True
+    def hashlog_from_event(hl, ev):
+        hl[ev['denied_mask']][ev['peer_profile']] = True
 
     @classmethod
     def from_hashlog(cls, hl):

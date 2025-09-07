@@ -157,8 +157,8 @@ class PtraceRule(BaseRule):
         )
 
     @staticmethod
-    def hashlog_from_event(hl, e):
-        hl[e['peer']][e['denied_mask']] = True
+    def hashlog_from_event(hl, ev):
+        hl[ev['peer']][ev['denied_mask']] = True
 
     @classmethod
     def from_hashlog(cls, hl):

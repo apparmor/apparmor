@@ -218,8 +218,8 @@ class SignalRule(BaseRule):
         )
 
     @staticmethod
-    def hashlog_from_event(hl, e):
-        hl[e['peer']][e['denied_mask']][e['signal']] = True
+    def hashlog_from_event(hl, ev):
+        hl[ev['peer']][ev['denied_mask']][ev['signal']] = True
 
     @classmethod
     def from_hashlog(cls, hl):

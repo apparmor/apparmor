@@ -304,15 +304,15 @@ class MountRule(BaseRule):
         return True
 
     @staticmethod
-    def hashlog_from_event(hl, e):
-        if e['flags'] is not None:
-            e['flags'] = ('=', e['flags'])
-        if e['fs_type'] is not None:
-            e['fs_type'] = ('=', e['fs_type'])
-        if e['operation'] == 'mount':
-            hl[e['operation']][e['flags']][e['fs_type']][e['name']][e['src_name']] = True
+    def hashlog_from_event(hl, ev):
+        if ev['flags'] is not None:
+            ev['flags'] = ('=', ev['flags'])
+        if ev['fs_type'] is not None:
+            ev['fs_type'] = ('=', ev['fs_type'])
+        if ev['operation'] == 'mount':
+            hl[ev['operation']][ev['flags']][ev['fs_type']][ev['name']][ev['src_name']] = True
         else:  # Umount
-            hl[e['operation']][e['flags']][e['fs_type']][e['name']][None] = True
+            hl[ev['operation']][ev['flags']][ev['fs_type']][ev['name']][None] = True
 
     @classmethod
     def from_hashlog(cls, hl):

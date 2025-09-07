@@ -221,9 +221,9 @@ class MessageQueueRule(BaseRule):
         )
 
     @staticmethod
-    def hashlog_from_event(hl, e):
-        mqueue_type = e['class'].partition('_')[0]
-        hl[e['denied_mask']][mqueue_type][e['name']] = True
+    def hashlog_from_event(hl, ev):
+        mqueue_type = ev['class'].partition('_')[0]
+        hl[ev['denied_mask']][mqueue_type][ev['name']] = True
 
     @classmethod
     def from_hashlog(cls, hl):

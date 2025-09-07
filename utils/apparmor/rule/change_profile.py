@@ -175,8 +175,8 @@ class ChangeProfileRule(BaseRule):
         return headers
 
     @staticmethod
-    def hashlog_from_event(hl, e):
-        hl[e['name2']] = True
+    def hashlog_from_event(hl, ev):
+        hl[ev['name2']] = True
 
     @classmethod
     def from_hashlog(cls, hl):

@@ -195,9 +195,9 @@ class PivotRootRule(BaseRule):
         )
 
     @staticmethod
-    def hashlog_from_event(hl, e):
+    def hashlog_from_event(hl, ev):
         # TODO: can the log contain the target profile?
-        hl[e['src_name']][e['name']] = True
+        hl[ev['src_name']][ev['name']] = True
 
     @classmethod
     def from_hashlog(cls, hl):

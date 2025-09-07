@@ -310,8 +310,8 @@ class DbusRule(BaseRule):
         )
 
     @staticmethod
-    def hashlog_from_event(hl, e):
-        hl[e['denied_mask']][e['bus']][e['path']][e['name']][e['interface']][e['member']][e['peer_profile']] = True
+    def hashlog_from_event(hl, ev):
+        hl[ev['denied_mask']][ev['bus']][ev['path']][ev['name']][ev['interface']][ev['member']][ev['peer_profile']] = True
 
     @classmethod
     def from_hashlog(cls, hl):

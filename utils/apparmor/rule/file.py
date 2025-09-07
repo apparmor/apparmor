@@ -439,20 +439,20 @@ class FileRule(BaseRule):
         self.raw_rule = None
 
     @staticmethod
-    def hashlog_from_event(hl, e):
+    def hashlog_from_event(hl, ev):
         # FileRule can be of two types, "file" or "exec"
-        if e['operation'] == 'exec':
-            if not e['name']:
+        if ev['operation'] == 'exec':
+            if not ev['name']:
                 raise AppArmorException('exec without executed binary')
 
-            if not e['name2']:
-                e['name2'] = ''  # exec events in enforce mode don't have target=...
+            if not ev['name2']:
+                ev['name2'] = ''  # exec events in enforce mode don't have target=...
 
-            hl[e['name']][e['name2']] = True
+            hl[ev['name']][ev['name2']] = True
             return
 
         # Map c (create) and d (delete) to w (logging is more detailed than the profile language)
-        dmask = e['denied_mask']
+        dmask = ev['denied_mask']
         dmask = dmask.replace('c', 'w')
         dmask = dmask.replace('d', 'w')
 
@@ -470,7 +470,7 @@ class FileRule(BaseRule):
             else:
                 dmask = other_d
 
-        if e.get('ouid') is not None and e['fsuid'] == e['ouid']:
+        if ev.get('ouid') is not None and ev['fsuid'] == ev['ouid']:
             # in current log style, owner permissions are indicated by a match of fsuid and ouid
             owner = True
 
@@ -479,7 +479,7 @@ class FileRule(BaseRule):
 
         for perm in dmask:
             if perm in 'mrwalk':  # intentionally not allowing 'x' here
-                hl[e['name']][owner][perm] = True
+                hl[ev['name']][owner][perm] = True
             else:
                 raise AppArmorException(_('Log contains unknown mode %s') % dmask)
 

@@ -142,8 +142,8 @@ class CapabilityRule(BaseRule):
         return _('Capability'), cap_txt
 
     @staticmethod
-    def hashlog_from_event(hl, e):
-        hl[e['name']] = True
+    def hashlog_from_event(hl, ev):
+        hl[ev['name']] = True
 
     @classmethod
     def from_hashlog(cls, hl):
