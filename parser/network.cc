@@ -434,7 +434,7 @@ void network_rule::set_netperm(unsigned int family, unsigned int type, unsigned 
 
 network_rule::network_rule(perm32_t perms_p, struct cond_entry *conds,
 			   struct cond_entry *peer_conds):
-	dedup_perms_rule_t(AA_CLASS_NETV8), label(NULL)
+	dedup_perms_rule_t(features_supports_networkv9 ? AA_CLASS_NETV9 : AA_CLASS_NETV8), label(NULL)
 {
 	size_t family_index, i;
 
@@ -475,7 +475,7 @@ network_rule::network_rule(perm32_t perms_p, struct cond_entry *conds,
 network_rule::network_rule(perm32_t perms_p, const char *family, const char *type,
 			   const char *protocol, struct cond_entry *conds,
 			   struct cond_entry *peer_conds):
-	dedup_perms_rule_t(AA_CLASS_NETV8), label(NULL)
+	dedup_perms_rule_t(features_supports_networkv9 ? AA_CLASS_NETV9 : AA_CLASS_NETV8), label(NULL)
 {
 	const struct network_tuple *mapping = NULL;
 
@@ -526,7 +526,7 @@ network_rule::network_rule(perm32_t perms_p, const char *family, const char *typ
 }
 
 network_rule::network_rule(perm32_t perms_p, unsigned int family, unsigned int type):
-	dedup_perms_rule_t(AA_CLASS_NETV8), label(NULL)
+	dedup_perms_rule_t(features_supports_networkv9 ? AA_CLASS_NETV9 : AA_CLASS_NETV8), label(NULL)
 {
 	network_map[family].push_back({ family, type, 0xFFFFFFFF });
 	set_netperm(family, type, 0xFFFFFFFF);
@@ -755,8 +755,9 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mask, unsigned int protocol) {
 	std::ostringstream buffer;
 	std::string buf;
+	unsigned int netclass = features_supports_networkv9 ? AA_CLASS_NETV9 : AA_CLASS_NETV8;
 
-	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << AA_CLASS_NETV8;
+	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << netclass;
 	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ((family & 0xff00) >> 8);
 	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (family & 0xff);
 	if (type_mask > 0xffff) {
@@ -766,7 +767,7 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (type_mask & 0xff);
 	}
 
-	if (!features_supports_inet || (family != AF_INET && family != AF_INET6)) {
+	if (!(features_supports_inetv8 || features_supports_inetv9) || (family != AF_INET && family != AF_INET6)) {
 		buf = buffer.str();
 		if (!prof.policy.rules->add_rule(buf.c_str(), priority,
 				rule_mode, map_perms(perms),
@@ -883,7 +884,7 @@ int network_rule::gen_policy_re(Profile &prof)
 	std::ostringstream buffer;
 	std::string buf;
 
-	if (!features_supports_networkv8) {
+	if (!(features_supports_networkv8 || features_supports_networkv9)) {
 		warn_once(prof.name);
 		return RULE_NOT_SUPPORTED;
 	}

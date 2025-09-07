@@ -18,7 +18,7 @@ bin=$pwd
 
 . "$bin/prologue.inc"
 
-requires_kernel_features network_v8/af_inet
+requires_any_of_kernel_features network_v8/af_inet network_v9/af_inet
 requires_parser_support "network ip=::1,"
 
 settest net_inet_rcv

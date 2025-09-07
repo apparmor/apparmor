@@ -115,10 +115,8 @@ static int reexec(int pair[2], int argc, char **argv)
 	 * args by one to effectively pop off the first <CHANGE_ONEXEC>
 	 */
 	new_profile = argv[3];
-	argv[3] = argv[2];
-	argv[2] = argv[1];
-	argv[1] = argv[0];
-	argv++;
+	argv[3] = argv[0];
+	argv+=3;
 
 	if (aa_change_onexec(new_profile) < 0) {
 		perror("FAIL - aa_change_onexec");
@@ -150,19 +148,21 @@ int main(int argc, char **argv)
 
 	if (argc < 3) {
 		fprintf(stderr,
-			"FAIL - usage: %s <LABEL> <MODE> [<CHANGE_ONEXEC> ...]\n\n"
+			"FAIL - usage: %s <LABEL> <MODE> [<CHANGE_ONEXEC> <EXPECTED_LABEL> <EXPECTED_MODE>...]\n\n"
 			"  <LABEL>\t\tThe expected confinement label\n"
 			"  <MODE>\tThe expected confinement mode\n"
 			"  <CHANGE_ONEXEC>\tThe profile to change to on exec\n\n"
+			"  <EXPECTED_LABEL>\t\tThe expected confinement label after transition\n"
+			"  <EXPECTED_MODE>\tThe expected confinement mode\n"
 			"This program gets a socket pair and then verifies \n"
 			"the confinement label and mode of each file \n"
 			"descriptor. If there is no expected mode string, \n"
 			"<MODE> should be \"%s\".\n\n"
-			"Multiple <CHANGE_ONEXEC> profiles can be specified \n"
+			"Multiple <CHANGE_ONEXEC> <EXPECTED_LABEL> <EXPECTED_MODE> profiles can be specified \n"
 			"and the test will run normally for the first pair, \n"
 			"then call aa_change_onexec() to rexec itself under \n"
 			"the next <CHANGE_ONEXEC> and verify the passed in \n"
-			"socket pairs still have the correct labeling.\n" ,
+			"socket pairs have the correct labeling.\n" ,
 			argv[0], NO_MODE);
 		exit(1);
 	}

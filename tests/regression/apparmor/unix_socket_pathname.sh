@@ -29,7 +29,7 @@ bin=$pwd
 . "$bin/prologue.inc"
 requires_kernel_features policy/versions/v6
 #af_mask for downgrade test af_unix for full test
-requires_any_of_kernel_features network/af_mask network_v8/af_mask
+requires_any_of_kernel_features network/af_mask network_v8/af_mask network_v9/af_mask
 
 settest unix_socket
 
@@ -44,7 +44,9 @@ downgraded=false
 okserver=w
 badserver1=r
 badserver2=
-if [ "$(kernel_features policy/versions/v7)" = "true" ] ; then
+if [ "$(kernel_features policy/versions/v7)" = "true" -o \
+     "$(kernel_features policy/versions/v8)" = "true" -o \
+     "$(kernel_features policy/versions/v9)" = "true" ] ; then
 	okserver=rw
 #	badserver2=w
 fi
@@ -55,12 +57,14 @@ fi
 # af_unix support requires 'unix getattr' to call getsockname()
 af_unix_okserver=
 af_unix_okclient=
-if ( [ "$(kernel_features network_v8/af_unix)" = "true" ] ||
+if ( [ "$(kernel_features network_v9/af_unix)" = "true" ] ||
+     [ "$(kernel_features network_v8/af_unix)" = "true" ] ||
      [ "$(kernel_features network/af_unix)" = "true" ] ) &&
      [ "$(parser_supports 'unix,')" = "true" ] ; then
 	af_unix_okserver="create,setopt"
 	af_unix_okclient="create,getopt,setopt,getattr"
-elif [ "$(kernel_features network_v8)" = "true" ] ; then
+elif [ "$(kernel_features network_v8)" = "true" ] ||
+     [ "$(kernel_features network_v9)" = "true" ] ; then
 	af_unix_okserver="create,setopt,bind,listen,accept,getopt,rw,shutdown"
 	af_unix_okclient="create,getopt,setopt,getattr,connect,rw"
 	downgraded="true"
