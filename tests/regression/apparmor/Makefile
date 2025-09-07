@@ -169,7 +169,9 @@ SRC=access.c \
     unlink.c \
     userns.c \
     userns_setns.c \
-    xattrs.c
+    xattrs.c \
+    true.c \
+    false.c
 
 #only do the ioperm/iopl tests for x86 derived architectures
 ifneq (,$(findstring $(shell uname -i),i386 i486 i586 i686 x86 x86_64))

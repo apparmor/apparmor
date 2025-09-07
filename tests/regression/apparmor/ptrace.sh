@@ -31,7 +31,7 @@ bin=$pwd
 helper=$pwd/ptrace_helper
 
 bin_true=${tmpdir}/true
-cp -pL /bin/true ${tmpdir}/true
+cp -pL ./true ${tmpdir}/true
 
 # -n number of syscalls to perform
 # -c have the child call ptrace_me, else parent does ptrace_attach

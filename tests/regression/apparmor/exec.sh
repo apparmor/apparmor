@@ -16,7 +16,7 @@ bin=$pwd
 
 . "$bin/prologue.inc"
 
-cp -pL /bin/true ${tmpdir}/true
+cp -pL ./true ${tmpdir}/true
 file=${tmpdir}/true
 ok_ix_perm=rix
 badperm=r

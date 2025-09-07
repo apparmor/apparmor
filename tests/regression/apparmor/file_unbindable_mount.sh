@@ -22,7 +22,8 @@ backing_file="$tmpdir/loop_file"
 mount_target="$tmpdir/mount_target"
 
 mkdir "${mount_target}"
-fallocate -l 4M "${backing_file}"
+# rust core utils is ~11MB
+fallocate -l 16M "${backing_file}"
 mkfs.fat -F 32 "${backing_file}" > /dev/null 2> /dev/null
 
 losetup -f "${backing_file}" || fatalerror 'Unable to set up a loop device'
@@ -35,7 +36,7 @@ cp "$(type -P echo)" "${mount_target}/echo"
 
 settest file_unbindable_mount "${bin}/complain"
 
-genprofile "${mount_target}/a_file:r" "${mount_target}/echo:ix"
+genprofile addimage:"${mount_target}/echo" "${mount_target}/a_file:r" "${mount_target}/echo:ix"
 runchecktest "Read file in unbindable mount" pass read "${mount_target}/a_file"
 runchecktest "Exec in unbindable mount" pass exec "${mount_target}/echo" PASS
 
