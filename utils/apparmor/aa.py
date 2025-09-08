@@ -1590,7 +1590,7 @@ def collapse_log(hashlog, ignore_null_profiles=True):
 
             for ev_type, ev_class in ReadLog.ruletypes.items():
                 for rule in ev_class.from_hashlog(hashlog[aamode][full_profile][ev_type]):
-                    if not hat_exists or not is_known_rule(active_profiles[full_profile], ev_type, rule):
+                    if not hat_exists or not is_known_rule(active_profiles[final_name], ev_type, rule):
                         log_dict[aamode][final_name][ev_type].add(rule)
 
     return log_dict
