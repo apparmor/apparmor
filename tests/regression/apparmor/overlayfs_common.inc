@@ -41,9 +41,9 @@ mkdir "${mount_target}"
 mkdir "${overlayfs_lower}"
 mkdir "${overlayfs_other}"
 
-fallocate -l 512K "${backing_file_lower}"
+fallocate -l 64M "${backing_file_lower}"
 mkfs.ext4 -F "${backing_file_lower}" > /dev/null 2> /dev/null
-fallocate -l 512K "${backing_file_upper}"
+fallocate -l 64M "${backing_file_upper}"
 mkfs.ext4 -F "${backing_file_upper}" > /dev/null 2> /dev/null
 
 losetup -f "${backing_file_lower}" || fatalerror 'Unable to set up lower loop device'
@@ -62,13 +62,14 @@ mkdir "${overlayfs_workdir}"
 # after mounting the overlay is described as "undefined"
 # Hopefully this isn't UB in the C standard/compiler sense
 # Concretely: kernel overlayfs propagates changes, fuse-overlayfs doesn't
-fallocate -l 16K "${overlayfs_lower}/lower_file"
+fallocate -l 12M "${overlayfs_lower}/lower_file"
 touch "${overlayfs_lower}/lower_file_2"
 touch "${overlayfs_lower}/lower_file_nope"
-fallocate -l 16K "${overlayfs_upper}/upper_file"
+fallocate -l 12M "${overlayfs_upper}/upper_file"
 touch "${overlayfs_upper}/upper_file_2"
 touch "${overlayfs_upper}/upper_file_nope"
 # echo is also a builtin, making things a bit more complicated
+#      echo from rust core utils it is ~11MB so allocating 12M instead of 16K
 cp "$(type -P echo)" "${overlayfs_lower}/lower_echo"
 cp "$(type -P echo)" "${overlayfs_upper}/upper_echo"
 cp "$(type -P echo)" "${overlayfs_lower}/lower_echo_nope"
@@ -136,7 +137,7 @@ runchecktest "Remove file in overlayfs mount (overlay)" pass unlink "${mount_tar
 rm -f "${mount_target}/overlay_file_new"
 
 cp --preserve=all "${mount_target}/upper_echo" "${mount_target}/overlay_echo"
-genprofile "${mount_target}/*_echo:ix"
+genprofile "${mount_target}/*_echo:ix" addimage:"${mount_target}/lower_echo" addimage:"${mount_target}/upper_echo"
 runchecktest "Exec in overlayfs mount (lower)" pass exec "${mount_target}/lower_echo" PASS
 runchecktest "Exec in overlayfs mount (upper)" pass exec "${mount_target}/upper_echo" PASS
 runchecktest "Exec in overlayfs mount (overlay)" pass exec "${mount_target}/overlay_echo" PASS

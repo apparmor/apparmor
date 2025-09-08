@@ -119,8 +119,8 @@ genprofile "${tmpdir}/file\*/beta**:$okperm"
 runchecktest "GLOB FOLLOWED BY DOUBLE TAILGLOB (fail)" fail ${file2}
 
 settest exec
-cp -pL /bin/true ${tmpdir}/true
-cp -pL /bin/false ${tmpdir}/false
+cp -pL ./true ${tmpdir}/true
+cp -pL ./false ${tmpdir}/false
 file=${tmpdir}/true
 okperm=rix
 baderm=r
