@@ -3,7 +3,7 @@ abi <abi/4.0>,
 include <tunables/global>
 
 # See comments on /proc/@{pid}/ns/{cgroup,pid} for why we need the flag
-profile systemd-detect-virt /usr/bin/systemd-detect-virt flags=(attach_disconnected) {
+profile systemd-detect-virt /usr/bin/systemd-detect-virt flags=(attach_disconnected.path=/apparmor/disconnected/) {
   include <abstractions/base>
   
   /usr/bin/systemd-detect-virt mr,
@@ -43,7 +43,7 @@ profile systemd-detect-virt /usr/bin/systemd-detect-virt flags=(attach_disconnec
   #/proc/@{pid}/ns/{cgroup,pid} r,
   #/sys/fs/cgroup/ r, # statfs
   #/sys/fs/cgroup/cgroup.events r, # F_OK
-  
+
   ## systemd/src/basic/virt.c:detect_vm
   # detect_vm_dmi -> detect_vm_dmi_vendor
   # /sys/class/dmi/id is symlink to /sys/devices/virtual/dmi/id
@@ -87,8 +87,9 @@ profile systemd-detect-virt /usr/bin/systemd-detect-virt flags=(attach_disconnec
   # getattr is called on /proc/@{pid}/ns/{cgroup,pid} above. However, these are
   # symlinks to magic files that do not exist on the filesystem and whose paths
   # get resolved to a disconnected "/". Until we can better mediate such magic
-  # files, we can only allow them through allowing read access to "/".
-  / r,
-  
+  # files, we can only allow them through allowing read access to "/"
+  # (translated to /apparmor/disconnected/ via attach_disconnected.path)
+  /apparmor/disconnected/ r,
+
   include if exists <local/systemd-detect-virt>
 }
