@@ -21,7 +21,13 @@
 #ifndef _IMMUNIX_H
 #define _IMMUNIX_H
 
+#define AA_USER_SHIFT			0
+#define AA_OTHER_SHIFT			14
+
+#define MAY_EXEC_SHIFT  0
+#define MAY_OTHER_EXEC_SHIFT  (MAY_EXEC_SHIFT + AA_OTHER_SHIFT)
 #define EXEC_MMAP_SHIFT 6
+#define EXEC_OTHER_MMAP_SHIFT (EXEC_MMAP_SHIFT + AA_OTHER_SHIFT)
 /*
  * Modeled after MAY_READ, MAY_WRITE, MAY_EXEC in the kernel. The value of
  * AA_MAY_EXEC must be identical to MAY_EXEC, etc.
@@ -32,7 +38,7 @@
 #define AA_MAY_APPEND			(1 << 3)
 #define AA_OLD_MAY_LINK			(1 << 4)
 #define AA_OLD_MAY_LOCK			(1 << 5)
-#define AA_OLD_EXEC_MMAP		(1 << EXEC_MMAP_SHIFT)
+#define AA_OLD_EXEC_MMAP		(1 << 6)
 #define AA_EXEC_PUX			(1 << 7)
 #define AA_EXEC_UNSAFE			(1 << 8)
 #define AA_EXEC_INHERIT			(1 << 9)
@@ -48,9 +54,6 @@
 					 AA_EXEC_UNSAFE | AA_EXEC_INHERIT | \
 					 AA_EXEC_MOD_0 | AA_EXEC_MOD_1 | \
 					 AA_EXEC_MOD_2 | AA_EXEC_MOD_3)
-
-#define AA_USER_SHIFT			0
-#define AA_OTHER_SHIFT			14
 
 #define AA_USER_PERMS			(AA_BASE_PERMS << AA_USER_SHIFT)
 #define AA_OTHER_PERMS			(AA_BASE_PERMS << AA_OTHER_SHIFT)
