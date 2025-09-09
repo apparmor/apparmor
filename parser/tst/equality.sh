@@ -685,6 +685,129 @@ do
 
 done
 
+#ix implies m if it is applied, and no other rule overrides because of priority
+	verify_binary_equality "'$p1'x'$p2' ix implies m" \
+		       "/t { $p1 /foo ix, }" \
+		       "/t { $p2 /foo mix, }"
+
+	verify_binary_equality "'$p1'x'$p2' ix owner implies m" \
+		       "/t { $p1 owner /foo ix, }" \
+		       "/t { $p2 owner /foo mix, }"
+
+	verify_binary_equality "'$p1'x'$p2' ix other implies m" \
+		       "/t { $p1 other /foo ix, }" \
+		       "/t { $p2 other /foo mix, }"
+
+	verify_binary_inequality "'$p1'x'$p2' ix implies m owner != all" \
+		       "/t { $p1 /foo ix, }" \
+		       "/t { $p2 owner /foo mix, }"
+
+	verify_binary_inequality "'$p1'x'$p2' ix implies m other != all" \
+		       "/t { $p1 /foo ix, }" \
+		       "/t { $p2 other /foo mix, }"
+
+	verify_binary_inequality "'$p1'x'$p2' ix implies m owner != other" \
+		       "/t { $p1 owner /foo ix, }" \
+		       "/t { $p2 other /foo mix, }"
+
+	verify_binary_equality "'$p1'x'$p2' ix implies m with exact match over glob" \
+		       "/t { $p1 /** px, $p1 /foo ix, }" \
+		       "/t { $p2 /** px, $p2 /foo mix, }"
+
+	verify_binary_equality "'$p1'x'$p2' reverse order ix implies m with exact match over glob" \
+		       "/t { $p1 /** px, $p1 /foo mix, }" \
+		       "/t { $p2 /** px, $p2 /foo ix, }"
+
+	verify_binary_equality "'$p1'x'$p2' deny removed ix and implied m" \
+		       "/t { $p1 audit deny /foo x, $p1 /foo rix, }" \
+		       "/t { $p2 /foo r, }"
+
+	verify_binary_equality "'$p1'x'$p2' deny glob removed ix and implied m" \
+		       "/t { $p1 audit deny /** x, $p1 /foo rix, }" \
+		       "/t { $p2 /foo r, }"
+
+	verify_binary_equality "'$p1'x'$p2' deny removed ix and not explicit m" \
+		       "/t { $p1 audit deny /foo x, $p1 /foo mrix, }" \
+		       "/t { $p2 /foo mr, }"
+
+	verify_binary_equality "'$p1'x'$p2' deny glob removed ix not explicit m" \
+		       "/t { $p1 audit deny /** x, $p1 /foo mrix, }" \
+		       "/t { $p2 /foo mr, }"
+
+# ix implied m is not set if ix overridden by higher x priority rule
+if priority_gt "$p1" $p2 ; then
+	verify_binary_equality "'$p1'x'$p2' Higher priority overrides implied m" \
+		       "/t { $p1 /foo px, $p2 /foo ix, }" \
+		       "/t { /foo px, }"
+	verify_binary_equality "'$p1'x'$p2' Higher priority glob overrides implied m" \
+		       "/t { $p1 /** px, $p2 /foo ix, }" \
+		       "/t { /** px, }"
+
+	verify_binary_equality "'$p1'x'$p2' > pri deny removed ix and implied m" \
+		       "/t { $p1 audit deny /foo x, $p2 /foo rix, }" \
+		       "/t { /foo r, }"
+
+	verify_binary_equality "'$p1'x'$p2' > pri deny glob removed ix and implied m" \
+		       "/t { $p1 audit deny /** x, $p2 /foo rix, }" \
+		       "/t { /foo r, }"
+
+	verify_binary_equality "'$p1'x'$p2' > pri deny removed ix and not explicit m" \
+		       "/t { $p1 audit deny /foo x, $p2 /foo mrix, }" \
+		       "/t { /foo mr, }"
+
+	verify_binary_equality "'$p1'x'$p2' > pri deny glob removed ix not explicit m" \
+		       "/t { $p1 audit deny /** x, $p2 /foo mrix, }" \
+		       "/t { /foo mr, }"
+
+elif priority_eq "$p1" $p2 ; then # skip any conflicts
+	verify_binary_equality "'$p1'x'$p2' eq pri deny removed ix and implied m" \
+		       "/t { $p1 audit deny /foo x, $p2 /foo rix, }" \
+		       "/t { /foo r, }"
+
+	verify_binary_equality "'$p1'x'$p2' eq deny glob removed ix and implied m" \
+		       "/t { $p1 audit deny /** x, $p2 /foo rix, }" \
+		       "/t { /foo r, }"
+
+	verify_binary_equality "'$p1'x'$p2' eq pri deny removed ix and not explicit m" \
+		       "/t { $p1 audit deny /foo x, $p2 /foo mrix, }" \
+		       "/t { /foo mr, }"
+
+	verify_binary_equality "'$p1'x'$p2' eq pri deny glob removed ix not explicit m" \
+		       "/t { $p1 audit deny /** x, $p2 /foo mrix, }" \
+		       "/t { /foo mr, }"
+elif priority_lt "$p1" $p2 ; then
+	verify_binary_inequality "'$p1'x'$p2' negative case ix is overiding px" \
+		       "/t { $p1 /foo px, $p2 /foo ix, }" \
+		       "/t { /foo px, }"
+	verify_binary_equality "'$p1'x'$p2' ix of higher priority overrides and implies m" \
+		       "/t { $p1 /foo px, $p2 /foo ix, }" \
+		       "/t { /foo mix, }" \
+		       "/t { /foo ix, }"
+	verify_binary_inequality "'$p1'x'$p2' negative case ix overrides px glob" \
+		       "/t { $p1 /** px, $p2 /foo ix, }" \
+		       "/t { /** px, }"
+	verify_binary_equality "'$p1'x'$p2' ix glob of higher priority overrides and implies" \
+		       "/t { $p1 /** px, $p2 /** ix, }" \
+		       "/t { /** mix, }" \
+		       "/t { /** ix, }"
+	verify_binary_equality "'$p1'x'$p2' < pri deny no effect on implied m" \
+		       "/t { $p1 audit deny /foo x, $p2 /foo rix, }" \
+		       "/t { /foo rix, }"
+
+	verify_binary_equality "'$p1'x'$p2' < pri deny glob no effect on ix and implied m" \
+		       "/t { $p1 audit deny /** x, $p2 /foo rix, }" \
+		       "/t { /foo rix, }"
+
+	verify_binary_equality "'$p1'x'$p2' < pri deny no effect on ix and not explicit m" \
+		       "/t { $p1 audit deny /foo x, $p2 /foo mrix, }" \
+		       "/t { /foo mrix, }"
+
+	verify_binary_equality "'$p1'x'$p2' < pri deny no effect on ix not explicit m" \
+		       "/t { $p1 audit deny /** x, $p2 /foo mrix, }" \
+		       "/t { /foo mrix, }"
+fi
+
+
 #Test deny carves out permission
 if priority_gt "$p1" "" ; then
 	verify_binary_equality "'$p1'x'$p2' Deny removes r perm" \

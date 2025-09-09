@@ -1403,29 +1403,31 @@ static inline int diff_qualifiers(perm32_t perm1, perm32_t perm2)
 
 // only applied if filedfa
 static void add_implied_ix_mmap(optflags const &opts, vector<int> &priority,
-				perm32_t &mask, int pri)
+				perm32_t &mask)
 {
 	// ix implies EXEC_MMAP
-	if (mask & AA_EXEC_INHERIT) {
+	if ((mask & AA_MAY_EXEC) && (mask & AA_EXEC_INHERIT)) {
 		//USER_EXEC_MAP = 6
-		if (priority[EXEC_MMAP_SHIFT] <= pri) {
+		if (priority[EXEC_MMAP_SHIFT] <= priority[MAY_EXEC_SHIFT]) {
 			if (opts.dump & DUMP_DFA_PERMS)
-				cerr << "    " << "[6]<=" << priority[6] <<  " < " << pri << " adding implied m to " << hex << "mask: " << mask << dec;
+				cerr << "    " << "[6]<=" << priority[EXEC_MMAP_SHIFT] <<  " < " << priority[MAY_EXEC_SHIFT] << " adding implied m to " << hex << "mask: " << mask << dec;
 			mask |= AA_USER_EXEC_MMAP;
-			priority[6] = pri;
+			priority[EXEC_MMAP_SHIFT] = priority[MAY_EXEC_SHIFT];
 		} else if (opts.dump & DUMP_DFA_PERMS)
-				cerr << "    " << "[6]>" << priority[6] <<  " < " << pri << " skipping adding implied m to " << hex << "mask: " << mask << dec;
+				cerr << "    " << "[6]>" << priority[EXEC_MMAP_SHIFT] <<  " > " << priority[MAY_EXEC_SHIFT] << " skipping adding implied m to " << hex << "mask: " << mask << dec;
 
-	} else if (mask & AA_OTHER_EXEC_INHERIT) {
-		// ix implies EXEC_MMAP
+	}
+	// ix implies EXEC_MMAP
+	if ((mask & AA_OTHER_EXEC) && (mask & AA_OTHER_EXEC_INHERIT)) {
 		//OTHER_EXEC_MAP = 20 = 6 (EXEC_MMAP_SHIFT) + 14 (AA_OTHER_SHIFT)
-		if (priority[EXEC_MMAP_SHIFT + AA_OTHER_SHIFT] <= pri) {
+		if (priority[EXEC_OTHER_MMAP_SHIFT] <= priority[MAY_OTHER_EXEC_SHIFT]) {
 			if (opts.dump & DUMP_DFA_PERMS)
-				cerr << "    " << "[20]<=" << priority[20] <<  " < " << pri << " adding implied m to " << hex << "mask: " << mask << dec;
+				cerr << "    " << "[20]<=" << priority[EXEC_OTHER_MMAP_SHIFT] <<  " < " << priority[MAY_OTHER_EXEC_SHIFT] << " adding implied m to " << hex << "mask: " << mask << dec;
 			mask |= AA_OTHER_EXEC_MMAP;
-			priority[20] = pri;
-		}  else if (opts.dump & DUMP_DFA_PERMS)
-				cerr << "    " << "[20]>" << priority[20] <<  " < " << pri << " skipping adding implied m to " << hex << "mask: " << mask << dec;
+			priority[EXEC_OTHER_MMAP_SHIFT] = priority[MAY_OTHER_EXEC_SHIFT];
+		} else if (opts.dump & DUMP_DFA_PERMS)
+				cerr << "    " << "[20]>" << priority[EXEC_OTHER_MMAP_SHIFT] <<  " > " << priority[MAY_OTHER_EXEC_SHIFT] << " skipping adding implied m to " << hex << "mask: " << mask << dec;
+
 	}
 }
 
@@ -1591,7 +1593,7 @@ int accept_perms(optflags const &opts, NodeVec *state, perms_t &perms,
 		}
 	}
 	if (filedfa && (perms.allow & AA_EXEC_BITS)) {
-		add_implied_ix_mmap(opts, priority, perms.allow, priority[0]);
+		add_implied_ix_mmap(opts, priority, perms.allow);
 	}
 	if (opts.dump & DUMP_DFA_PERMS) {
 		cerr << "  computed: ";  perms.dump(cerr); cerr << "\n";
