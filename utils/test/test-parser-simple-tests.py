@@ -76,6 +76,7 @@ exception_not_raised = (
     'generated_dbus/duplicated-conditionals-45129.sd',
 
     'dbus/bad_modifier_2.sd',
+    'dbus/bad_peer_2.sd',  # We do not enforce the presence of a separator between peer fields
     'dbus/bad_regex_01.sd',
     'dbus/bad_regex_02.sd',
     'dbus/bad_regex_03.sd',
@@ -195,6 +196,7 @@ exception_not_raised = (
 
     'unix/bad_modifier_2.sd',  # We do not check for duplicated keywords
     'unix/bad_bind_2.sd',  # We do not check bind coherency
+    'unix/bad_peer_3.sd',  # We do not enforce the presence of a separator between peer fields
 
     'vars/vars_bad_3.sd',
     'vars/vars_bad_4.sd',
@@ -326,13 +328,6 @@ unknown_line = (
     'bare_include_tests/ok_84.sd',
     'bare_include_tests/ok_85.sd',
     'bare_include_tests/ok_86.sd',
-
-    # Unsupported \\" in unix AARE
-    'unix/ok_regex_03.sd',
-    'unix/ok_regex_09.sd',
-    'unix/ok_regex_13.sd',
-    'unix/ok_regex_19.sd',
-
 )
 
 # testcases with various unexpected failures

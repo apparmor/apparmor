@@ -104,6 +104,7 @@ class NetworkTestParse(NetworkTest):
         ('network stream peer=(ip=::1 port=22),',   exp(False, False, False, '',           None,                None,   True,  'stream',   False, NetworkRule.ALL,                       {"ip": "::1", 'port': '22'},)),
         ('network stream ip=::1 port=22,',          exp(False, False, False, '',           None,                None,   True,  'stream',   False, {"ip": "::1", 'port': '22'},           NetworkRule.ALL)),
         ('network (bind,listen) stream,',           exp(False, False, False, '',           {'listen', 'bind'},  None,   True,  'stream',   False, NetworkRule.ALL,                       NetworkRule.ALL)),
+        ('network peer=(ip=::1, port=22),',         exp(False, False, False, '',           None,                None,   True,  None,       True,  NetworkRule.ALL,                       {"ip": "::1", 'port': '22'})),
         ('network (connect, rw) stream ip=192.168.122.2 port=22 peer=(ip=192.168.122.3 port=22),',
                                                     exp(False, False, False, '',           {'connect', 'rw'},   None,   True,  'stream',   False, {'ip': '192.168.122.2', 'port': '22'}, {"ip": "192.168.122.3", 'port': '22'})),  # noqa: E127
     )

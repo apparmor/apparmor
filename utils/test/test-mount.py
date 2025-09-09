@@ -50,7 +50,8 @@ class MountTestParse(AATest):
         ('mount fstype=(ext3, ext4) /a -> "/bar space",',                   MountRule('mount',   ('=', ['ext3', 'ext4']),  MountRule.ALL,           '/a',           '/bar space',   False, False, False, '')),
         ('mount fstype=(ext3, ext4) options=(ro, sync) /a -> /b,',          MountRule('mount',   ('=', ['ext3', 'ext4']),  ('=', ('ro', 'sync')),   '/a',           '/b',           False, False, False, '')),
         ('mount fstype=(ext3, ext4) options=(ro, sync) /a -> /b, #cmt',     MountRule('mount',   ('=', ['ext3', 'ext4']),  ('=', ('ro', 'sync')),   '/a',           '/b',           False, False, False, ' #cmt')),
-        ('mount fstype=({ext3,ext4}) options in (ro, sync) /a -> /b,',      MountRule('mount',   ('=', ['{ext3,ext4}']),   ('in', ('ro', 'sync')),  '/a',           '/b',           False, False, False, '')),
+        ('mount fstype=({ext3,ext4}) options in (ro, sync) /a -> /b,',      MountRule('mount',   ('=', ['ext3', 'ext4']),  ('in', ('ro', 'sync')),  '/a',           '/b',           False, False, False, '')),
+        ('mount fstype=(  {ext3,ext4}  ) options in (ro, sync) /a -> /b,',  MountRule('mount',   ('=', ['ext3', 'ext4']),  ('in', ('ro', 'sync')),  '/a',           '/b',           False, False, False, '')),
         ('mount fstype in (ext3, ext4) options=(ro, sync) /a -> /b, #cmt',  MountRule('mount',   ('in', ['ext3', 'ext4']), ('=', ('ro', 'sync')),   '/a',           '/b',           False, False, False, ' #cmt')),
         ('mount fstype in (ext3, ext4) option in (ro, sync) /a, #cmt',      MountRule('mount',   ('in', ['ext3', 'ext4']), ('in', ('ro', 'sync')),  '/a',           MountRule.ALL,  False, False, False, ' #cmt')),
         ('mount fstype=(ext3, ext4) option=(ro, sync) /a -> /b, #cmt',      MountRule('mount',   ('=', ['ext3', 'ext4']),  ('=', ('ro', 'sync')),   '/a',           '/b',           False, False, False, ' #cmt')),
@@ -93,6 +94,7 @@ class MountTestParse(AATest):
         ('umount,',                                                         MountRule('umount',  MountRule.ALL,            MountRule.ALL,           MountRule.ALL,  MountRule.ALL,  False, False, False, '')),
         ('umount fstype=ext3,',                                             MountRule('umount',  ('=', ['ext3']),          MountRule.ALL,           MountRule.ALL,  MountRule.ALL,  False, False, False, '')),
         ('umount /a,',                                                      MountRule('umount',  MountRule.ALL,            MountRule.ALL,           MountRule.ALL,  '/a',           False, False, False, '')),
+        ('umount "/foo/b a r",',                                            MountRule('umount',  MountRule.ALL,            MountRule.ALL,           MountRule.ALL,  '/foo/b a r',   False, False, False, '')),
 
         ('remount,',                                                        MountRule('remount', MountRule.ALL,            MountRule.ALL,           MountRule.ALL,  MountRule.ALL,  False, False, False, '')),
         ('remount fstype=ext4,',                                            MountRule('remount', ('=', ['ext4']),          MountRule.ALL,           MountRule.ALL,  MountRule.ALL,  False, False, False, '')),

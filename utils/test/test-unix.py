@@ -42,10 +42,11 @@ class UnixTestParse(AATest):
         ('unix peer=(addr=@/tmp/foo-*),',                   UnixRule(UnixRule.ALL,      UnixRule.ALL,                     UnixRule.ALL,                 {'addr': '@/tmp/foo-*'},        False, False, False, '')),
         ('unix (accept, rw) protocol=AA type=BB opt=AA label=bb peer=(addr=a label=bb),',
                                                             UnixRule(('accept', 'rw'),  {'type': 'BB', 'protocol': 'AA'}, {'opt': 'AA', 'label': 'bb'}, {'addr': 'a', 'label': 'bb'},   False, False, False, '')),  # noqa: E127
-        ('unix peer=( label=la, addr="@/h"),',              UnixRule(UnixRule.ALL,      UnixRule.ALL,                     UnixRule.ALL,                {'addr': '@/h', 'label': 'la,'}, False, False, False, '')),
+        ('unix peer=( label=la, addr="@/h"),',              UnixRule(UnixRule.ALL,      UnixRule.ALL,                     UnixRule.ALL,                {'addr': '@/h', 'label': 'la'},  False, False, False, '')),
         ('unix peer=(addr="@/h o", label="l a"),',          UnixRule(UnixRule.ALL,      UnixRule.ALL,                     UnixRule.ALL,              {'addr': '@/h o', 'label': 'l a'}, False, False, False, '')),
         ('unix addr="@/h" label=la,',                       UnixRule(UnixRule.ALL,      UnixRule.ALL,                     {'addr': '@/h', 'label': 'la'},    UnixRule.ALL,              False, False, False, '')),
         ('unix addr="@/h o" label="l a",',                  UnixRule(UnixRule.ALL,      UnixRule.ALL,                     {'addr': '@/h o', 'label': 'l a'}, UnixRule.ALL,              False, False, False, '')),
+        ('unix peer=(label=x//&y),',                        UnixRule(UnixRule.ALL,      UnixRule.ALL,                     UnixRule.ALL,                      {'label': 'x//&y'},        False, False, False, '')),
     )
 
     def _run_test(self, rawrule, expected):
