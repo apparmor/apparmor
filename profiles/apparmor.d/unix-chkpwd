@@ -30,8 +30,11 @@ profile unix-chkpwd /{,usr/}{,s}bin/unix_chkpwd {
   /run/host/userdb/*.user r,
   /run/host/userdb/*.user-privileged r,
 
+  # TODO: we might want to move these into an abstraction
   # authd socket for PAM
   @{run}/authd.sock rw,
+  # for pam_extrausers.so
+  /var/lib/extrausers/shadow r,
 
   # file_inherit
   owner /dev/tty[0-9]* rw,
