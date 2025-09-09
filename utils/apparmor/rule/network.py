@@ -55,8 +55,8 @@ network_ipv6 = (
     r')(%%[0-9a-zA-Z]{1,})?'
 )
 
-network_port = r'(port\s*=\s*(?P<%s>\d+))\s*'
-ip_cond = fr'\s*ip\s*=\s*(?P<%s>(({network_ipv4})|({network_ipv6})|none))\s*'
+network_port = r'(port\s*=\s*(?P<%s>\d+))[,\s]*'
+ip_cond = fr'\s*ip\s*=\s*(?P<%s>(({network_ipv4})|({network_ipv6})|none))[,\s]*'
 
 RE_LOCAL_EXPR = f'((({ip_cond % "ip"})|({network_port % "port"}))*)'
 RE_PEER_EXPR = fr'(peer\s*=\s*\(\s*(({ip_cond % "ip_peer"})|({network_port % "port_peer"}))+\s*\))'

@@ -1,0 +1,1 @@
+Jun 02 17:15:55 ubuntu kernel: audit: type=1400 audit(1654190155.699:1155): apparmor="DENIED" operation="sysv_mqueue" profile="/root/apparmor/tests/regression/apparmor/sysv_mq_snd" pid=16148 comm="sysv_mq_snd" requested="write" denied="write" class="sysv_mqueue" fsuid=1001 ouid=1001

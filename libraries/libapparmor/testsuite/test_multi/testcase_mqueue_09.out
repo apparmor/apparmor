@@ -1,0 +1,15 @@
+START
+File: testcase_mqueue_09.in
+Event type: AA_RECORD_DENIED
+Audit ID: 1654190155.699:1155
+Operation: sysv_mqueue
+Mask: write
+Denied Mask: write
+fsuid: 1001
+ouid: 1001
+Profile: /root/apparmor/tests/regression/apparmor/sysv_mq_snd
+Command: sysv_mq_snd
+PID: 16148
+Class: sysv_mqueue
+Epoch: 1654190155
+Audit subid: 1155

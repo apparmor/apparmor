@@ -15,7 +15,7 @@ import re
 
 from apparmor.common import AppArmorBug, AppArmorException
 
-from apparmor.regex import RE_PROFILE_MOUNT, RE_PROFILE_PATH_OR_VAR, strip_parenthesis, strip_quotes
+from apparmor.regex import RE_PROFILE_MOUNT, RE_PROFILE_PATH_OR_VAR, strip_parenthesis, strip_quotes, strip_braces
 from apparmor.rule import AARE
 from apparmor.rule import BaseRule, BaseRuleset, parse_modifiers, logprof_value_or_all, check_and_split_list, quote_if_needed
 
@@ -201,7 +201,8 @@ class MountRule(BaseRule):
             if r['fstype'] is not None:
                 fstype = []
                 for m in re.finditer(fs_type_pattern, rule_details):
-                    fst = parse_aare_list(strip_parenthesis(m.group('fstype')), 'fstype')
+                    # apparmor_parser cannot handle items starting with '{' so '({ext3,ext4})' will fail -> Converting to (ext3,ext4)
+                    fst = parse_aare_list(strip_braces(strip_parenthesis(m.group('fstype')).strip()), 'fstype')
                     fstype.append((m.group('fstype_equals_or_in'), fst))
 
             opts = (None, cls.ALL)
@@ -257,7 +258,7 @@ class MountRule(BaseRule):
 
         else:
             if not self.all_dest:
-                dest = ' ' + str(self.dest.regex)
+                dest = ' ' + quote_if_needed(str(self.dest.regex))
 
         return ('%s%s%s%s%s%s%s,%s' % (self.modifiers_str(),
                                        space,

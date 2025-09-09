@@ -15,26 +15,13 @@ import re
 
 from apparmor.common import AppArmorException
 
-from apparmor.regex import RE_PROFILE_UNIX, strip_parenthesis
+from apparmor.regex import RE_PROFILE_UNIX, strip_parenthesis, re_cond, re_cond_set
 from apparmor.rule import (BaseRule, BaseRuleset, parse_modifiers, logprof_value_or_all, check_and_split_list,
                            check_dict_keys, tuple_to_dict, print_dict_values, initialize_cond_dict, AARE)
 
 from apparmor.translations import init_translation
 
 _ = init_translation()
-
-_aare = r'([][!/\\\,().*?@{}\w^-]+)'
-_quoted_aare = r'"([][!/\\\,().*?@{}\w\s^-]+)"'
-aare = rf'({_aare}|{_quoted_aare}|\(({_aare}|{_quoted_aare})\))'
-aare_set = rf'({_aare}|{_quoted_aare}|\(({_aare}|{_quoted_aare})+\))'
-
-
-def re_cond_set(x, y=None):
-    return rf'\s*({x}\s*=\s*(?P<{y or x}_cond_set>{aare_set}))\s*'
-
-
-def re_cond(x, y=None):
-    return rf'\s*({x}\s*=\s*(?P<{y or x}_cond>{aare}))\s*'
 
 
 access_flags = [

@@ -76,7 +76,10 @@ class MessageQueueRule(BaseRule):
 
         self.label, self.all_labels = self._aare_or_all(label, 'label', is_path=False, log_event=log_event)
         self.mqueue_type, self.all_mqueue_types = self._aare_or_all(mqueue_type, 'type', is_path=False, log_event=log_event)
-        self.mqueue_name, self.all_mqueue_names = self._aare_or_all(mqueue_name, 'mqueue_name', is_path=False, log_event=log_event)
+        if mqueue_name is not None:
+            self.mqueue_name, self.all_mqueue_names = self._aare_or_all(mqueue_name, 'mqueue_name', is_path=False, log_event=log_event)
+        else:
+            self.mqueue_name, self.all_mqueue_names = None, self.ALL
         self.validate_mqueue_name()
 
     def validate_mqueue_name(self):
