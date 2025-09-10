@@ -21,6 +21,7 @@ pwd=`cd $pwd ; /bin/pwd`
 bin=$pwd
 
 . "$bin/prologue.inc"
+. "$bin/net_supports.inc"
 
 file=$tmpdir/file
 file2="$tmpdir/file (deleted)"
@@ -65,9 +66,7 @@ okperm=rwl
 badperm=wl
 af_unix=""
 
-if [ "$(kernel_features network_v8)" = "true" -a "$(parser_supports 'unix,')" = "true" ]; then
-	af_unix="unix:create"
-elif [ "$(kernel_features network/af_unix)" = "true" -a "$(parser_supports 'unix,')" = "true" ]; then
+if supports_unix_rules ; then
 	af_unix="unix:create"
 fi
 
@@ -88,7 +87,7 @@ EOM
 rm -f ${socket}
 
 # these tests require af_unix support
-if [ "$(kernel_features network/af_unix)" = "true" -a "$(parser_supports 'unix,')" = "true" ]; then
+if supports_unix_rules ; then
 # PASS - unconfined client
 
 genprofile $af_unix $file:$okperm $socket:rw $fd_client:ux
@@ -133,5 +132,5 @@ sleep 1
 rm -f ${socket}
 
 else
-    echo "    Required feature 'network/af_unix' not available. Skipping subset of tests that require network/af_unix ..."
+    echo "    Required feature 'unix rules' support not available. Skipping subset of tests that require af_unix ..."
 fi

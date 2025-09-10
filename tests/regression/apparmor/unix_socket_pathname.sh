@@ -27,6 +27,8 @@ pwd=`cd $pwd ; /bin/pwd`
 bin=$pwd
 
 . "$bin/prologue.inc"
+. "$bin/net_supports.inc"
+
 requires_kernel_features policy/versions/v6
 #af_mask for downgrade test af_unix for full test
 requires_any_of_kernel_features network/af_mask network_v8/af_mask network_v9/af_mask
@@ -57,20 +59,19 @@ fi
 # af_unix support requires 'unix getattr' to call getsockname()
 af_unix_okserver=
 af_unix_okclient=
-if ( [ "$(kernel_features network_v9/af_unix)" = "true" ] ||
-     [ "$(kernel_features network_v8/af_unix)" = "true" ] ||
-     [ "$(kernel_features network/af_unix)" = "true" ] ) &&
-     [ "$(parser_supports 'unix,')" = "true" ] ; then
+if supports_unix_rules ; then
 	af_unix_okserver="create,setopt"
 	af_unix_okclient="create,getopt,setopt,getattr"
-elif [ "$(kernel_features network_v8)" = "true" ] ||
-     [ "$(kernel_features network_v9)" = "true" ] ; then
+elif supports_socket_mediation ; then
 	af_unix_okserver="create,setopt,bind,listen,accept,getopt,rw,shutdown"
 	af_unix_okclient="create,getopt,setopt,getattr,connect,rw"
 	downgraded="true"
 	echo "    using unix socket mediation downgrade ..."
 	# af_unix_okserver="create"
 	# af_unix_okclient="create"
+else
+	echo "    no unix mediation support. skipping tests"
+	exit 0
 fi
 
 okclient=rw

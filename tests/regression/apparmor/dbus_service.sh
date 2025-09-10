@@ -17,8 +17,11 @@ pwd=`cd $pwd ; /bin/pwd`
 bin=$pwd
 
 . "$bin/prologue.inc"
+. "$bin/net_supports.inc"
+
 requires_kernel_features dbus
 requires_parser_support "dbus,"
+requires supports_unix_rules
 . "$bin/dbus.inc"
 
 service="--$bus --name=$dest $path $iface"

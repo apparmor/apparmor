@@ -18,8 +18,10 @@ pwd=`cd $pwd ; /bin/pwd`
 bin=$pwd
 
 . "$bin/prologue.inc"
+. "$bin/net_supports.inc"
 requires_kernel_features dbus
 requires_parser_support "dbus,"
+requires supports_unix_rules
 . "$bin/dbus.inc"
 
 listnames="--type=method_call --session --name=org.freedesktop.DBus /org/freedesktop/DBus org.freedesktop.DBus.ListNames"
