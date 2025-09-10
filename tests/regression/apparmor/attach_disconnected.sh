@@ -18,6 +18,11 @@ pwd=`cd $pwd ; /bin/pwd`
 bin=$pwd
 
 . "$bin/prologue.inc"
+. "$bin/net_supports.inc"
+
+# needs more than just kernel support, needs corresponding parser support
+# as well
+requires supports_unix_rules
 
 settest unix_fd_server
 disk_img=$tmpdir/disk_img
@@ -29,8 +34,6 @@ socket=$tmpdir/unix_fd_test
 att_dis_client=$pwd/attach_disconnected
 
 . "$bin/mount.inc"
-
-requires_any_of_kernel_features network/af_unix network_v9/af_unix
 
 attach_disconnected_cleanup() {
 	if [ ! -z "$loop_device" ]; then

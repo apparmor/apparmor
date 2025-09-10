@@ -32,18 +32,18 @@
 kernel_features_istrue()
 {
 	if [ ! -e "/sys/kernel/security/apparmor/features/" ] ; then
-		echo "Kernel feature masks not supported."
+		echo "    Kernel feature masks not supported."
 		return 1;
 	fi
 
 	for f in $@ ; do
 		if [ ! -e "/sys/kernel/security/apparmor/features/$f" ] ; then
-			echo "Required feature '$f' not available."
+			echo "    Required feature '$f' not available."
 			return 2;
 		fi
 		if [ ! -f "/sys/kernel/security/apparmor/features/$f" -o \
 		     `cat "/sys/kernel/security/apparmor/features/$f"` == 'no' ] ; then
-			echo "Required feature '$f' not available."
+			echo "    Required feature '$f' not available."
 			return 3;
 		fi
         done
@@ -61,7 +61,7 @@ kernel_features()
 {
 	features_dir="/sys/kernel/security/apparmor/features/"
 	if [ ! -e "$features_dir" ] ; then
-		echo "Kernel feature masks not supported."
+		echo "    Kernel feature masks not supported."
 		return 1;
 	fi
 
@@ -72,11 +72,11 @@ kernel_features()
 			file=$(dirname "$features_dir/$f")
 			if [ -f $file ]; then
 				if ! grep -q $feature $file; then
-					echo "Required feature '$f' not available."
+					echo "    Required feature '$f' not available."
 					return 2;
 				fi
 			else
-				echo "Required feature '$f' not available."
+				echo "    Required feature '$f' not available."
 				return 3;
 			fi
 		fi
@@ -108,8 +108,21 @@ requires_any_of_kernel_features()
 		features="$features $1"
 		shift
 	done
-	echo "Required feature(s): $features not available. Skipping tests ..."
+	echo "    Required feature(s): $features not available. Skipping tests ..."
 	exit 0
+}
+
+requires()
+{
+	local features
+	while [ $# -gt 0 ]; do
+		if ! $("$1") ; then
+			echo "    Required $1 not available. Skipping tests ..." 1>&2
+			exit 0;
+		fi
+		shift
+	done
+	return 0
 }
 
 # requires_namespace_interface() - exit if namespace interface is not available
@@ -117,7 +130,7 @@ requires_namespace_interface()
 {
 	if [ ! -e "/sys/kernel/security/apparmor/policy/namespaces" ]
 	then
-		echo "Namespaces in apparmorfs policy interface not supported. Skipping tests ..."
+		echo "    Namespaces in apparmorfs policy interface not supported. Skipping tests ..."
 		exit 0
 	fi
 }
@@ -127,7 +140,7 @@ requires_query_interface()
 {
 	if [ ! -e "/sys/kernel/security/apparmor/.access" ]
 	then
-		echo "Kernel query interface not supported. Skipping tests ..."
+		echo "    Kernel query interface not supported. Skipping tests ..."
 		exit 0
 	fi
 }
@@ -161,9 +174,9 @@ parser_supports()
 	fi
 
 	for R in "$@" ; do
-		echo "/test { $R }" | $subdomain ${parser_args} $opts -qQT 2>/dev/null 1>/dev/null
+		echo "/test { $R }" | $subdomain ${parser_args} ${opts} -QT 2>/dev/null 1>/dev/null
 		if [ $? -ne 0 ] ; then
-			echo "Compiler does not support rule '$R'"
+			echo "    Compiler does not support rule '$R'"
 			return 1;
 		fi
 	done
