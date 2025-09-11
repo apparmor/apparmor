@@ -63,8 +63,8 @@ elif [ "$(kernel_features network_v8/af_unix)" = "true" -o \
        "$(kernel_features network/af_unix)" = "true" -a \
        "$(parser_supports 'unix,')" = "true" ] ; then
 	# old abi did not update the label to new task confinements using it
-	np1_result="$np1"
-	np1_np2_result="$np2"
+	np1_result="$test"
+	np1_np2_result="$test"
         mixed_enforce="enforce"
         mixed_complain="complain"
 	if [ "$(kernel_features network_v9/af_unix)" = "true" ] ; then
