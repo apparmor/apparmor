@@ -17,7 +17,12 @@ pwd=`cd $pwd ; /bin/pwd`
 bin=$pwd
 
 . "$bin/prologue.inc"
+. "$bin/net_supports.inc"
 requires_query_interface
+
+# with af_unix v9, dbus requires policy encode support for unix mediation
+# or it will lie. Saying that it is supported but always returning allowed
+requires supports_unix_rules
 
 settest query_label
 

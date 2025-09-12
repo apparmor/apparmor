@@ -18,8 +18,14 @@ pwd=`cd $pwd ; /bin/pwd`
 bin=$pwd
 
 . "$bin/prologue.inc"
+. "$bin/net_supports.inc"
 requires_kernel_features dbus
 requires_parser_support "dbus,"
+
+#with v9 af_unix mediation, dbus is present but always allow unless
+#policy encodes unix support. So check that unix rules are supported
+requires supports_unix_rules
+
 . "$bin/dbus.inc"
 
 args="--session"

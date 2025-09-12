@@ -32,10 +32,10 @@ pwd=`cd $pwd ; /bin/pwd`
 bin=$pwd
 
 . "$bin/prologue.inc"
+. "$bin/net_supports.inc"
 . "$bin/unix_socket.inc"
 requires_any_of_kernel_features policy/versions/v7 policy/versions/v8 policy/versions/v9
-requires_any_of_kernel_features network/af_unix network_v9/af_unix
-requires_parser_support "unix,"
+requires supports_unix_rules
 
 settest unix_socket
 
