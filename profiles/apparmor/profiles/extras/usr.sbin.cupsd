@@ -19,6 +19,8 @@ include <tunables/global>
   capability setgid,
   capability setuid,
 
+  deny capability net_admin,
+
   /{usr/,}bin/bash ixr,
   /{usr/,}bin/cat ix,
 
