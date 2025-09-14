@@ -37,6 +37,7 @@ profile unix-chkpwd /{,usr/}{,s}bin/unix_chkpwd {
   /var/lib/extrausers/shadow r,
 
   # file_inherit
+  owner /dev/pts/[0-9]* rw,
   owner /dev/tty[0-9]* rw,
 
   include if exists <local/unix-chkpwd>
