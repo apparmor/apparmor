@@ -990,10 +990,21 @@ static int cmp_network_map(std::unordered_map<unsigned int, std::pair<unsigned i
 	int res;
 	size_t family_index;
 	for (family_index = AF_UNSPEC; family_index < get_af_max(); family_index++) {
-		res = lhs.at(family_index).first - rhs.at(family_index).first;
+		std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>>::const_iterator li = lhs.find(family_index);
+		std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>>::const_iterator ri = rhs.find(family_index);
+		if (li == lhs.end()) {
+			if (ri != rhs.end())
+				return -1;	// lhs < rhs
+			continue;		// both undef equiv to ==
+		} else if (ri == rhs.end()) {
+			return 1;		// lhs > rhs
+		}
+
+		res = li->second.first - ri->second.first;
 		if (res)
 			return res;
-		res = lhs.at(family_index).second - rhs.at(family_index).second;
+
+		res = li->second.second - ri->second.second;
 		if (res)
 			return res;
 	}
