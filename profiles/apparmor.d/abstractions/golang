@@ -1,0 +1,11 @@
+
+  abi <abi/4.0>,
+
+  # Container-aware GOMAXPROCS
+  owner @{PROC}/@{pid}/mountinfo r,
+  owner @{PROC}/@{pid}/cgroup r,
+  @{sys}/fs/cgroup/**/{cpu.cfs_quota_us,cpu.cfs_period_us} r, # V1
+  @{sys}/fs/cgroup/**/cpu.max r, # V2
+
+  # Include additions to the abstraction
+  include if exists <abstractions/golang.d>
