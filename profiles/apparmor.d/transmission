@@ -55,6 +55,14 @@ profile transmission-gtk /usr/bin/transmission-gtk flags=(complain,attach_discon
 
   owner @{run}/user/*/dconf/user w,
 
+  # "Inhibit hibernation when torrents are active"
+  dbus (send)
+       bus=session
+       path=/org/gnome/SessionManager
+       interface=org.gnome.SessionManager
+       member=Inhibit
+       peer=(name=org.gnome.SessionManager),
+
   # Site-specific additions and overrides. See local/README for details.
   include if exists <local/transmission>
   include if exists <local/transmission-gtk>
