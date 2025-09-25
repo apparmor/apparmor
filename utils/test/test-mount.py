@@ -46,6 +46,7 @@ class MountTestParse(AATest):
         ('mount @{mntpnt},',                                                MountRule('mount',   MountRule.ALL,            MountRule.ALL,           '@{mntpnt}',    MountRule.ALL,  False, False, False, '')),
         ('mount /a,',                                                       MountRule('mount',   MountRule.ALL,            MountRule.ALL,           '/a',           MountRule.ALL,  False, False, False, '')),
         ('mount "/a space",',                                               MountRule('mount',   MountRule.ALL,            MountRule.ALL,           '/a space',     MountRule.ALL,  False, False, False, '')),
+        ('mount fstype=ext3,ext4 /a -> /b,',                                MountRule('mount',   ('=', ['ext3', 'ext4']),  MountRule.ALL,           '/a',           '/b',           False, False, False, '')),
         ('mount fstype=(ext3, ext4) /a -> /b,',                             MountRule('mount',   ('=', ['ext3', 'ext4']),  MountRule.ALL,           '/a',           '/b',           False, False, False, '')),
         ('mount fstype=(ext3, ext4) /a -> "/bar space",',                   MountRule('mount',   ('=', ['ext3', 'ext4']),  MountRule.ALL,           '/a',           '/bar space',   False, False, False, '')),
         ('mount fstype=(ext3, ext4) options=(ro, sync) /a -> /b,',          MountRule('mount',   ('=', ['ext3', 'ext4']),  ('=', ('ro', 'sync')),   '/a',           '/b',           False, False, False, '')),
@@ -242,8 +243,8 @@ class MountTestClean(AATest):
     tests = (
         #  raw rule                                                  clean rule
         ('     mount                                                                            ,    # foo  ', 'mount, # foo'),
-        ('     mount                                fstype  =  (  sysfs  )                      ,           ', 'mount fstype=(sysfs),'),
-        ('     mount                                fstype  =  (  sysfs  ,  procfs  )           ,           ', 'mount fstype=(procfs, sysfs),'),
+        ('     mount                                fstype  =  (  sysfs  )                      ,           ', 'mount fstype=sysfs,'),
+        ('     mount                                fstype  =  (  sysfs  ,  procfs  )           ,           ', 'mount fstype=procfs,sysfs,'),
         ('     mount  options  =  (  rw  )                                                      ,           ', 'mount options=(rw),'),
         ('     mount  options  =  (  rw , noatime  )                                            ,           ', 'mount options=(noatime, rw),'),
         ('     mount                                fstype  in (  sysfs  )                      ,           ', 'mount fstype in (sysfs),'),
@@ -273,6 +274,30 @@ class MountTestClean(AATest):
 
         self.assertEqual(expected, clean, 'unexpected clean rule')
         self.assertEqual(rawrule.strip(), raw, 'unexpected raw rule')
+
+
+class MountTestFsType(AATest):
+    tests = (
+        #  raw fstype       clean fs type
+        ('=ext3',           '=ext3'),
+        ('=ext{3,4}',       '=ext{3,4}'),
+        ('=(ext{3,4})',     '=ext{3,4}'),
+        ('=ext3,ext4',      '=ext3,ext4'),
+        ('=(ext3,ext4)',    '=ext3,ext4'),
+        ('={ext3,ext4}',    '=ext3,ext4'),
+        ('=(ext3, ext4)',   '=ext3,ext4'),
+        ('={ext3, ext4}',   '=ext3,ext4'),
+        ('in ext3',         ' in (ext3)'),
+        ('in ext3,ext4',    ' in (ext3, ext4)'),
+        ('in (ext3,ext4)',  ' in (ext3, ext4)'),
+        ('in {ext3,ext4}',  ' in (ext3, ext4)'),
+        ('in (ext3, ext4)', ' in (ext3, ext4)'),
+        ('in {ext3, ext4}', ' in (ext3, ext4)'),
+    )
+
+    def _run_test(self, fstype, expected):
+        clean = MountRule.create_instance("mount fstype " + fstype + ",").get_clean()
+        self.assertEqual("mount fstype" + expected + ",", clean)
 
 
 class MountLogprofHeaderTest(AATest):

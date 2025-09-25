@@ -1,7 +1,0 @@
-#
-#=Description basic rule not allow unparen'ed fstypes
-#=EXRESULT FAIL
-#=TODO
-/usr/bin/foo {
-  mount fstype=ext3,ext4  /dev -> /mnt,
-}

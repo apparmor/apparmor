@@ -87,6 +87,8 @@ exception_not_raised = (
     'file/bad_re_brace_2.sd',
     'file/bad_re_brace_3.sd',
 
+    'mount/bad_opt_28.sd',  # Missing parenthesis
+
     # We do not check that options are compatible
     'mount/bad_opt_29.sd',
     'mount/bad_opt_30.sd',

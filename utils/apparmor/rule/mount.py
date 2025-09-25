@@ -48,7 +48,8 @@ FS_AARE = r'([][".*@{}\w^-]+)'
 
 fs_type_pattern = r'\b(?P<fstype_or_vfstype>fstype|vfstype)\b\s*(?P<fstype_equals_or_in>=|in)\s*'\
     r'(?P<fstype>\(\s*(' + FS_AARE + r')(' + sep + r'(' + FS_AARE + r'))*\s*\)|'\
-    r'\{\s*(' + FS_AARE + r')(' + sep + r'(' + FS_AARE + r'))*\s*\}|(\s*' + FS_AARE + r'))'\
+    r'\{\s*(' + FS_AARE + r')(' + sep + r'(' + FS_AARE + r'))*\s*\}|'\
+    r'(\s*' + FS_AARE + r')(,' + FS_AARE + ')*)'
 
 
 option_pattern = r'\s*(\boption(s?)\b\s*(?P<options_equals_or_in>=|in)\s*'\
@@ -476,6 +477,9 @@ class MountConditional(MountRule):
     def get_clean(self, depth=0) -> str:
         conditional = ''
         if not self.all_values:
-            conditional += ' %s%s(%s)' % (self.name, wrap_in_with_spaces(self.operator), ', '.join(sorted(self.values)))
+            if self.name == 'fstype' and self.operator == "=":
+                conditional += ' %s%s%s' % (self.name, wrap_in_with_spaces(self.operator), ','.join(sorted(self.values)))
+            else:
+                conditional += ' %s%s(%s)' % (self.name, wrap_in_with_spaces(self.operator), ', '.join(sorted(self.values)))
 
         return conditional

@@ -1,5 +1,5 @@
 #
-#=Description basic rule not allow unparen'ed fstypes
+#=Description basic rule does not allow unparen'ed fstypes
 #=EXRESULT FAIL
 /usr/bin/foo {
   mount fstype in ext3,ext4  /dev -> /mnt,
