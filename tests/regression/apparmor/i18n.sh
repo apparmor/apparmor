@@ -33,11 +33,10 @@ settest open
 # skip DEL (\x7f) for now until Ican get it properly passed through
 # skip \ (\x5c) because they are dropped as invalid escape sequences
 
-# TODO: find a work around. This is less than satisfactory but rust
-# core utils breaks with numbers above 127 because that indicates as
-# multi-byte utf8
-#for i in $(seq  1 46) $(seq 48 91) $(seq 93 126) $(seq 128 255); do
-for i in $(seq  1 46) $(seq 48 91) $(seq 93 126); do
+# Older rust coreutils broke when given non-utf8 paths
+# If you encounter issues here, remove $(seq 128 255) below
+# Order the high-bytes first to catch this potential issue earlier
+for i in $(seq 128 255) $(seq  1 46) $(seq 48 91) $(seq 93 126); do
 #for i in $(seq 127 127 ); do
 	symbol=$(printf "\\$(printf "%03o" $i)")
 	# Sigh, in the case of \012, bash would strip it out during
