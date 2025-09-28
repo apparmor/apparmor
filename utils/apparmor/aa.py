@@ -899,7 +899,8 @@ def ask_exec(hashlog, default_ans=''):
                         file_perm = 'mr'
                     else:
                         if ans == 'CMD_DENY':
-                            active_profiles[full_profile]['file'].add(FileRule(exec_target, None, 'x', FileRule.ALL, owner=False, log_event=True, deny=True))
+                            add_rule_ui_feedback(active_profiles[full_profile]['file'], full_profile,
+                                                 FileRule(exec_target, None, 'x', FileRule.ALL, owner=False, log_event=True, deny=True))
                             changed[profile] = True
                             if target_profile and hashlog[aamode].get(target_profile):
                                 hashlog[aamode][target_profile]['final_name'] = ''
@@ -911,8 +912,8 @@ def ask_exec(hashlog, default_ans=''):
                             rule_to_name = to_name
                         else:
                             rule_to_name = FileRule.ALL
-
-                        active_profiles[full_profile]['file'].add(FileRule(exec_target, file_perm, exec_mode, rule_to_name, owner=False, log_event=True))
+                        add_rule_ui_feedback(active_profiles[full_profile]['file'], full_profile,
+                                             FileRule(exec_target, file_perm, exec_mode, rule_to_name, owner=False, log_event=True))
 
                         changed[profile] = True
 
@@ -924,15 +925,15 @@ def ask_exec(hashlog, default_ans=''):
                                 interpreter_rule = FileRule(interpreter_path, None, 'ix', FileRule.ALL, owner=False)
 
                                 if not is_known_rule(active_profiles[full_profile], 'file', exec_target_rule):
-                                    active_profiles[full_profile]['file'].add(exec_target_rule)
+                                    add_rule_ui_feedback(active_profiles[full_profile]['file'], full_profile, exec_target_rule)
                                 if not is_known_rule(active_profiles[full_profile], 'file', interpreter_rule):
-                                    active_profiles[full_profile]['file'].add(interpreter_rule)
+                                    add_rule_ui_feedback(active_profiles[full_profile]['file'], full_profile, interpreter_rule)
 
                                 if abstraction:
                                     abstraction_rule = IncludeRule(abstraction, False, True)
 
                                     if not active_profiles[full_profile]['inc_ie'].is_covered(abstraction_rule):
-                                        active_profiles[full_profile]['inc_ie'].add(abstraction_rule)
+                                        add_rule_ui_feedback(active_profiles[full_profile]['inc_ie'], full_profile, abstraction_rule)
 
                     # Update tracking info based on kind of change
 
@@ -1094,6 +1095,20 @@ def ask_the_questions(log_dict):
                     return  # end profiling loop
 
 
+def add_rule_ui_feedback(prof, prof_name, rule, deleted=0):
+    prof.add(rule)
+    ui_feedback(prof_name, rule.get_clean(), deleted=deleted)
+
+
+def ui_feedback(prof_name, rule_str, deleted=False):
+    if aaui.UI_mode == 'allow_all':
+        aaui.UI_Info(_('Adding %s to profile %s.') % (rule_str, prof_name))
+    else:
+        aaui.UI_Info(_('Adding %s to profile.') % rule_str)
+    if deleted:
+        aaui.UI_Info(_('Deleted %s previous matching profile entries.') % deleted)
+
+
 def ask_rule_questions(prof_events, profile_name, the_profile, r_types):
     """ask questions about rules to add to a single profile/hat
 
@@ -1190,22 +1205,13 @@ def ask_rule_questions(prof_events, profile_name, the_profile, r_types):
 
                         the_profile['inc_ie'].add(IncludeRule.create_instance(selection))
 
-                        if aaui.UI_mode == 'allow_all':
-                            aaui.UI_Info(_('Adding %s to profile %s.') % (selection, profile_name))
-                        else:
-                            aaui.UI_Info(_('Adding %s to profile.') % selection)
-                        if deleted:
-                            aaui.UI_Info(_('Deleted %s previous matching profile entries.') % deleted)
+                        ui_feedback(profile_name, selection, deleted)
 
                     else:
                         rule_obj = rule_obj.create_instance(selection)
                         deleted = the_profile[ruletype].add(rule_obj, cleanup=True)
-                        if aaui.UI_mode == 'allow_all':
-                            aaui.UI_Info(_('Adding %s to profile %s.') % (rule_obj.get_clean(), profile_name))
-                        else:
-                            aaui.UI_Info(_('Adding %s to profile.') % rule_obj.get_clean())
-                        if deleted:
-                            aaui.UI_Info(_('Deleted %s previous matching profile entries.') % deleted)
+
+                        ui_feedback(profile_name, rule_obj.get_clean(), deleted)
 
                 elif ans == 'CMD_DENY':
                     if re_match_include(selection):
