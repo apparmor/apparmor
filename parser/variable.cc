@@ -55,29 +55,31 @@ variable::variable(const char *var_name, int boolean):
 	PDEBUG("Matched: boolean assignment (%s) to %d\n", var_name, boolean);
 }
 
-char *variable::process_var(const char *var)
+bool is_var(const char *var, const char **start, int *var_len, const char **info)
 {
 	const char *orig = var;
 	const char *valid;
+	const char *error = NULL;
 	int len = strlen(var);
 	int i;
+	bool result;
 
 	if (*orig == '@' || *orig == '$') {
 		orig++;
 		len--;
 	} else {
-		PERROR("ASSERT: Found var '%s' without variable prefix\n",
-		       var);
-		return NULL;
+		error = "ASSERT: Found var '%s' without variable prefix\n";
+		result = false;
+		goto ret;
 	}
 
 	if (*orig == '{') {
 		orig++;
 		len--;
 		if (orig[len - 1] != '}') {
-			PERROR("ASSERT: No matching '}' in variable '%s'\n",
-			       var);
-			return NULL;
+			error = "ASSERT: No matching '}' in variable '%s'\n";
+			result = false;
+			goto ret;
 		} else
 			len--;
 	}
@@ -87,15 +89,37 @@ char *variable::process_var(const char *var)
 		/* first character must be alpha */
 		if (valid[i] == *orig) {
 			if (!isalpha(valid[i])) {
-				PERROR("Variable '%s' must start with alphabet letters\n",
-				       var);
-				return NULL;
+				error = "Variable '%s' must start with alphabet letters\n";
+				result = false;
+				goto ret;
 			}
 		} else if (!(valid[i] == '_' || isalnum(valid[i]))) {
-			PERROR("Variable '%s' contains invalid characters\n",
-			       var);
-			return NULL;
+			error = "Variable '%s' contains invalid characters\n";
+			result = false;
+			goto ret;
 		}
+	}
+	result = true;
+
+ret:
+	if (start)
+		*start = orig;
+	if (var_len)
+		*var_len = len;
+	if (info)
+		*info = error;
+	return result;
+}
+
+char *variable::process_var(const char *var)
+{
+	const char *orig;
+	const char *info;
+	int len;
+
+	if (!is_var(var, &orig, &len, &info)) {
+		PERROR(info, var);
+		return NULL;
 	}
 
 	return strndup(orig, len);
@@ -221,6 +245,10 @@ int variable::expand_by_alternation(char **name)
 
 	if (prefix.empty() && var.empty() && suffix.empty()) {
 		return 0; /* no var found, name is unchanged */
+	}
+
+	if (!is_var(var.c_str(), NULL, NULL, NULL)) {
+		return 0;
 	}
 
 	if (!prefix.empty() && prefix[prefix.size() - 1] == '/') {
