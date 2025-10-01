@@ -55,29 +55,40 @@ variable::variable(const char *var_name, int boolean):
 	PDEBUG("Matched: boolean assignment (%s) to %d\n", var_name, boolean);
 }
 
-char *variable::process_var(const char *var)
+enum var_status {
+	VAR_VALID,
+	VAR_NO_PREFIX,
+	VAR_NO_MATCHING_BRACE,
+	VAR_INVAL_START,
+	VAR_INVAL_CHARS,
+	VAR_INVAL_COMMA,
+};
+
+enum var_status is_var(const char *var, const char **start, int *var_len, const char **info)
 {
 	const char *orig = var;
 	const char *valid;
+	const char *error = NULL;
 	int len = strlen(var);
 	int i;
+	enum var_status result;
 
 	if (*orig == '@' || *orig == '$') {
 		orig++;
 		len--;
 	} else {
-		PERROR("ASSERT: Found var '%s' without variable prefix\n",
-		       var);
-		return NULL;
+		error = "ASSERT: Found var '%s' without variable prefix\n";
+		result = VAR_NO_PREFIX;
+		goto ret;
 	}
 
 	if (*orig == '{') {
 		orig++;
 		len--;
 		if (orig[len - 1] != '}') {
-			PERROR("ASSERT: No matching '}' in variable '%s'\n",
-			       var);
-			return NULL;
+			error = "ASSERT: No matching '}' in variable '%s'\n";
+			result = VAR_NO_MATCHING_BRACE;
+			goto ret;
 		} else
 			len--;
 	}
@@ -87,15 +98,40 @@ char *variable::process_var(const char *var)
 		/* first character must be alpha */
 		if (valid[i] == *orig) {
 			if (!isalpha(valid[i])) {
-				PERROR("Variable '%s' must start with alphabet letters\n",
-				       var);
-				return NULL;
+				error = "Variable '%s' must start with alphabet letters\n";
+				result = VAR_INVAL_START;
+				goto ret;
 			}
 		} else if (!(valid[i] == '_' || isalnum(valid[i]))) {
-			PERROR("Variable '%s' contains invalid characters\n",
-			       var);
-			return NULL;
+			error = "Variable '%s' contains invalid characters\n";
+			/* comma must be a special case due to the
+			 * possibility of alternation, like in unix
+			 * addresses; eg: @{foo,bar}-test */
+			result = valid[i] == ',' ? VAR_INVAL_COMMA : VAR_INVAL_CHARS;
+			goto ret;
 		}
+	}
+	result = VAR_VALID;
+
+ret:
+	if (start)
+		*start = orig;
+	if (var_len)
+		*var_len = len;
+	if (info)
+		*info = error;
+	return result;
+}
+
+char *variable::process_var(const char *var)
+{
+	const char *orig;
+	const char *info;
+	int len;
+
+	if (is_var(var, &orig, &len, &info) != VAR_VALID) {
+		PERROR(info, var);
+		return NULL;
 	}
 
 	return strndup(orig, len);
@@ -206,6 +242,7 @@ int variable::expand_by_alternation(char **name)
 	bool filter_leading_slash = false;
 	bool filter_trailing_slash = false;
 	int ret = 0;
+	const char *info;
 
 	if (!name) {
 		PERROR("ASSERT: name to be expanded cannot be NULL\n");
@@ -221,6 +258,18 @@ int variable::expand_by_alternation(char **name)
 
 	if (prefix.empty() && var.empty() && suffix.empty()) {
 		return 0; /* no var found, name is unchanged */
+	}
+
+	enum var_status vstatus = is_var(var.c_str(), NULL, NULL, &info);
+	if (vstatus != VAR_VALID) {
+		if (vstatus == VAR_INVAL_COMMA) {
+			pwarn(WARN_DEPRECATED, _("The usage of comma in the variable formatting to indicate alternation is deprecated. "
+						 "Escape the character @ to indicate it is not a variable.\n"));
+
+			return 0;
+		}
+		PERROR(info, var.c_str());
+		exit(1);
 	}
 
 	if (!prefix.empty() && prefix[prefix.size() - 1] == '/') {
