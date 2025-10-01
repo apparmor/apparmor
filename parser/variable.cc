@@ -263,6 +263,9 @@ int variable::expand_by_alternation(char **name)
 	enum var_status vstatus = is_var(var.c_str(), NULL, NULL, &info);
 	if (vstatus != VAR_VALID) {
 		if (vstatus == VAR_INVAL_COMMA) {
+			pwarn(WARN_DEPRECATED, _("The usage of comma in the variable formatting to indicate alternation is deprecated. "
+						 "Escape the character @ to indicate it is not a variable.\n"));
+
 			return 0;
 		}
 		PERROR(info, var.c_str());
