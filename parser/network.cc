@@ -611,7 +611,7 @@ void network_rule::warn_once(const char *name)
 	rule_t::warn_once(name, "network rules not enforced");
 }
 
-std::string gen_ip_cond(const struct ip_address ip)
+std::string gen_ip_cond(struct ip_address const &ip)
 {
 	std::ostringstream oss;
 	int i;
@@ -984,16 +984,27 @@ static int cmp_ip_conds(ip_conds const &lhs, ip_conds const &rhs)
 	return lhs.is_none - rhs.is_none;
 }
 
-static int cmp_network_map(std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> lhs,
-			   std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> rhs)
+static int cmp_network_map(std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> const &lhs,
+			   std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> const &rhs)
 {
 	int res;
 	size_t family_index;
 	for (family_index = AF_UNSPEC; family_index < get_af_max(); family_index++) {
-		res = lhs[family_index].first - rhs[family_index].first;
+		std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>>::const_iterator li = lhs.find(family_index);
+		std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>>::const_iterator ri = rhs.find(family_index);
+		if (li == lhs.end()) {
+			if (ri != rhs.end())
+				return -1;	// lhs < rhs
+			continue;		// both undef equiv to ==
+		} else if (ri == rhs.end()) {
+			return 1;		// lhs > rhs
+		}
+
+		res = li->second.first - ri->second.first;
 		if (res)
 			return res;
-		res = lhs[family_index].second - rhs[family_index].second;
+
+		res = li->second.second - ri->second.second;
 		if (res)
 			return res;
 	}
