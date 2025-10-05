@@ -1,7 +1,7 @@
 # vim:ft=apparmor
 # Allow writing cache for Qt6 "platforminputcontexts" plugins
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # User files
 

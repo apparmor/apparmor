@@ -13,7 +13,7 @@
 # will need to revalidate this profile once we finish re-architecting
 # the change_hat patch.
 
-abi <abi/4.0>,
+abi <abi/5.0>,
 
 include <tunables/global>
 

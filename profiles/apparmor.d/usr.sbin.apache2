@@ -1,6 +1,6 @@
 # Author: Marc Deslauriers <marc.deslauriers@ubuntu.com>
 
-abi <abi/4.0>,
+abi <abi/5.0>,
 
 include <tunables/global>
 profile apache2 /usr/{bin,sbin}/apache2 flags=(attach_disconnected) {

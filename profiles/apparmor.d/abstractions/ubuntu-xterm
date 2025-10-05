@@ -3,7 +3,7 @@
 # for allowing access to xterm
 #
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   include <abstractions/consoles>
   /dev/ptmx rw,

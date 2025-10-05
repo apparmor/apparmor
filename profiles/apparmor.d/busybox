@@ -1,7 +1,7 @@
 # This profile allows everything and only exists to give the
 # application a name instead of having the label "unconfined"
 
-abi <abi/4.0>,
+abi <abi/5.0>,
 include <tunables/global>
 
 profile busybox /usr/bin/busybox flags=(unconfined) {

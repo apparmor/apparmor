@@ -10,7 +10,7 @@
 #
 # ------------------------------------------------------------------
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # shared snippets for config files
   /etc/php{,5,7,8,-legacy}/** r,

@@ -6,7 +6,7 @@
 # in the toplevel profile. Eg:
 #   include <abstractions/ubuntu-helpers>
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   /usr/bin/akregator Cxr -> sanitized_helper,
   /usr/bin/liferea-add-feed Cxr -> sanitized_helper,

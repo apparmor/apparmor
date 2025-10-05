@@ -2,7 +2,7 @@
 # LOGPROF-SUGGEST: no
 # Author: Daniel Richard G. <skunk@iSKUNK.ORG>
 
-abi <abi/4.0>,
+abi <abi/5.0>,
 
   include <abstractions/base>
   include <abstractions/freedesktop.org>

@@ -3,7 +3,7 @@
 # for allowing access to konsole
 #
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   include <abstractions/consoles>
   include <abstractions/kde>

@@ -13,7 +13,7 @@
 # mlmmj upstream renamed the (misspelled) mlmmj-recieve to mlmmj-receive,
 # so this profile is probably superfluous
 
-abi <abi/4.0>,
+abi <abi/5.0>,
 
 include <tunables/global>
 

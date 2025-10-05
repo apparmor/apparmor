@@ -1,7 +1,7 @@
 # vim:ft=apparmor
 # orbit2 permissions
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # system library
   /usr/lib/orbit-2.0/*.so mr,

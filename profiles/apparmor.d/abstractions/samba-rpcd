@@ -11,7 +11,7 @@
 
 # This file contains basic permissions for samba rpcd_xyz services
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   include <abstractions/base>
   include <abstractions/nameservice>

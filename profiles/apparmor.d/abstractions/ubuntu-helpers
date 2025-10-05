@@ -31,7 +31,7 @@
 # Use at your own risk. This profile was developed as an interim workaround for
 # LP: #851986 until AppArmor utilizes proper environment filtering.
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
 profile sanitized_helper {
   include <abstractions/base>

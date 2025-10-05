@@ -9,7 +9,7 @@
 #
 # ------------------------------------------------------------------
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
 # Description: Where common programs should allow users to download
 # files

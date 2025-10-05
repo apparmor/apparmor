@@ -1,5 +1,5 @@
 # Last Modified: Mon Jan 20 20:17:22 2025
-abi <abi/4.0>,
+abi <abi/5.0>,
 
 include <tunables/global>
 

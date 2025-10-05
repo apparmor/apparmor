@@ -8,7 +8,7 @@
 #
 # ------------------------------------------------------------------
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # files required by LDAP clients (e.g. nss_ldap/pam_ldap)
   /etc/ldap.conf            r,

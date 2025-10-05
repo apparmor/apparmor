@@ -8,7 +8,7 @@
 #
 # ------------------------------------------------------------------
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   /opt/novell/xad/lib/ r,
   /opt/novell/xad/lib/lib*.so* mr,

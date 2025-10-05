@@ -1,7 +1,7 @@
 # vim:ft=apparmor
 # aspell permissions
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # per-user settings and dictionaries
   owner @{HOME}/.aspell.*.{pws,prepl} rwk,

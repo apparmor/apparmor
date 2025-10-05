@@ -9,7 +9,7 @@
 #
 # ------------------------------------------------------------------
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # discoverable system configuration for non-local cupsd
   /etc/cups/client.conf   r,

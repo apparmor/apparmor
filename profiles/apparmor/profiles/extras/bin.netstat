@@ -13,7 +13,7 @@
 # give evolution access to significant chunks of /proc
 #
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
 include <tunables/global>
 

@@ -1,6 +1,6 @@
 # vim:ft=apparmor
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
 # Rules for changing per-application language settings on KDE. Some KDE
 # applications have "Help -> Switch Application Language..." option, that needs

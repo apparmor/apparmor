@@ -1,7 +1,7 @@
 # Special profile transitioned to by unconfined when creating an unprivileged
 # user namespace.
 #
-abi <abi/4.0>,
+abi <abi/5.0>,
 include <tunables/global>
 
 profile unprivileged_userns {

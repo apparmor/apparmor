@@ -11,7 +11,7 @@
 #
 # ------------------------------------------------------------------
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # Global config of openssl
   include <abstractions/openssl>
