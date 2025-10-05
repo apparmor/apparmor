@@ -14,10 +14,12 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-profile postfix-proxymap /usr/lib{,exec}/postfix/{bin/,sbin/,}proxymap {
+profile postfix-proxymap /usr/lib{,exec}/postfix/{bin/,sbin/,}proxymap flags=(attach_disconnected.path=/apparmor/disconnected/) {
   include <abstractions/base>
   include <abstractions/nameservice>
   include <abstractions/postfix-common>
+
+  /apparmor/disconnected/run/mysql/mysql.sock w,
 
   /etc/my.cnf r,
   @{exec_path} mrix,
