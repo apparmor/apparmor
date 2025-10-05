@@ -14,10 +14,12 @@
 
 include <tunables/global>
 
-profile postfix-lmtp /usr/lib{,exec}/postfix/{bin/,sbin/,}lmtp {
+profile postfix-lmtp /usr/lib{,exec}/postfix/{bin/,sbin/,}lmtp flags=(attach_disconnected.path=/apparmor/disconnected/) {
   include <abstractions/base>
   include <abstractions/nameservice>
   include <abstractions/postfix-common>
+
+  /apparmor/disconnected/var/spool/postfix/private/dovecot-lmtp r,
 
   @{exec_path} mrix,
 
