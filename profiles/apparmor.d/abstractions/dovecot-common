@@ -20,6 +20,7 @@
 
   owner @{run}/dovecot/config rw,
   owner @{run}/dovecot/dovecot.conf.binary r,
+  owner @{run}/dovecot/dovecot.conf.binary.* r,
   owner /tmp/doveconf.* r,
 
   # Include additions to the abstraction
