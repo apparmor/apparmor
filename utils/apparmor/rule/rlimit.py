@@ -207,14 +207,14 @@ class RlimitRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def _is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, other_rule, strict):
         """compare if rule-specific variables are equal"""
 
-        if self.rlimit != rule_obj.rlimit:
+        if self.rlimit != other_rule.rlimit:
             return False
 
-        if (self.value_as_int != rule_obj.value_as_int
-                or self.all_values != rule_obj.all_values):
+        if (self.value_as_int != other_rule.value_as_int
+                or self.all_values != other_rule.all_values):
             return False
 
         return True

@@ -258,32 +258,32 @@ class DbusRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def _is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, other_rule, strict):
         """compare if rule-specific variables are equal"""
 
-        if (self.access != rule_obj.access
-                or self.all_access != rule_obj.all_access):
+        if (self.access != other_rule.access
+                or self.all_access != other_rule.all_access):
             return False
 
-        if not self._is_equal_aare(self.bus,        self.all_buses,         rule_obj.bus,           rule_obj.all_buses,         'bus'):
+        if not self._is_equal_aare(self.bus,        self.all_buses,         other_rule.bus,         other_rule.all_buses,         'bus'):
             return False
 
-        if not self._is_equal_aare(self.path,       self.all_paths,         rule_obj.path,          rule_obj.all_paths,         'path'):
+        if not self._is_equal_aare(self.path,       self.all_paths,         other_rule.path,        other_rule.all_paths,         'path'):
             return False
 
-        if not self._is_equal_aare(self.name,       self.all_names,         rule_obj.name,          rule_obj.all_names,         'name'):
+        if not self._is_equal_aare(self.name,       self.all_names,         other_rule.name,        other_rule.all_names,         'name'):
             return False
 
-        if not self._is_equal_aare(self.interface,  self.all_interfaces,    rule_obj.interface,     rule_obj.all_interfaces,    'interface'):
+        if not self._is_equal_aare(self.interface,  self.all_interfaces,    other_rule.interface,   other_rule.all_interfaces,    'interface'):
             return False
 
-        if not self._is_equal_aare(self.member,     self.all_members,       rule_obj.member,        rule_obj.all_members,       'member'):
+        if not self._is_equal_aare(self.member,     self.all_members,       other_rule.member,      other_rule.all_members,       'member'):
             return False
 
-        if not self._is_equal_aare(self.peername,   self.all_peernames,     rule_obj.peername,      rule_obj.all_peernames,     'peername'):
+        if not self._is_equal_aare(self.peername,   self.all_peernames,     other_rule.peername,    other_rule.all_peernames,     'peername'):
             return False
 
-        if not self._is_equal_aare(self.peerlabel,  self.all_peerlabels,    rule_obj.peerlabel,     rule_obj.all_peerlabels,    'peerlabel'):
+        if not self._is_equal_aare(self.peerlabel,  self.all_peerlabels,    other_rule.peerlabel,   other_rule.all_peerlabels,    'peerlabel'):
             return False
 
         return True
@@ -310,8 +310,8 @@ class DbusRule(BaseRule):
         )
 
     @staticmethod
-    def hashlog_from_event(hl, e):
-        hl[e['denied_mask']][e['bus']][e['path']][e['name']][e['interface']][e['member']][e['peer_profile']] = True
+    def hashlog_from_event(hl, ev):
+        hl[ev['denied_mask']][ev['bus']][ev['path']][ev['name']][ev['interface']][ev['member']][ev['peer_profile']] = True
 
     @classmethod
     def from_hashlog(cls, hl):

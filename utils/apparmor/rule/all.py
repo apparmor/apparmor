@@ -59,7 +59,7 @@ class AllRule(BaseRule):
         # no localvars, so there can't be a difference
         return True
 
-    def _is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, other_rule, strict):
         """compare if rule-specific variables are equal"""
 
         # no localvars, so there can't be a difference

@@ -84,13 +84,13 @@ class BooleanRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def _is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, other_rule, strict):
         """compare if rule-specific variables are equal"""
 
-        if self.varname != rule_obj.varname:
+        if self.varname != other_rule.varname:
             return False
 
-        if self.value != rule_obj.value:
+        if self.value != other_rule.value:
             return False
 
         return True

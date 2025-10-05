@@ -79,11 +79,11 @@ class UserNamespaceRule(BaseRule):
                    allow_keyword=allow_keyword, comment=comment, priority=priority)
 
     @staticmethod
-    def hashlog_from_event(hl, e):
-        if e['denied_mask']:
-            hl[e['denied_mask'][7:]] = True  # [7:] removes the 'userns_' prefix
+    def hashlog_from_event(hl, ev):
+        if ev['denied_mask']:
+            hl[ev['denied_mask'][7:]] = True  # [7:] removes the 'userns_' prefix
         else:
-            hl[e['request_mask'][7:]] = True  # To support transition to special profiles
+            hl[ev['request_mask'][7:]] = True  # To support transition to special profiles
 
     @classmethod
     def from_hashlog(cls, hl):
@@ -113,10 +113,10 @@ class UserNamespaceRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def _is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, other_rule, strict):
         '''compare if rule-specific variables are equal'''
 
-        if (self.access != rule_obj.access or self.all_access != rule_obj.all_access):
+        if (self.access != other_rule.access or self.all_access != other_rule.all_access):
             return False
 
         return True

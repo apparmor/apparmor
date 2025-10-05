@@ -90,16 +90,16 @@ class IncludeRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def _is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, other_rule, strict):
         """compare if rule-specific variables are equal"""
 
-        if self.path != rule_obj.path:
+        if self.path != other_rule.path:
             return False
 
-        if self.ifexists != rule_obj.ifexists:
+        if self.ifexists != other_rule.ifexists:
             return False
 
-        if self.ismagic != rule_obj.ismagic:
+        if self.ismagic != other_rule.ismagic:
             return False
 
         return True

@@ -255,24 +255,24 @@ class NetworkRule(BaseRule):
 
         return True
 
-    def _is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, other_rule, strict):
         """compare if rule-specific variables are equal"""
 
-        if self.accesses != rule_obj.accesses:
+        if self.accesses != other_rule.accesses:
             return False
 
-        if (self.domain != rule_obj.domain
-                or self.all_domains != rule_obj.all_domains):
+        if (self.domain != other_rule.domain
+                or self.all_domains != other_rule.all_domains):
             return False
 
-        if (self.type_or_protocol != rule_obj.type_or_protocol
-                or self.all_type_or_protocols != rule_obj.all_type_or_protocols):
+        if (self.type_or_protocol != other_rule.type_or_protocol
+                or self.all_type_or_protocols != other_rule.all_type_or_protocols):
             return False
 
-        if self.local_expr != rule_obj.local_expr:
+        if self.local_expr != other_rule.local_expr:
             return False
 
-        if self.peer_expr != rule_obj.peer_expr:
+        if self.peer_expr != other_rule.peer_expr:
             return False
 
         return True
@@ -294,10 +294,10 @@ class NetworkRule(BaseRule):
         )
 
     @staticmethod
-    def hashlog_from_event(hl, e):
-        local = (e['addr'], e['port'])
-        peer = (e['peer_addr'], e['remote_port'])
-        hl[e['accesses']][e['family']][e['sock_type']][e['protocol']][local][peer] = True
+    def hashlog_from_event(hl, ev):
+        local = (ev['addr'], ev['port'])
+        peer = (ev['peer_addr'], ev['remote_port'])
+        hl[ev['accesses']][ev['family']][ev['sock_type']][ev['protocol']][local][peer] = True
 
     @classmethod
     def from_hashlog(cls, hl):

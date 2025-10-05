@@ -149,25 +149,25 @@ class UnixRule(BaseRule):
             return False
         return True
 
-    def _is_equal_localvars(self, rule_obj, strict):
-        if self.accesses != rule_obj.accesses:
+    def _is_equal_localvars(self, other_rule, strict):
+        if self.accesses != other_rule.accesses:
             return False
-        if self.rule_conds != rule_obj.rule_conds:
+        if self.rule_conds != other_rule.rule_conds:
             return False
-        if self.local_expr != rule_obj.local_expr:
+        if self.local_expr != other_rule.local_expr:
             return False
-        if self.peer_expr != rule_obj.peer_expr:
+        if self.peer_expr != other_rule.peer_expr:
             return False
 
         return True
 
     @staticmethod
-    def hashlog_from_event(hl, e):
-        rule = (e['sock_type'], None)  # Protocol is not supported yet.
-        local = (e['addr'], None, e['attr'], None)
-        peer = (e['peer_addr'], e['peer_profile'])
+    def hashlog_from_event(hl, ev):
+        rule = (ev['sock_type'], None)  # Protocol is not supported yet.
+        local = (ev['addr'], None, ev['attr'], None)
+        peer = (ev['peer_addr'], ev['peer_profile'])
 
-        hl[e['denied_mask']][rule][local][peer] = True
+        hl[ev['denied_mask']][rule][local][peer] = True
 
     @classmethod
     def from_hashlog(cls, hl):

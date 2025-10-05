@@ -77,13 +77,13 @@ class AliasRule(BaseRule):
         # the only way aliases can be covered are exact duplicates
         return self._is_equal_localvars(other_rule, False)
 
-    def _is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, other_rule, strict):
         """compare if rule-specific aliases are equal"""
 
-        if self.orig_path != rule_obj.orig_path:
+        if self.orig_path != other_rule.orig_path:
             return False
 
-        if self.target != rule_obj.target:
+        if self.target != other_rule.target:
             return False
 
         return True

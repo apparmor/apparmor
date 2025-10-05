@@ -190,18 +190,18 @@ class SignalRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def _is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, other_rule, strict):
         """compare if rule-specific variables are equal"""
 
-        if (self.access != rule_obj.access
-                or self.all_access != rule_obj.all_access):
+        if (self.access != other_rule.access
+                or self.all_access != other_rule.all_access):
             return False
 
-        if (self.signal != rule_obj.signal
-                or self.all_signals != rule_obj.all_signals):
+        if (self.signal != other_rule.signal
+                or self.all_signals != other_rule.all_signals):
             return False
 
-        if not self._is_equal_aare(self.peer, self.all_peers, rule_obj.peer, rule_obj.all_peers, 'peer'):
+        if not self._is_equal_aare(self.peer, self.all_peers, other_rule.peer, other_rule.all_peers, 'peer'):
             return False
 
         return True
@@ -218,8 +218,8 @@ class SignalRule(BaseRule):
         )
 
     @staticmethod
-    def hashlog_from_event(hl, e):
-        hl[e['peer']][e['denied_mask']][e['signal']] = True
+    def hashlog_from_event(hl, ev):
+        hl[ev['peer']][ev['denied_mask']][ev['signal']] = True
 
     @classmethod
     def from_hashlog(cls, hl):

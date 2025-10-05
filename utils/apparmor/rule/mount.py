@@ -291,28 +291,28 @@ class MountRule(BaseRule):
 
         return True
 
-    def _is_equal_localvars(self, rule_obj, strict):
-        if self.operation != rule_obj.operation:
+    def _is_equal_localvars(self, other_rule, strict):
+        if self.operation != other_rule.operation:
             return False
-        if self.fstype != rule_obj.fstype or self.options != rule_obj.options:
+        if self.fstype != other_rule.fstype or self.options != other_rule.options:
             return False
-        if not self._is_equal_aare(self.source, self.all_source, rule_obj.source, rule_obj.all_source, 'source'):
+        if not self._is_equal_aare(self.source, self.all_source, other_rule.source, other_rule.all_source, 'source'):
             return False
-        if not self._is_equal_aare(self.dest, self.all_dest, rule_obj.dest, rule_obj.all_dest, 'dest'):
+        if not self._is_equal_aare(self.dest, self.all_dest, other_rule.dest, other_rule.all_dest, 'dest'):
             return False
 
         return True
 
     @staticmethod
-    def hashlog_from_event(hl, e):
-        if e['flags'] is not None:
-            e['flags'] = ('=', e['flags'])
-        if e['fs_type'] is not None:
-            e['fs_type'] = ('=', e['fs_type'])
-        if e['operation'] == 'mount':
-            hl[e['operation']][e['flags']][e['fs_type']][e['name']][e['src_name']] = True
+    def hashlog_from_event(hl, ev):
+        if ev['flags'] is not None:
+            ev['flags'] = ('=', ev['flags'])
+        if ev['fs_type'] is not None:
+            ev['fs_type'] = ('=', ev['fs_type'])
+        if ev['operation'] == 'mount':
+            hl[ev['operation']][ev['flags']][ev['fs_type']][ev['name']][ev['src_name']] = True
         else:  # Umount
-            hl[e['operation']][e['flags']][e['fs_type']][e['name']][None] = True
+            hl[ev['operation']][ev['flags']][ev['fs_type']][ev['name']][None] = True
 
     @classmethod
     def from_hashlog(cls, hl):

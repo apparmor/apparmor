@@ -304,32 +304,32 @@ class FileRule(BaseRule):
         # still here? -> then it is covered
         return True
 
-    def _is_equal_localvars(self, rule_obj, strict):
+    def _is_equal_localvars(self, other_rule, strict):
         """compare if rule-specific variables are equal"""
 
-        if self.owner != rule_obj.owner:
+        if self.owner != other_rule.owner:
             return False
 
-        if not self._is_equal_aare(self.path, self.all_paths, rule_obj.path, rule_obj.all_paths, 'path'):
+        if not self._is_equal_aare(self.path, self.all_paths, other_rule.path, other_rule.all_paths, 'path'):
             return False
 
-        if self.perms != rule_obj.perms:
+        if self.perms != other_rule.perms:
             return False
 
-        if self.all_perms != rule_obj.all_perms:
+        if self.all_perms != other_rule.all_perms:
             return False
 
-        if self.exec_perms != rule_obj.exec_perms:
+        if self.exec_perms != other_rule.exec_perms:
             return False
 
-        if not self._is_equal_aare(self.target, self.all_targets, rule_obj.target, rule_obj.all_targets, 'target'):
+        if not self._is_equal_aare(self.target, self.all_targets, other_rule.target, other_rule.all_targets, 'target'):
             return False
 
         if strict:  # file_keyword and leading_perms are only cosmetics, but still a difference
-            if self.file_keyword != rule_obj.file_keyword:
+            if self.file_keyword != other_rule.file_keyword:
                 return False
 
-            if self.leading_perms != rule_obj.leading_perms:
+            if self.leading_perms != other_rule.leading_perms:
                 return False
 
         return True
@@ -439,20 +439,20 @@ class FileRule(BaseRule):
         self.raw_rule = None
 
     @staticmethod
-    def hashlog_from_event(hl, e):
+    def hashlog_from_event(hl, ev):
         # FileRule can be of two types, "file" or "exec"
-        if e['operation'] == 'exec':
-            if not e['name']:
+        if ev['operation'] == 'exec':
+            if not ev['name']:
                 raise AppArmorException('exec without executed binary')
 
-            if not e['name2']:
-                e['name2'] = ''  # exec events in enforce mode don't have target=...
+            if not ev['name2']:
+                ev['name2'] = ''  # exec events in enforce mode don't have target=...
 
-            hl[e['name']][e['name2']] = True
+            hl[ev['name']][ev['name2']] = True
             return
 
         # Map c (create) and d (delete) to w (logging is more detailed than the profile language)
-        dmask = e['denied_mask']
+        dmask = ev['denied_mask']
         dmask = dmask.replace('c', 'w')
         dmask = dmask.replace('d', 'w')
 
@@ -470,7 +470,7 @@ class FileRule(BaseRule):
             else:
                 dmask = other_d
 
-        if e.get('ouid') is not None and e['fsuid'] == e['ouid']:
+        if ev.get('ouid') is not None and ev['fsuid'] == ev['ouid']:
             # in current log style, owner permissions are indicated by a match of fsuid and ouid
             owner = True
 
@@ -479,7 +479,7 @@ class FileRule(BaseRule):
 
         for perm in dmask:
             if perm in 'mrwalk':  # intentionally not allowing 'x' here
-                hl[e['name']][owner][perm] = True
+                hl[ev['name']][owner][perm] = True
             else:
                 raise AppArmorException(_('Log contains unknown mode %s') % dmask)
 
