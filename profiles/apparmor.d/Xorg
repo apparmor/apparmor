@@ -19,6 +19,11 @@ profile Xorg_wrap /usr/lib/xorg/Xorg.wrap flags=(complain) {
   capability setuid,
   capability setgid,
 
+  # Is this needed?
+  #deny capability sys_admin,
+
+  /etc/X11/Xwrapper.config r,
+
   /usr/lib/xorg/Xorg.wrap mr,
   /usr/lib/xorg/Xorg px,
 
@@ -44,6 +49,12 @@ profile Xorg /usr/lib/xorg/Xorg flags=(attach_disconnected, complain) {
   capability sys_admin,
   capability sys_nice,
   capability sys_rawio,
+
+  deny capability dac_read_search,
+
+  # Xorg wants net_admin for SO_RCVBUFFORCE (see socket(7)), but denying it
+  # seems to have a negligible impact on performance.
+  deny capability net_admin,
 
   network netlink raw,
 

@@ -32,6 +32,7 @@ include <tunables/global>
   capability net_bind_service,
   capability chown,
   capability fowner,
+  capability fsetid,
   capability kill,
   capability setgid,
   capability setuid,
@@ -152,6 +153,9 @@ include <tunables/global>
   /         r,
   /**       r,
   owner /** rwl,
+
+  /usr/lib/openssh/sshd-auth ix,
+  /usr/lib/openssh/sshd-session ix,
 
   /usr/lib/openssh/sftp-server PUx,
 

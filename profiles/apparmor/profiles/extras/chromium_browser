@@ -53,7 +53,7 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
        bus=system
        path=/org/freedesktop/UPower/devices/*
        interface=org.freedesktop.DBus.Properties
-       member=Get
+       member={Get,GetAll}
        peer=(label=unconfined),
   deny dbus (send)
        bus=system
