@@ -18,6 +18,7 @@ profile dovecot-imap-login /usr/lib*/dovecot/imap-login {
   include <abstractions/base>
   include <abstractions/dovecot-common>
 
+  capability dac_override,
   capability setuid,
   capability sys_chroot,
 
