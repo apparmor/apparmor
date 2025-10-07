@@ -96,4 +96,7 @@
 @{word32}=@{word16}@{word16}
 @{word64}=@{word32}@{word32}
 
+# Shortcut for PCI bus (e.g., /sys/devices/@{pci_bus}/**)
+@{pci_bus}=pci@{hex4}:@{hex2}
+
 include if exists <tunables/system.d>

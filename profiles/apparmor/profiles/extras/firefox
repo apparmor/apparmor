@@ -194,11 +194,11 @@ profile firefox @{MOZ_LIBDIR}/@{MOZ_APP_NAME}{,*[^s][^h]} {
   @{PROC}/sys/vm/overcommit_memory r,
   @{sys}/fs/cgroup/user.slice/user-[0-9]*.slice/session-{,c}[0-9]*.scope/cpu.max r,
   # prevent crash LP: #1931602
-  /sys/devices/pci[0-9]*/**/{uevent,resource,irq,class} r,
+  /sys/devices/@{pci_bus}/**/{uevent,resource,irq,class} r,
   /sys/devices/platform/**/uevent r,
-  /sys/devices/pci*/**/{boot_vga,busnum,config,idVendor,idProduct,revision} r,
-  /sys/devices/pci*/**/{,subsystem_}device r,
-  /sys/devices/pci*/**/{,subsystem_}vendor r,
+  /sys/devices/@{pci_bus}/**/{boot_vga,busnum,config,idVendor,idProduct,revision} r,
+  /sys/devices/@{pci_bus}/**/{,subsystem_}device r,
+  /sys/devices/@{pci_bus}/**/{,subsystem_}vendor r,
   /sys/devices/system/node/node[0-9]*/meminfo r,
   owner @{HOME}/.cache/thumbnails/** rw,
 

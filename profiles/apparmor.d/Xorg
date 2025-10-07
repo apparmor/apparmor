@@ -69,7 +69,7 @@ profile Xorg /usr/lib/xorg/Xorg flags=(attach_disconnected, complain) {
   @{sys}/devices/**       r,
   @{sys}/module/**        r,
 
-  @{sys}/devices/pci*/**/backlight/*/brightness rw,
+  @{sys}/devices/@{pci_bus}/**/backlight/*/brightness rw,
 
   # Display managers
   @{run}/user/@{uid}/gdm/* r,
@@ -118,7 +118,7 @@ profile Xorg /usr/lib/xorg/Xorg flags=(attach_disconnected, complain) {
   # When running without a kernel mode-setting (KMS) driver, Xorg may need
   # these additional permissions. DO NOT enable these unless necessary!
   #nokms#/dev/mem rw,
-  #nokms#@{sys}/devices/pci[0-9]*/*/*/resource[0-9] w,
+  #nokms#@{sys}/devices/@{pci_bus}/*/*/resource[0-9] w,
 
   # Site-specific additions and overrides. See local/README for details.
   include if exists <local/Xorg>

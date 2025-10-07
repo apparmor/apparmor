@@ -19,7 +19,7 @@
   # libnvidia-opencl.so rules:
   /dev/nvidia-uvm rw,
   /dev/nvidia-uvm-tools rw,
-  @{sys}/devices/pci[0-9]*/**/config r,
+  @{sys}/devices/@{pci_bus}/**/config r,
   @{sys}/devices/system/memory/block_size_bytes r,
   /usr/share/nvidia/** r,
   @{PROC}/devices r,
