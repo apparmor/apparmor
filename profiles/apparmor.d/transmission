@@ -55,7 +55,10 @@ profile transmission-gtk /usr/bin/transmission-gtk flags=(complain,attach_discon
   include <abstractions/transmission-common>
   include <abstractions/dbus-session-strict>
   include <abstractions/dconf>
+  include <abstractions/dri-enumerate>
   include <abstractions/gnome>
+  include <abstractions/gtk>
+  include <abstractions/vulkan>
 
   /usr/bin/transmission-gtk mr,
 
@@ -81,8 +84,11 @@ profile transmission-qt /usr/bin/transmission-qt flags=(complain) {
   include <abstractions/dbus-session-strict>
   include <abstractions/fonts>
   include <abstractions/X>
+  include <abstractions/kde>
   include <abstractions/qt5>
   include <abstractions/qt5-settings-write>
+  include <abstractions/qt6>
+  include <abstractions/vulkan>
 
   /usr/bin/transmission-qt mr,
 

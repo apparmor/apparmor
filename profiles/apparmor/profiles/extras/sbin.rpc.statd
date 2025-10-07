@@ -49,7 +49,7 @@ profile rpc.statd /{usr/,}sbin/rpc.statd {
   /var/lib/nfs/statd/sm.bak/       r,
   /var/lib/nfs/statd/sm.bak/*      rwl,
   /var/lib/nfs/state               rwk,
-  /var/lib/nfs/state.new           rwl,
+  /var/lib/nfs/{,.}state.new       rwl,
   @{run}/rpc.statd.pid             w,
   @{run}/rpcbind.sock              rw,
   @{run}/sm-notify.pid             w,

@@ -9,6 +9,7 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
+
 # Note: attach_disconnected appears necessary in rootless mode
 profile Xorg /usr/lib/xorg/Xorg flags=(attach_disconnected, complain) {
   include <abstractions/base>
@@ -27,6 +28,12 @@ profile Xorg /usr/lib/xorg/Xorg flags=(attach_disconnected, complain) {
   capability sys_admin,
   capability sys_nice,
   capability sys_rawio,
+
+  deny capability dac_read_search,
+
+  # Xorg wants net_admin for SO_RCVBUFFORCE (see socket(7)), but denying it
+  # seems to have a negligible impact on performance.
+  deny capability net_admin,
 
   network netlink raw,
 
