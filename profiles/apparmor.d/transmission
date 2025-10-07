@@ -69,7 +69,7 @@ profile transmission-gtk /usr/bin/transmission-gtk flags=(complain,attach_discon
        bus=session
        path=/org/gnome/SessionManager
        interface=org.gnome.SessionManager
-       member=Inhibit
+       member={Inhibit,Uninhibit}
        peer=(name=org.gnome.SessionManager),
 
   # Site-specific additions and overrides. See local/README for details.
