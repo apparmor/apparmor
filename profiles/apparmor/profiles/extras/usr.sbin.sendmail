@@ -11,7 +11,7 @@
 # support /etc/alternatives/ -- SuSE has no such mechanism. So, this
 # file supports _BOTH_ sendmail's sendmail and postfix's sendmail.
 
-abi <abi/4.0>,
+abi <abi/5.0>,
 
 include <tunables/global>
 

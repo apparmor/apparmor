@@ -9,7 +9,7 @@
 #
 # ------------------------------------------------------------------
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # location of user mail, spool and mboxes
   owner @{HOME}/[mM]ail/      r,

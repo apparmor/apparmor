@@ -1,4 +1,4 @@
-abi <abi/4.0>,
+abi <abi/5.0>,
 
 profile "test-mount-tmpfs-rw" flags=(attach_disconnected,mediate_deleted) {
   # See parser/mount.cc for implementation details.

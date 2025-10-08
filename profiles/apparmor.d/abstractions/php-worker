@@ -2,7 +2,7 @@
 
 # This file contains basic permissions for php-fpm workers
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # load common libraries and their support files
   include <abstractions/base>

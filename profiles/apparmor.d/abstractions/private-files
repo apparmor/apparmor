@@ -2,7 +2,7 @@
 # privacy-violations contains rules for common files that you want to
 # explicitly deny access
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # privacy violations (don't audit files under $HOME otherwise get a
   # lot of false positives when reading contents of directories)

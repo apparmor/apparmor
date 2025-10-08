@@ -1,7 +1,7 @@
 # vim:ft=apparmor
 # Allow updating recent documents
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # User files
 

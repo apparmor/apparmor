@@ -213,7 +213,7 @@ class MinitoolsTest(AATest):
         prof_content = read_file(expected_file).split('\n')
 
         self.assertTrue(prof_content[0].startswith('# Last Modified:'), 'prof_content[0] starts with %s' % prof_content[0])
-        self.assertEqual(prof_content[1], 'abi <abi/4.0>,')
+        self.assertEqual(prof_content[1], 'abi <abi/5.0>,')
         self.assertEqual(prof_content[2], '')
         self.assertEqual(prof_content[3], 'include <tunables/global>')
         self.assertEqual(prof_content[4], '')

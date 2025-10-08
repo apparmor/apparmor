@@ -3,7 +3,7 @@
 # in the toplevel profile. Eg:
 #   include <abstractions/ubuntu-helpers>
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # Apport
   /usr/bin/apport-bug Cx -> sanitized_helper,

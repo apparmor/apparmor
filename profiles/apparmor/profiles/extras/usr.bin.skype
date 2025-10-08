@@ -3,7 +3,7 @@
 # - Андрей Калинин, LP: #226624
 # - Jamie Strandboge and Ivan Frederiks, LP: #933440
 
-abi <abi/4.0>,
+abi <abi/5.0>,
 
 include <tunables/global>
 /usr/bin/skype flags=(complain) {

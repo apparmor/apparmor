@@ -9,7 +9,7 @@
 #
 # ------------------------------------------------------------------
 
-abi <abi/4.0>,
+abi <abi/5.0>,
 
 include <tunables/global>
 profile traceroute /usr/{{bin,sbin}/traceroute,bin/linux-traceroute,bin/traceroute.db} {

@@ -2,7 +2,7 @@
 
 # This file contains basic permissions for Apache and every vHost
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   include <abstractions/nameservice>
 

@@ -8,7 +8,7 @@
 #
 # ------------------------------------------------------------------
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # perhaps your configuration has users elsewhere, or you don't wish
   # them to read their own manpages

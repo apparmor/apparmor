@@ -9,7 +9,7 @@
 #
 # ------------------------------------------------------------------
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   owner @{run}/user/*/wayland-[0-9]* rw,
   owner @{run}/user/*/{mesa,mutter,sdl,wayland-cursor,weston,xwayland}-shared-* rw,

@@ -10,7 +10,7 @@
 #
 # ------------------------------------------------------------------
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # some services update wtmp, utmp, and lastlog with per-user
   # connection information

@@ -11,7 +11,7 @@
 # ------------------------------------------------------------------
 # Last Modified: Tue May 31 09:46:20 2005
 
-abi <abi/4.0>,
+abi <abi/5.0>,
 
 include <tunables/global>
 

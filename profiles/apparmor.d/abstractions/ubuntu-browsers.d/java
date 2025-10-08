@@ -1,6 +1,6 @@
 # vim:ft=apparmor
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # Java plugin
   owner @{HOME}/.java/deployment/deployment.properties k,

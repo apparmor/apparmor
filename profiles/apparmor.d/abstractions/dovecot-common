@@ -9,7 +9,7 @@
 # ------------------------------------------------------------------
 # used with dovecot/*
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   capability setgid,
 

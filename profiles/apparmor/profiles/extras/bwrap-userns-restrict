@@ -8,7 +8,7 @@
 # Note: the bwrap child is stacked against the bwrap profile due to
 # bwraps use of no-new-privs.
 
-abi <abi/4.0>,
+abi <abi/5.0>,
 
 include <tunables/global>
 

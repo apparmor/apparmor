@@ -1,7 +1,7 @@
 # vim:ft=apparmor
 # Allow writing shared settings for Qt-based applications
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # User files
 

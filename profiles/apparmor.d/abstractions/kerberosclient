@@ -9,7 +9,7 @@
 #
 # ------------------------------------------------------------------
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # files required by kerberos client programs
   /usr/lib{,32,64}/krb5/plugins/libkrb5/ r,

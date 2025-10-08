@@ -9,7 +9,7 @@
 #
 # ------------------------------------------------------------------
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # This abstraction grants full session bus access. Consider using the
   # dbus-session-strict abstraction for fine-grained bus mediation.

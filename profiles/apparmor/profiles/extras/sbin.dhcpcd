@@ -16,7 +16,7 @@
 # ntp.conf and yp.conf in addition to resolv.conf.
 #
 
-abi <abi/4.0>,
+abi <abi/5.0>,
 
 include <tunables/global>
 

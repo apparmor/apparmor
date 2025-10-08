@@ -8,7 +8,7 @@
 #
 # ------------------------------------------------------------------
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # This little snippet should abstract the read/write access to a repository.
   # it is intended to be included in profiles for svnserve/apache2 and maybe

@@ -8,7 +8,7 @@
 #    License published by the Free Software Foundation.
 #------------------------------------------------------------------
 
-abi <abi/4.0>,
+abi <abi/5.0>,
 
 include <tunables/global>
 

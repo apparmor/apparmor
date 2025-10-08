@@ -9,7 +9,7 @@
 #
 # ------------------------------------------------------------------
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   /tmp/.lwidentity/pipe       rw,
   /var/lib/likewise-open/lwidentity_privileged/pipe rw,

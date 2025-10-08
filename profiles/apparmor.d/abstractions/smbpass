@@ -9,7 +9,7 @@
 #
 # ------------------------------------------------------------------
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # libpam-smbpass/pam_smbpass.so permissions
   /var/lib/samba/*.[lt]db rwk,

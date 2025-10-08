@@ -9,7 +9,7 @@
 #
 # ------------------------------------------------------------------
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # This abstract profile can be included by applications that are
   # dynamically linked to libnuma.

@@ -1,7 +1,7 @@
 # vim:ft=apparmor
 # gnupg sub-process running permissions
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # user configurations
   owner @{HOME}/.gnupg/options     r,

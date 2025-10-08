@@ -1,6 +1,6 @@
 # Last Modified: Sun Sep 16 18:11:15 2007
 
-abi <abi/4.0>,
+abi <abi/5.0>,
 
 include <tunables/global>
 /usr/sbin/cupsd {

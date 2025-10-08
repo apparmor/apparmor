@@ -142,7 +142,7 @@ check-parser: test-dependencies
 	$(Q)for abstraction_path in ${ABSTRACTIONS}; do \
 		for abstraction in $$(find $${abstraction_path} -maxdepth 1 -type f -printf '%P\n') ; do \
 			[ -n "${VERBOSE}" ] && echo "Testing $${abstraction_path}/$${abstraction}" ; \
-			echo "abi <abi/4.0>, include <tunables/global> profile test { include <abstractions/$${abstraction}> }" \
+			echo "abi <abi/5.0>, include <tunables/global> profile test { include <abstractions/$${abstraction}> }" \
 			| ${PARSER} --config-file=../parser/tst/parser.conf -S -b ${PROFILES_SOURCE} -I $${abstraction_path}/../ > /dev/null \
 			|| exit 1; \
 		done; \
@@ -155,12 +155,12 @@ check-logprof: test-dependencies
 
 .PHONY: check-abstractions.d
 check-abstractions.d:
-	@echo "*** Checking if all abstractions (with a few exceptions) contain 'include if exists <abstractions/*.d>' and 'abi <abi/4.0>,'"
+	@echo "*** Checking if all abstractions (with a few exceptions) contain 'include if exists <abstractions/*.d>' and 'abi <abi/5.0>,'"
 	$(Q)for file in $$(find ${ABSTRACTIONS} -maxdepth 1 -type f) ; do \
 		case "$${file}" in */ubuntu-browsers | */ubuntu-helpers) continue ;; esac ; \
 		include="include if exists <abstractions/$$(basename $${file}).d>" ; \
 		grep -q "^  $${include}\$$" $${file} || { echo "$${file} does not contain '$${include}'"; exit 1; } ; \
-		grep -q "^ *abi <abi/4.0>," $${file} || { echo "$${file} does not contain 'abi <abi/4.0>,'"; exit 1; } ; \
+		grep -q "^ *abi <abi/5.0>," $${file} || { echo "$${file} does not contain 'abi <abi/5.0>,'"; exit 1; } ; \
 	done
 
 .PHONY: check-tunables.d
@@ -174,10 +174,10 @@ check-tunables.d:
 
 .PHONY: check-local
 check-local:
-	@echo "*** Checking if all profiles contain 'include if exists <local/*>' and 'abi <abi/4.0>,'"
+	@echo "*** Checking if all profiles contain 'include if exists <local/*>' and 'abi <abi/5.0>,'"
 	$(Q)for file in $$(find ${PROFILES_SOURCE} ${EXTRAS_SOURCE} -maxdepth 1 -type f) ; do \
 		case "$${file}" in */README) continue ;; esac ; \
 		include="include if exists <local/$$(basename $${file})>" ; \
 		grep -q "^  *$${include}\$$" $${file} || { echo "$${file} does not contain '$${include}'"; exit 1; } ; \
-		grep -q "^ *abi <abi/4.0>," $${file} || { echo "$${file} does not contain 'abi <abi/4.0>,'"; exit 1; } ; \
+		grep -q "^ *abi <abi/5.0>," $${file} || { echo "$${file} does not contain 'abi <abi/5.0>,'"; exit 1; } ; \
 	done

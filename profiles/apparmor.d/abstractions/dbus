@@ -9,7 +9,7 @@
 #
 # ------------------------------------------------------------------
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # This abstraction grants full system bus access. Consider using the
   # dbus-strict abstraction for fine-grained bus mediation.

@@ -3,7 +3,7 @@
 # for allowing access to gnome-terminal
 #
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   include <abstractions/gnome>
 

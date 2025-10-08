@@ -1,7 +1,7 @@
 # vim:ft=apparmor
 # Rules for writing KDE icon cache
 
-  abi <abi/4.0>,
+  abi <abi/5.0>,
 
   # User files
 
