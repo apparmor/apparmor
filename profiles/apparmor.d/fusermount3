@@ -8,6 +8,9 @@ profile fusermount3 /usr/bin/fusermount3 {
 
   capability sys_admin,
   capability dac_read_search,
+  # Newly needed between 3.14 and 3.17 (LP: #2122161)
+  capability dac_override,
+  capability setuid,
 
   # Allow both rw and ro type mounts (e.g. AppImage uses ro)
   #MS_DIRSYNC, MS_NOATIME, MS_NODIRATIME, MS_NOEXEC, MS_SYNCHRONOUS, MS_NOSYMFOLLOW
@@ -41,6 +44,11 @@ profile fusermount3 /usr/bin/fusermount3 {
   # needed since libfuse 3.17.1-rc0 (LP: #2111845)
   /usr/bin/mount ix,
   /usr/bin/umount ix,
+
+  # rules needed by umount, until we can make a separate umount profile
+  @{run}/mount/utab r,
+  @{run}/mount/utab.act w,
+  @{run}/mount/utab.event w,
 
   @{etc_ro}/fuse.conf r,
   @{PROC}/@{pid}/{mounts,mountinfo} r,
