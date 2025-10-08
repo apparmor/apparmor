@@ -36,6 +36,9 @@ profile lsblk /usr/bin/lsblk {
   # Needed for channel subsystem for IBM Z
   @{sys}/devices/css@{int}/** r,
 
+  # Needed for Azure ACPI/NVMe
+  @{sys}/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI*:00/MSFT1000:00/** r,
+
   /dev/sr@{int} rk,
 
   @{run}/udev/data/** r,
