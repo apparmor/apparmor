@@ -1,0 +1,10 @@
+#
+#=Description dbus rule with bad 'peer'
+#=EXRESULT FAIL
+#=TODO
+#
+
+profile foo {
+  # peer addr and peer label should be separated by [,\s]+
+  dbus send peer=(name=foolabel=bar),
+}

@@ -1,0 +1,6 @@
+#
+#=Description Mount Rule with unparen'ed fstypes
+#=EXRESULT PASS
+/usr/bin/foo {
+  mount fstype=ext3,ext4  /dev -> /mnt,
+}

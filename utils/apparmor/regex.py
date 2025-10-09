@@ -122,6 +122,20 @@ RE_PROFILE_FILE_ENTRY = re.compile(
     + ')'
     + RE_COMMA_EOL)
 
+_aare = r'((,*[][!/\\\()&.*?@{}\w^-]|\\.)+)'
+_quoted_aare = r'"((,*[][!/\\\()&.*?@{}\w\s^-]|\\.)+)"'  # may contain \s
+
+aare = '(' + _aare + '|' + _quoted_aare + r'|\((' + _aare + '|' + _quoted_aare + r')\))'
+aare_set = '(' + _aare + '|' + _quoted_aare + r'|\((' + _aare + '|' + _quoted_aare + r')+\))'
+
+
+def re_cond_set(x, y=None):
+    return r'\s*(' + x + r'\s*=\s*(?P<' + (y or x) + '_cond_set>' + aare_set + r'))[,\s]*'
+
+
+def re_cond(x, y=None):
+    return r'\s*(' + x + r'\s*=\s*(?P<' + (y or x) + '_cond>' + aare + r'))[,\s]*'
+
 
 def parse_profile_start_line(line, filename):
     common_sections = ['leadingspace', 'flags', 'comment']
@@ -283,6 +297,17 @@ def strip_parenthesis(data):
 
 def strip_quotes(data):
     if len(data) > 1 and data.startswith('"') and data.endswith('"'):
+        return data[1:-1]
+    else:
+        return data
+
+
+def strip_braces(data):
+    """strips braces from the given string and returns the strip()ped result.
+       The braces must be the first and last char, otherwise they won't be removed.
+       Even if no braces get removed, the result will be strip()ped.
+    """
+    if data.startswith('{') and data.endswith('}'):
         return data[1:-1]
     else:
         return data

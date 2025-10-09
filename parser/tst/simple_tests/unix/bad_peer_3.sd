@@ -1,0 +1,9 @@
+#
+#=Description unix rule with bad 'peer'
+#=EXRESULT FAIL
+#
+
+# peer addr and peer label should be separated by [,\s]+
+profile foo {
+  unix send peer=(addr=alabel=bb),
+}

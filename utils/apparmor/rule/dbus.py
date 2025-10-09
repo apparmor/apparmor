@@ -15,7 +15,7 @@
 import re
 
 from apparmor.common import AppArmorBug, AppArmorException
-from apparmor.regex import RE_PROFILE_DBUS, RE_PROFILE_NAME, strip_parenthesis, strip_quotes
+from apparmor.regex import RE_PROFILE_DBUS, strip_parenthesis, strip_quotes, re_cond
 from apparmor.rule import (
     BaseRule, BaseRuleset, check_and_split_list, logprof_value_or_all,
     parse_modifiers, quote_if_needed)
@@ -49,19 +49,7 @@ RE_DBUS_DETAILS = re.compile(
             + r'(\s+(name\s*=\s*'      + RE_FLAG % 'name'      + '))?|'  # optional name=AARE, (...) optional  # noqa: E221
             + r'(\s+(interface\s*=\s*' + RE_FLAG % 'interface' + '))?|'  # optional interface=AARE, (...) optional
             + r'(\s+(member\s*=\s*'    + RE_FLAG % 'member'    + '))?|'  # optional member=AARE, (...) optional  # noqa: E221
-            + r'(\s+(peer\s*=\s*\((,|\s)*'  # optional peer=(name=AARE and/or label=AARE), (...) required
-                + '('  # noqa: E131
-                    + '(' + r'(,|\s)*' + ')'  # empty peer=()  # noqa: E131
-                    + '|'  # or  # noqa: E131
-                    + '(' + r'name\s*=\s*' + RE_PROFILE_NAME % 'peername1' + ')'  # only peer name (match group peername1)  # noqa: E131
-                    + '|'  # or  # noqa: E131
-                    + '(' r'label\s*=\s*' + RE_PROFILE_NAME % 'peerlabel1' + ')'  # only peer label (match group peerlabel1)  # noqa: E131
-                    + '|'  # or  # noqa: E131
-                    + '(' + r'name\s*=\s*'  + RE_PROFILE_NAME % 'peername2'  + r'(,|\s)+' + r'label\s*=\s*' + RE_PROFILE_NAME % 'peerlabel2' + ')'  # peer name + label (match name peername2/peerlabel2)  # noqa: E131,E221
-                    + '|'  # or  # noqa: E131
-                    + '(' + r'label\s*=\s*' + RE_PROFILE_NAME % 'peerlabel3' + r'(,|\s)+' + r'name\s*=\s*'  + RE_PROFILE_NAME % 'peername3'  + ')'  # peer label + name (match name peername3/peerlabel3)  # noqa: E131,E221
-                + ')'  # noqa: E131
-            + r'(,|\s)*\)))?'
+            + r'(\s+(peer\s*=\s*\(([,\s]*(' + re_cond("name") + '|' + re_cond("label") + r')(\s*,)?)*\)))?'  # noqa: E221
         + '){0,6}'
     + r'\s*$')
 
@@ -157,21 +145,13 @@ class DbusRule(BaseRule):
             else:
                 member = cls.ALL
 
-            if details.group('peername1'):
-                peername = strip_parenthesis(strip_quotes(details.group('peername1')))
-            elif details.group('peername2'):
-                peername = strip_parenthesis(strip_quotes(details.group('peername2')))
-            elif details.group('peername3'):
-                peername = strip_parenthesis(strip_quotes(details.group('peername3')))
+            if details.group('name_cond'):
+                peername = strip_parenthesis(strip_quotes(details.group('name_cond')))
             else:
                 peername = cls.ALL
 
-            if details.group('peerlabel1'):
-                peerlabel = strip_parenthesis(strip_quotes(details.group('peerlabel1')))
-            elif details.group('peerlabel2'):
-                peerlabel = strip_parenthesis(strip_quotes(details.group('peerlabel2')))
-            elif details.group('peerlabel3'):
-                peerlabel = strip_parenthesis(strip_quotes(details.group('peerlabel3')))
+            if details.group('label_cond'):
+                peerlabel = strip_parenthesis(strip_quotes(details.group('label_cond')))
             else:
                 peerlabel = cls.ALL
 
