@@ -8,9 +8,11 @@ profile fusermount3 /usr/bin/fusermount3 {
 
   capability sys_admin,
   capability dac_read_search,
-  # Newly needed between 3.14 and 3.17 (LP: #2122161)
-  capability dac_override,
-  capability setuid,
+  # Denials newly generated between 3.14 and 3.17 (LP: #2122161)
+  # Flatpak seems to work fine without these capabilities, so don't grant
+  # them unless actual functionality breakage is caused elsewhere
+  # capability dac_override,
+  # capability setuid,
 
   # Allow both rw and ro type mounts (e.g. AppImage uses ro)
   #MS_DIRSYNC, MS_NOATIME, MS_NODIRATIME, MS_NOEXEC, MS_SYNCHRONOUS, MS_NOSYMFOLLOW
@@ -45,10 +47,12 @@ profile fusermount3 /usr/bin/fusermount3 {
   /usr/bin/mount ix,
   /usr/bin/umount ix,
 
-  # rules needed by umount, until we can make a separate umount profile
+  # Rules needed by umount, until we can make a separate umount profile
+  # First encountered with LP: #2122161
   @{run}/mount/utab r,
-  @{run}/mount/utab.act w,
+  @{run}/mount/utab.act wk,
   @{run}/mount/utab.event w,
+  @{run}/mount/utab.lock rwk,
 
   @{etc_ro}/fuse.conf r,
   @{PROC}/@{pid}/{mounts,mountinfo} r,
