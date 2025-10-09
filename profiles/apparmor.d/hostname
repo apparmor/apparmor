@@ -29,6 +29,7 @@ profile hostname @{bin}/@{exec} {
   network inet6 dgram,
 
   file r /etc/hostname,
+  file r /etc/defaultdomain,
 
   # Site-specific additions and overrides. See local/README for details.
   include if exists <local/hostname>
