@@ -2,6 +2,10 @@ abi <abi/5.0>,
 
 include <tunables/global>
 
+# /proc/device-tree is sometimes a symlink, so we need to handle the
+# symlink targets as well as cases where it isn't a symlink
+@{device_tree_dir}=/proc/device-tree /sys/firmware/devicetree/base
+
 # See comments on /proc/@{pid}/ns/{cgroup,pid} for why we need the flag
 profile systemd-detect-virt /usr/bin/systemd-detect-virt flags=(attach_disconnected.path=/apparmor/disconnected/) {
   include <abstractions/base>
@@ -61,12 +65,12 @@ profile systemd-detect-virt /usr/bin/systemd-detect-virt flags=(attach_disconnec
   # detect_vm_hypervisor
   /sys/hypervisor/type r,
   # detect_vm_device_tree
-  /proc/device-tree/hypervisor/compatible r,
-  #"/proc/device-tree/ibm,partition-name" r, # F_OK
-  #"/proc/device-tree/hmc-managed?" r, # F_OK
-  #"/proc/device-tree/chosen/qemu,graphic-width" r, #F_OK
-  /proc/device-tree/ r, # FOREACH_DIRENT looking for /proc/device-tree/*fw-cfg*
-  /proc/device-tree/compatible r,
+  @{device_tree_dir}/hypervisor/compatible r,
+  #"@{device_tree_dir}/ibm,partition-name" r, # F_OK
+  #"@{device_tree_dir}/hmc-managed?" r, # F_OK
+  #"@{device_tree_dir}/chosen/qemu,graphic-width" r, #F_OK
+  @{device_tree_dir}/ r, # FOREACH_DIRENT looking for @{device_tree_dir}/*fw-cfg*
+  @{device_tree_dir}/compatible r,
   # detect_vm_zvm
   /proc/sysinfo r,
 
