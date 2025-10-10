@@ -77,7 +77,7 @@ std::set<std::string> cond_expr::get_set(const char *var)
 }
 
 template <typename T>
-void cond_expr::compare(cond_op op, T lhs, T rhs)
+void cond_expr::compare(cond_op op, const T &lhs, const T &rhs)
 {
 	switch (op) {
 	case GT_OP:
