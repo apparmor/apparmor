@@ -103,8 +103,7 @@ test-utils:
     - printf '\e[0K%s:%s:%s\r\e[0K\n' section_end "$(date +%s)" install_extra_deps
 
     # See apparmor/apparmor#221
-    - make -C parser/tst gen_dbus
-    - make -C parser/tst gen_xtrans
+    - make -C parser/tst gen_tests
     - make -C utils check
     - make -C utils/test coverage-regression
   artifacts:

@@ -72,9 +72,11 @@ B<PROFILE FILE> = ( [ I<PREAMBLE> ] [ I<PROFILE> ] )*
 B<PREAMBLE> = ( I<COMMENT> | I<VARIABLE ASSIGNMENT> | I<ALIAS RULE> | I<INCLUDE> | I<ABI> )*
   Variable assignment and alias rules must come before the profile.
 
-B<VARIABLE ASSIGNMENT> = I<VARIABLE> ('=' | '+=') (space separated values)
+B<VARIABLE ASSIGNMENT> = ( I<VARIABLE> | I<BOOL_VAR> ) ('=' | '+=') (space separated values)
 
 B<VARIABLE> = '@{' I<ALPHA> [ ( I<ALPHANUMERIC> | '_' ) ... ] '}'
+
+B<BOOL_VAR> = '${' I<ALPHA> [ ( I<ALPHANUMERIC> | '_' ) ... ] '}'
 
 B<ALIAS RULE> = 'alias' I<ABS PATH> '-E<gt>' I<REWRITTEN ABS PATH> ','
 
@@ -130,7 +132,7 @@ B<LINE RULES> = ( I<COMMENT> | I<INCLUDE> ) [ '\r' ] '\n'
 
 B<COMMA RULES> = ( I<CAPABILITY RULE> | I<NETWORK RULE> | I<MOUNT RULE> | I<PIVOT ROOT RULE> | I<UNIX RULE> | I<FILE RULE> | I<LINK RULE> | I<CHANGE_PROFILE RULE> | I<RLIMIT RULE> | I<DBUS RULE> | I<MQUEUE RULE> | I<IO_URING RULE> | I<USERNS RULE> | I<ALL RULE>)
 
-B<BLOCK RULES> = ( I<SUBPROFILE> | I<HAT> | I<QUALIFIER BLOCK> )
+B<BLOCK RULES> = ( I<SUBPROFILE> | I<HAT> | I<QUALIFIER BLOCK> | I<IF_BLOCK> )
 
 B<SUBPROFILE> = 'profile' I<PROFILE NAME> [ I<ATTACHMENT SPECIFICATION> ] [ I<PROFILE FLAG CONDS> ] '{' ( I<RULES> )* '}'
 
@@ -141,6 +143,16 @@ B<HATNAME> = (must start with alphanumeric character. See aa_change_hat(2) for a
 B<QUALIFIER BLOCK> = I<QUALIFIERS> I<BLOCK>
 
 B<INTEGER> = (+ | -)? [[:digit:]]+
+
+B<IF_BLOCK> = 'if' I<EXPR> I<BLOCK> [ ( 'else' 'if'  I<EXPR> I<BLOCK> )* ] [ 'else' I<BLOCK> ]
+
+B<EXPR> = ( I<EXPR> ( 'and' | 'or' ) I<EXPR> | 'not' I<EXPR> | '(' I<EXPR> ')' | I<FACTOR> )
+
+B<FACTOR> = ( 'defined' I<VARIABLE> | [ 'defined' ] I<BOOL_VAR> | ( I<TEXT> | I<VARIABLE> ) I<OPERATOR> ( I<TEXT> | I<VARIABLE> ) )
+
+B<OPERATOR> = ( 'in' | '==' | '!=' | '>' | '>=' | '<' | '<=' )
+
+B<BLOCK> = '{' ( I<RULES> )* '}'
 
 B<ACCESS TYPE> = ( 'allow' | 'deny' )
 
@@ -1880,6 +1892,13 @@ example) is collapsed.
 
 =back
 
+=head3 Boolean Variables
+
+In addition to the set variables AppArmor supports boolean
+variables. These begin with a B<$> and can only be used in conditional
+expressions. Boolean variables provide a convenient way to
+enable/disable policy rules that have been wrapped in the proper if
+condition.
 
 =head2 Alias rules
 
@@ -2202,6 +2221,107 @@ An example AppArmor profile:
 	    owner /var/lib/baz/* rw,
 	  }
   	}
+
+=head2 Conditional rules
+
+AppArmor provides a mechanism to conditionally enable and disable
+rules in a profile. Rules that are to be conditionally used can be
+wrapped in an I<if> condition block with the condition expression
+being controlled by setting variable values.
+
+The condition expression can be composed of variables, boolean
+variables, a B<defined> check, the comparison operators B<in>, B<==>,
+B<!=>, B<>>, B<>=>, B<<>, and B<<=>, open '(' and close ')' parentheses,
+and the boolean operators B<and>, B<or>, and B<not>. Boolean operators
+are evaluated left to write with priority in order of the
+following list.
+
+=over 4
+
+=item B<in>	- tests whether the left text or variable is a subset of
+the text or variable on the right. The subset check is done by a full
+match, therefore partial string matches would not evaluate to true.
+
+=item B<==>	- tests whether both text or variable evaluate to the same
+value.
+
+=item B<!=>	- tests whether both text or variable evaluate to
+different values.
+
+=item B<>>	- tests whether the left text or variable is greater than
+the right text or variable.
+Comparisons between integers and set variables will fail to compile
+unless the variable contents are exactly one value, an integer. Other
+comparison will be strictly lexicographical.
+
+=item B<>=>	- tests whether the left text or variable is greater than
+or equal to the right text or variable.
+Comparisons between integers and set variables will fail to compile
+unless the variable contents are exactly one value, an integer. Other
+comparison will be strictly lexicographical.
+
+=item B<<>	- tests whether the left text or variable is lesser than
+the right text or variable.
+Comparisons between integers and set variables will fail to compile
+unless the variable contents are exactly one value, an integer. Other
+comparison will be strictly lexicographical.
+
+=item B<<=>	- tests whether the left text or variable is lesser than
+or equal to the right text or variable.
+Comparisons between integers and set variables will fail to compile
+unless the variable contents are exactly one value, an integer. Other
+comparison will be strictly lexicographical.
+
+=item B<defined> - tests whether the following variable or boolean
+variable has been defined/created.
+
+=item B<parentheses> - open '(' and close ')' paretheses are used to
+group operations by priority.
+
+=item B<not>	- boolean B<not> operator, negates the value of the
+following expression.
+
+=item B<and>	- boolean B<and> operator, both expressions being
+combined with B<and> must be true for the result to be true.
+
+=item B<or>	- boolean B<or> operator, either one or both expressions
+being combined with B<or> can be true for the result to be true.
+
+=back
+
+An example of a profile conditional
+
+	if ${distro_mods} and defined @{HOME} {
+	  /@{HOME}/.foo_file  rw,
+	} else {
+	  /home/*/.foo_file  rw,
+	}
+
+Since lexicographical comparisons using the B<>>, B<>=>, B<<>, B<<=>
+operators could lead to mistakes when comparing integers, comparisons
+between variables and integers will fail to compile unless the
+variable contains an integer.
+
+Eg.
+
+	@{BAR} = /home/user/ /home/user2/
+	@{BAR} += /home/user3/
+	@{TEST_VERSION} = 2
+	@{BAZ} = 10
+
+	/usr/bin/foo {
+	  if /home/user/ in @{BAR} {
+	    /** r,
+	  }
+	  if @{TEST_VERSION} >= @{BAZ} {
+	    /** w,
+	  } else if 10 > @{TEST_VERSION} {
+	    /** rw,
+	  }
+	  if @{BAZ} <= 10 {
+	    /** rw,
+	  }
+	}
 
 =head1 FILES
 

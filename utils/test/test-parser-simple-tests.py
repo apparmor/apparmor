@@ -337,27 +337,6 @@ syntax_failure = (
     # missing profile keywords
     'profile/re_named_ok2.sd',
 
-    # Syntax Errors caused by boolean conditions (parse_profile_data() gets confused by the closing '}')
-    'conditional/defined_1.sd',
-    'conditional/defined_2.sd',
-    'conditional/else_1.sd',
-    'conditional/else_2.sd',
-    'conditional/else_3.sd',
-    'conditional/else_if_1.sd',
-    'conditional/else_if_2.sd',
-    'conditional/else_if_3.sd',
-    'conditional/else_if_5.sd',
-    'conditional/ok_1.sd',
-    'conditional/ok_2.sd',
-    'conditional/ok_3.sd',
-    'conditional/ok_4.sd',
-    'conditional/ok_5.sd',
-    'conditional/ok_6.sd',
-    'conditional/ok_7.sd',
-    'conditional/ok_8.sd',
-    'conditional/ok_9.sd',
-    'conditional/stress_1.sd',
-
     # unexpected uppercase vs. lowercase in *x rules
     'file/ok_5.sd',  # Invalid mode UX
     'file/ok_2.sd',  # Invalid mode RWM

@@ -35,6 +35,7 @@ from apparmor.rule.io_uring import IOUringRule, IOUringRuleset
 from apparmor.rule.mount import MountRule, MountRuleset
 from apparmor.rule.pivot_root import PivotRootRule, PivotRootRuleset
 from apparmor.rule.unix import UnixRule, UnixRuleset
+from apparmor.rule.conditional import ConditionalBlock, ConditionalBlockset
 
 from apparmor.translations import init_translation
 
@@ -58,6 +59,7 @@ ruletypes = {
     'mount':          {'rule': MountRule,         'ruleset': MountRuleset},
     'pivot_root':     {'rule': PivotRootRule,     'ruleset': PivotRootRuleset},
     'unix':           {'rule': UnixRule,          'ruleset': UnixRuleset},
+    'cond_block':     {'rule': ConditionalBlock,  'ruleset': ConditionalBlockset},
 }
 
 
@@ -88,6 +90,7 @@ class ProfileStorage:
         data['profile_keyword'] = False
         data['is_hat'] = False  # profile or hat?
         data['hat_keyword'] = False  # True for 'hat foo', False for '^foo'
+        data['in_cond'] = False  # used for profiles created inside conditionals
 
         self.data = data
 
@@ -178,6 +181,7 @@ class ProfileStorage:
             'inc_ie',
             'rlimit',
             'capability',
+            'cond_block',
             'network',
             'dbus',
             'mount',

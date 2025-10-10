@@ -28,7 +28,7 @@ RE_COMMA_EOL = r'\s*,' + RE_EOL  # optional whitespace, comma + RE_EOL
 
 RE_PROFILE_NAME = r'(?P<%s>(\S+|"[^"]+"))'  # string without spaces, or quoted string. %s is the match group name
 RE_PATH = r'/\S*|"/[^"]*"'  # filename (starting with '/') without spaces, or quoted filename.
-RE_VAR = r'@{[^}\s]+}'
+RE_VAR = r'@{?[^}\s]+}?'
 RE_DICT_ENTRY = r'\s*(?P<key>[^,\s=]+)(?:=(?P<value>[^,\s=]+))?\s*'
 RE_PROFILE_PATH = '(?P<%s>(' + RE_PATH + '))'  # quoted or unquoted filename. %s is the match group name
 RE_PROFILE_PATH_OR_VAR = '(?P<%s>(' + RE_PATH + '|' + RE_VAR + r'\S*|"' + RE_VAR + '[^"]*"))'  # quoted or unquoted filename or variable. %s is the match group name
@@ -37,6 +37,10 @@ RE_XATTRS = r'(\s+xattrs\s*=\s*\((?P<xattrs>([^)=]+(=[^)=]+)?\s?)*)\)\s*)?'
 RE_FLAGS = r'(\s+(flags\s*=\s*)?\((?P<flags>[^)]+)\))?'
 
 RE_VARIABLE = re.compile(RE_VAR)
+RE_ID = r'(?P<id%(label)s>[^,!#\s=@$()"]+|"(\w|\s)*")'
+RE_VARIABLES = r'(?P<var%(label)s>(?P<var_type%(label)s>@|\$)\{?(?P<varname%(label)s>\w+)\}?)'
+RE_ID_OR_VAR = r'(' + RE_VARIABLES + r'|' + RE_ID + r')'
+RE_ALL_VARIABLES = re.compile(RE_VARIABLES % {'label': ''})
 
 RE_PROFILE_END = re.compile(r'^\s*\}' + RE_EOL)
 RE_PROFILE_ALL = re.compile(RE_PRIORITY_AUDIT_DENY + r'all' + RE_COMMA_EOL)
@@ -45,9 +49,21 @@ RE_PROFILE_ALIAS = re.compile(r'^\s*alias\s+(?P<orig_path>"??.+?"??)\s+->\s*(?P<
 RE_PROFILE_RLIMIT = re.compile(r'^\s*set\s+rlimit\s+(?P<rlimit>[a-z]+)\s*<=\s*(?P<value>[^ ]+(\s+[a-zA-Z]+)?)' + RE_COMMA_EOL)
 RE_PROFILE_BOOLEAN = re.compile(r'^\s*(?P<varname>\$\{?\w*\}?)\s*=\s*(?P<value>true|false)\s*,?' + RE_EOL, flags=re.IGNORECASE)
 RE_PROFILE_VARIABLE = re.compile(r'^\s*(?P<varname>@\{?\w+\}?)\s*(?P<mode>\+?=)\s*(?P<values>@*.+?)' + RE_EOL)
-RE_PROFILE_CONDITIONAL = re.compile(r'^\s*if\s+(not\s+)?(\$\{?\w*\}?)\s*\{' + RE_EOL)
-RE_PROFILE_CONDITIONAL_VARIABLE = re.compile(r'^\s*if\s+(not\s+)?defined\s+(@\{?\w+\}?)\s*\{\s*(#.*)?$')
-RE_PROFILE_CONDITIONAL_BOOLEAN = re.compile(r'^\s*if\s+(not\s+)?defined\s+(\$\{?\w+\}?)\s*\{\s*(#.*)?$')
+
+RE_BOOLEAN_OP = r'(?P<boolean_op%(term)s>(?P<boolean_not%(term)s>(not\s+)*)(?P<defined%(term)s>defined\s+)?' + RE_VARIABLES % {'label': '%(term)s'} + r')'
+RE_COMPARE_OP_QUOTED = r'(?P<compare_op%(term)s>(?P<compare_not%(term)s>(not\s+)*)(?P<left%(term)s>"?' + RE_ID_OR_VAR % {'label': '_left%(term)s'} + r'"?)\s+(?P<op%(term)s>==|!=|in|>|>=|<|<=)\s+(?P<right%(term)s>"?' + RE_ID_OR_VAR % {'label': '_right%(term)s'} + r'"?))'  # used only by transform_cond
+RE_COMPARE_OP = RE_COMPARE_OP_QUOTED.replace('"?', '')
+
+RE_FACTOR = r'(?P<open_paren%(term)s>\()?(' + RE_COMPARE_OP + r'|' + RE_BOOLEAN_OP + r')(?P<close_paren%(term)s>\))?'
+
+RE_TERM = r'(?P<open_paren%(expr)s>\()*\s*((?P<one%(expr)s>' + RE_FACTOR % {'term': '_1%(expr)s'} + r')\s+(?P<cond_op%(expr)s>and|or)\s+(?P<two%(expr)s>' + RE_FACTOR % {'term': '_2%(expr)s'} + ')|' + RE_FACTOR % {'term': '_0%(expr)s'} + r')\s*(?P<close_paren%(expr)s>\))*'
+
+RE_CONDITION = r'(?P<expr>(?P<open_paren>\()?(?P<first>' + RE_TERM % {'expr': '_first'} + r')(\s+(?P<cond_op>and|or)\s+(?P<second>' + RE_TERM % {'expr': '_second'} + r'))*(?P<close_paren>\))?)'
+
+RE_PROFILE_CONDITIONAL = r'\s*if\s+' + RE_CONDITION + r'\s*\{'
+
+RE_PROFILE_CONDITIONAL_START = re.compile(r'^' + RE_PROFILE_CONDITIONAL + RE_EOL)
+RE_PROFILE_CONDITIONAL_ELSE = re.compile(r'^\s*(?P<close>\})?\s*else((?P<if>\s+' + RE_PROFILE_CONDITIONAL + r')|(\s*\{))' + RE_EOL)
 RE_PROFILE_NETWORK = re.compile(RE_PRIORITY_AUDIT_DENY + r'network(?P<details>\s+.*)?' + RE_COMMA_EOL)
 RE_PROFILE_CHANGE_HAT = re.compile(r'^\s*\^("??.+?"??)' + RE_COMMA_EOL)
 RE_PROFILE_HAT_DEF = re.compile(r'^(?P<leadingspace>\s*)(?P<hat_keyword>\^|hat\s+)(?P<hat>"??[^)]+?"??)' + RE_FLAGS + r'\s*\{' + RE_EOL)

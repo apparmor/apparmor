@@ -134,6 +134,8 @@ static const unordered_map<string, int> keyword_table = {
 	{"sqpoll",		TOK_SQPOLL},
 	{"all",			TOK_ALL},
 	{"priority",		TOK_PRIORITY},
+	{"and",			TOK_AND},
+	{"or",			TOK_OR},
 };
 
 /* glibc maps bsd ofile to nofile but musl does not. */

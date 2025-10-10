@@ -1,0 +1,9 @@
+#=DESCRIPTION unfinished else
+#=EXRESULT FAIL
+
+$BAR=true
+
+/bin/true {
+  if $BAR {
+    /bin/true rix,
+  } else {

@@ -44,12 +44,12 @@ class BooleanTest(AATest):
 class BooleanTestParse(BooleanTest):
     tests = (
         # rawrule                                   comment    varname  value
-        ('$foo=true',                        exp('',           '$foo',  'true')),
-        ('$foo = false',                     exp('',           '$foo',  'false')),
-        ('$foo=TrUe',                        exp('',           '$foo',  'true')),
-        ('$foo = FaLsE',                     exp('',           '$foo',  'false')),
-        ('  $foo =   true   ',               exp('',           '$foo',  'true')),
-        ('  $foo =   true        # comment', exp(' # comment', '$foo',  'true')),
+        ('$foo=true',                        exp('',           '$foo',  True)),
+        ('$foo = false',                     exp('',           '$foo',  False)),
+        ('$foo=TrUe',                        exp('',           '$foo',  True)),
+        ('$foo = FaLsE',                     exp('',           '$foo',  False)),
+        ('  $foo =   true   ',               exp('',           '$foo',  True)),
+        ('  $foo =   true        # comment', exp(' # comment', '$foo',  True)),
     )
 
     def _run_test(self, rawrule, expected):

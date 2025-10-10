@@ -51,7 +51,7 @@ class BooleanRule(BaseRule):
             raise AppArmorException('Passed invalid value to %s: %s' % (self.__class__.__name__, value))
 
         self.varname = varname
-        self.value = value
+        self.value = value == 'true'
 
     @classmethod
     def _create_instance(cls, raw_rule, matches):
@@ -70,7 +70,7 @@ class BooleanRule(BaseRule):
 
         space = '  ' * depth
 
-        return '%s%s = %s' % (space, self.varname, self.value)
+        return '%s%s = %s' % (space, self.varname, str(self.value).lower())
 
     def _is_covered_localvars(self, other_rule):
         """check if other_rule is covered by this rule object"""
@@ -78,7 +78,10 @@ class BooleanRule(BaseRule):
         if self.varname != other_rule.varname:
             return False
 
-        if not self._is_covered_list(self.value, None, set(other_rule.value), None, 'value'):
+        if type(self.value) is not bool or type(other_rule.value) is not bool:
+            raise AppArmorBug(_('Invalid value for boolean variable'))
+
+        if self.value != other_rule.value:
             return False
 
         # still here? -> then it is covered
