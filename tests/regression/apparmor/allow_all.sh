@@ -24,7 +24,7 @@ bin=$pwd
 # 3. Execute ${bin}/complain under the allow_all profile and check the confinement that ${bin}/allow_all fell under
 
 cat <<EOF > ${tmpdir}/allow_all_profile
-abi <abi/5.0>,
+abi <kernel>,
 
 profile regression_allow_all ${bin}/getcon_verify {
 allow all,
