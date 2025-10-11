@@ -148,7 +148,7 @@ sys.stdout.write('%s\n' % sysconfig.get_path('purelib'));"`
         if test -z "$PYTHON_EXTRA_LIBS"; then
            PYTHON_EXTRA_LIBS=`$PYTHON -c "import sys; import sysconfig; \
 conf = sysconfig.get_config_var; \
-sys.stdout.write('%s %s %s\n' % (conf('BLDLIBRARY'), conf('LOCALMODLIBS'), conf('LIBS')))"`
+sys.stdout.write('%s %s %s\n' % (conf('BLDLIBRARY'), conf('SYSLIBS'), conf('LIBS')))"`
         fi
         AC_MSG_RESULT([$PYTHON_EXTRA_LIBS])
         AC_SUBST(PYTHON_EXTRA_LIBS)
@@ -179,11 +179,11 @@ sys.stdout.write('%s\n' % conf('LINKFORSHARED'))"`
         ac_save_CPPFLAGS="$CPPFLAGS"
         LIBS="$ac_save_LIBS $PYTHON_EXTRA_LIBS $PYTHON_LDFLAGS"
         CPPFLAGS="$ac_save_CPPFLAGS $PYTHON_CPPFLAGS"
-        AC_TRY_LINK([
+        AC_LINK_IFELSE([AC_LANG_PROGRAM([[
                 #include <Python.h>
-        ],[
+        ]], [[
                 Py_Initialize();
-        ],[pythonexists=yes],[pythonexists=no])
+        ]])],[pythonexists=yes],[pythonexists=no])
 
         AC_MSG_RESULT([$pythonexists])
 

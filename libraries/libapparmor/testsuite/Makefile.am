@@ -5,9 +5,7 @@ AUTOMAKE_OPTIONS = dejagnu
 COMMONDIR=$(top_srcdir)/../../common
 include $(COMMONDIR)/Make.rules
 
-INCLUDES = -I. -I$(top_srcdir)/include
-
-AM_CPPFLAGS = $(DEBUG_FLAGS) -DLOCALEDIR=\"${localedir}\"
+AM_CPPFLAGS = $(DEBUG_FLAGS) -DLOCALEDIR=\"${localedir}\" -I. -I$(top_srcdir)/include
 AM_CFLAGS = -Wall
 
 noinst_PROGRAMS = test_multi.multi

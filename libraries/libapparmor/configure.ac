@@ -3,10 +3,11 @@ m4_ifdef(__apparmor_version, , m4_define([__apparmor_version], m4_sinclude(../..
 m4_define([__aalen], decr(len(__apparmor_version)))
 m4_define([apparmor_version], m4_substr(__apparmor_version, 0, __aalen))
 
-AC_INIT(configure.ac)
+AC_INIT([libapparmor1],[apparmor_version],[bugs@apparmor.net (public) or security@apparmor.net (nonpublic)],,[apparmor.net])
 
-AM_INIT_AUTOMAKE(libapparmor1, apparmor_version)
+AM_INIT_AUTOMAKE([-Wall])
 
+# Specifying noyywrap here doesn't fix the warning
 AM_PROG_LEX
 AC_PROG_YACC
 AC_PROG_SED
@@ -78,15 +79,18 @@ AM_CONDITIONAL(HAVE_PYTHON, test x$with_python = xyes)
 AM_CONDITIONAL(HAVE_PERL, test x$with_perl = xyes) 
 AM_CONDITIONAL(HAVE_RUBY, test x$with_ruby = xyes)
 
-AC_HEADER_STDC
+# Keep because we use grep in a test
+AC_PROG_EGREP
+
 AC_CHECK_HEADERS(unistd.h stdint.h syslog.h)
 
 AC_CHECK_FUNCS([asprintf __secure_getenv secure_getenv reallocarray])
 
-AM_PROG_CC_C_O
 AC_C_CONST
-AM_PROG_LIBTOOL
+AM_PROG_AR
+LT_INIT
 
+# Specifying C99 is required for older systems
 AC_PROG_CC_C99
 if test "$ac_cv_prog_cc_c99" = "no"; then
   AC_MSG_ERROR([C99 mode is required to build libapparmor])
@@ -103,8 +107,7 @@ AS_VAR_IF([ax_cv_check_cflags__Werror__flto_partition_none], [yes],
 AC_SUBST([AM_CFLAGS], ["$EXTRA_CFLAGS"])
 AC_SUBST([AM_CXXFLAGS], ["$EXTRA_CFLAGS"])
 
-AC_OUTPUT(
-Makefile
+AC_CONFIG_FILES([Makefile
 doc/Makefile
 src/Makefile
 swig/Makefile
@@ -120,4 +123,5 @@ testsuite/libaalogparse.test/Makefile
 testsuite/lib/Makefile
 include/Makefile
 include/sys/Makefile
-)
+])
+AC_OUTPUT

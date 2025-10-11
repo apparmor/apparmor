@@ -1,5 +1,3 @@
-INCLUDES = $(all_includes)
-
 # variables to set the library versions used by libtool
 # Step through these rules IN ORDER to update the library version.
 # 1. Update the version information only immediately before a public release
@@ -45,7 +43,7 @@ include $(COMMONDIR)/Make.rules
 BUILT_SOURCES = grammar.h scanner.h af_protos.h
 AM_LFLAGS = -v
 AM_YFLAGS = -Wno-yacc -d -p aalogparse_
-AM_CPPFLAGS = -D_GNU_SOURCE -I$(top_srcdir)/include/
+AM_CPPFLAGS = -D_GNU_SOURCE -I$(top_srcdir)/include/ $(all_includes)
 scanner.h: scanner.l
 	$(LEX) -v $<
 

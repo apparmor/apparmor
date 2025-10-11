@@ -58,9 +58,11 @@ parser/techdoc.pdf
 parser/techdoc.toc
 profiles/apparmor.d/local/*
 !profiles/apparmor.d/local/README
+libraries/libapparmor/*~
 libraries/libapparmor/Makefile
 libraries/libapparmor/Makefile.in
 libraries/libapparmor/aclocal.m4
+libraries/libapparmor/ar-lib
 libraries/libapparmor/audit.log
 libraries/libapparmor/autom4te.cache
 libraries/libapparmor/compile
