@@ -36,6 +36,8 @@ profile tnftp /usr/bin/tnftp {
   # allow read on anything on @{HOME} not explicitly denied
   owner file r @{HOME},
   owner file r @{HOME}/**,
+  # Explicitly allow ~/.netrc, otherwise denied by private-files-strict
+  priority=1 owner file r @{HOME}/.netrc,
 
   # Sub-profile for the pager to work
   profile dash /usr/bin/dash {
