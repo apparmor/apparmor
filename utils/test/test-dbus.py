@@ -99,6 +99,7 @@ class DbusTestParse(DbusTest):
         ('dbus bus=system path=/foo/bar bus=session,',  exp(False, False, False, '',       None,                True,  'session', False, '/foo/bar', False, None,          True,   None,      True, None,   True, None,     True,  None,      True)),  # XXX bus= specified twice, last one wins
         ('dbus send peer=(label="foo") bus=session,',   exp(False, False, False, '',       {'send'},            False, 'session', False, None,       True,  None,          True,   None,      True, None,   True, None,     True,  'foo',     False)),
         ('dbus bus=1 bus=2 bus=3 bus=4 bus=5 bus=6,',   exp(False, False, False, '',       None,                True,  '6',       False, None,       True,  None,          True,   None,      True, None,   True, None,     True,  None,      True)),  # XXX bus= specified multiple times, last one wins
+        ('dbus peer=(name={x,y}),',         exp(False, False, False, '', None, True, None, True, None, True, None, True, None, True, None, True, '{x,y}',             False, None, True)),
     )
 
     def _run_test(self, rawrule, expected):
@@ -433,6 +434,7 @@ class WriteDbusTest(AATest):
         ('  priority=0   deny dbus         send      interface = ( foo ),',  'priority=0 deny dbus send interface=foo,'),
         ('  priority=-72 deny dbus         send      interface = ( foo ),',  'priority=-72 deny dbus send interface=foo,'),
         ('  priority=+834 deny dbus         send      interface = ( foo ),', 'priority=834 deny dbus send interface=foo,'),
+        ('  dbus peer=(name={xxx,org.freedesktop.PolicyKit1{,.*}}),',        'dbus peer=(name="{xxx,org.freedesktop.PolicyKit1{,.*}}"),'),
         # XXX add more complex rules
     )
 
