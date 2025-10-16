@@ -204,7 +204,10 @@ class DbusRule(BaseRule):
         if all_values:
             return ''
         elif value:
-            return ' %(prefix)s=%(value)s' % {'prefix': prefix, 'value': quote_if_needed(value.regex)}
+            if re.match("(?<!@){", value.regex):  # apparmor_parser doesn't properly handle unquoted {} AARE
+                return ' %(prefix)s="%(value)s"' % {'prefix': prefix, 'value': value.regex}
+            else:
+                return ' %(prefix)s=%(value)s' % {'prefix': prefix, 'value': quote_if_needed(value.regex)}
         else:
             raise AppArmorBug('Empty %(prefix_name)s in %(rule_name)s rule' % {'prefix_name': prefix, 'rule_name': self.rule_name})
 
