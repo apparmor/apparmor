@@ -22,6 +22,7 @@
 #
 #   /var/exports/** lrwk,
 #
-# Keep in mind that 'deny' rules are evaluated after allow rules, so you won't
-# be able to allow access to files that are explicitly denied by the shipped
-# profile using this mechanism.
+# Within a given priority level, `deny` rules have precedence. To override
+# them, you have to specify an allow rule with a higher priority, for example
+#
+#   priority=1 /var/log warn w,
