@@ -26,6 +26,7 @@ profile dovecot-dovecot-lda /usr/lib*/dovecot/dovecot-lda flags=(attach_disconne
 
   /etc/dovecot/** r,
   @{PROC}/*/mounts r,
+  owner /tmp/doveconf.* rw,
   owner /tmp/dovecot.lda.* rw,
   @{run}/dovecot/mounts r,
   @{run}/dovecot/auth-userdb rw,

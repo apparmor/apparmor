@@ -33,6 +33,7 @@ profile dovecot-imap /usr/lib*/dovecot/imap {
   /etc/dovecot/conf.d/ r,
   /etc/dovecot/conf.d/** r,
 
+  owner /tmp/doveconf.* rw,
   owner /tmp/dovecot.imap.* rw,
   @{PROC}/@{pid}/attr/{apparmor/,}current rw,
   @{PROC}/@{pid}/stat r,
