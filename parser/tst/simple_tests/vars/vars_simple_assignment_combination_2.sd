@@ -1,0 +1,9 @@
+#=DESCRIPTION  += before ?= fails, order matters
+#=EXRESULT FAIL
+
+@{FOO} += @{BAZ}
+@{FOO} ?= blah @{BAR}
+
+/bin/foo {
+  /@{FOO} r,
+}

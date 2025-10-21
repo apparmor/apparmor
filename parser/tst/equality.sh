@@ -1231,6 +1231,30 @@ test_parser_variables()
 	verify_binary_equality "@{exec_path} w/attachment w/pat expands correcly - add globbing" \
 				"profile a /t/* { @{exec_path}/** r, }" \
 				"profile a /t/* { /t/*/** r, }"
+
+	# test conditional assignment
+	verify_binary_equality "@{foo} ?=  creates var" \
+			       "@{foo} ?= /bar
+			       profile a /t/* { @{foo} rw, }" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_equality "@{foo} ?=  doesnt update existing var" \
+			       "@{foo} = /bar
+			        @{foo} ?= /foo
+				profile a /t/* { @{foo} rw, }" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_inequality "@{foo} ?=  doesnt update existing var" \
+			       "@{foo} = /does/not/match
+			        @{foo} ?= /bar
+				profile a /t/* { @{foo} rw, }" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_equality "@{foo} ?= can be added to bar += " \
+			       "@{foo} ?= /foo
+			        @{foo} += /bar
+				profile a /t/* { @{foo} rw, }" \
+			       "profile a /t/* { /{foo,bar} rw, }"
 }
 
 run_tests()
