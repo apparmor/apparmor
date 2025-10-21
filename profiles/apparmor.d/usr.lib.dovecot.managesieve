@@ -28,6 +28,7 @@ profile dovecot-managesieve /usr/lib*/dovecot/managesieve {
   @{DOVECOT_MAILSTORE}/** rwkl,
 
   /etc/dovecot/** r,
+  owner /tmp/doveconf.* rw,
   /usr/bin/doveconf rix,
   @{exec_path} mrix,
 
