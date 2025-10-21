@@ -43,7 +43,7 @@ public:
 	cond_expr(const char *var, cond_op op, const char *cond_id);
 	std::set<std::string> get_set(const char *var);
 	template <typename T>
-	void compare(cond_op op, T lhs, T rhs);
+	void compare(cond_op op, const T &lhs, const T &rhs);
 	virtual ~cond_expr()
 	{
 	};
