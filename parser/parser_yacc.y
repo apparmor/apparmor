@@ -527,23 +527,19 @@ varassign:	TOK_SET_VAR assign_op valuelist
 		free($1);
 	}
 
-varassign:	TOK_BOOL_VAR assign_op TOK_VALUE
+varassign:	TOK_BOOL_VAR assign_op expr
 	{
 		int boolean, err;
 		if ($2 == TOK_ADD_ASSIGN)
 			yyerror("Invalid assignment += not allowed with boolean variables");
-		boolean = str_to_boolean($3);
-		if (boolean == -1) {
-			yyerror("Invalid boolean assignment for (%s): %s is not true or false",
-				$1, $3);
-		}
+		boolean = $3->eval();
 		err = symtab::add_var($1, boolean);
 		if ($2 == TOK_EQUALS && err) {
 			yyerror("variable %s was previously declared", $1);
 			/* FIXME: it'd be handy to report the previous location */
 		}
 		free($1);
-		free($3);
+		delete($3);
 	}
 
 valuelist:	TOK_VALUE
@@ -1094,7 +1090,6 @@ factor: id_or_var
 
 id_or_var: TOK_ID { $$ = $1; }
 id_or_var: TOK_SET_VAR { $$ = $1; };
-id_or_var: TOK_VALUE { $$ = $1; }
 
 opt_target: /* nothing */ { $$ = NULL; }
 opt_target: TOK_ARROW id_or_var { $$ = $2; };

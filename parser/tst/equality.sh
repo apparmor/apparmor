@@ -1264,6 +1264,22 @@ test_parser_variables()
 	verify_binary_inequality "profile a /t/* {
 			       	       if false { /bar rw, } }" \
 			       "profile a /t/* { /bar rw, }"
+
+	# test var being assigned value of an expression
+	verify_binary_equality "var assigned expr not false" \
+			       "\${foo} = not false
+			       profile a /t/* { if \$foo { /bar rw, }}" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_inequality "var assigned expr not true" \
+			       "\$foo = not true
+			       profile a /t/* { if \$foo { /bar rw, }}" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_inequality "var assigned expr true and false" \
+			       "\$foo = true and false
+			       profile a /t/* { if \${foo} { /bar rw, }}" \
+			       "profile a /t/* { /bar rw, }"
 }
 
 run_tests()

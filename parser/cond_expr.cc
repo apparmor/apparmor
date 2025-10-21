@@ -32,7 +32,7 @@ cond_expr::cond_expr(const char *var, cond_op op)
 	if (op == BOOLEAN_VALUE) {
 		int boolean = str_to_boolean(var);
 		if (boolean == -1) {
-			yyerror("Invalid boolean : %s is not true or false",
+			yyerror("Invalid boolean : '%s' is not true or false",
 				var);
 		}
 		result = boolean;
