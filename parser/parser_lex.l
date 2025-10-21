@@ -264,8 +264,8 @@ ID 		{ID_CHARS}|(,{ID_CHARS}|\\[ ]|\\\t|\\\"|\\!|\\,)
 IDS		{ID_FIRST}{ID}*
 INC_ID 		[^ \t\r\n"!,<>]|(,[^ \t\r\n"!,<>]|\\[ ]|\\\t|\\\"|\\!|\\,)
 INC_IDS		{INC_ID}+
-POST_VAR_ID_CHARS	[^ \t\n"!,]{-}[=\+]
-POST_VAR_ID 	{POST_VAR_ID_CHARS}|(,{POST_VAR_ID_CHARS}|\\[ ]|\\\t|\\\"|\\!|\\,|\\\(|\\\))
+POST_VAR_ID_CHARS	[^ \t\n"!,]{-}[=\+?]
+POST_VAR_ID 	{POST_VAR_ID_CHARS}|(,{POST_VAR_ID_CHARS}|\\[ ]|\\\t|\\\"|\\!|\\,|\\\(|\\\)|[^ \t\n"!,=\+]\?)
 LIST_VALUE_ID_CHARS	([^ \t\n"!,]{-}[()]|\\[ ]|\\\t|\\\"|\\!|\\,|\\\(|\\\))
 LIST_VALUE_QUOTED_ID_CHARS [^\0"]|\\\"
 LIST_VALUE_ID	{LIST_VALUE_ID_CHARS}+
