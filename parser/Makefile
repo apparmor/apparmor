@@ -122,8 +122,8 @@ OBJECTS = $(patsubst %.cc, %.o, $(SRCS:.c=.o))
 AAREDIR= libapparmor_re
 AAREOBJECT = ${AAREDIR}/libapparmor_re.a
 AAREOBJECTS = $(AAREOBJECT)
-AARE_LDFLAGS = -static-libgcc -static-libstdc++ -L. $(LDFLAGS)
-AALIB = -Wl,-Bstatic -lapparmor -Wl,-Bdynamic -lpthread
+AARE_LDFLAGS = -L. $(LDFLAGS)
+AALIB = -lapparmor -lpthread
 
 ifdef WITH_LIBINTL
 	AALIB += -lintl
@@ -139,7 +139,7 @@ else
   LOCAL_LIBAPPARMOR_INCLUDE = $(LIBAPPARMOR_SRC)/include
   LOCAL_LIBAPPARMOR_LDPATH = $(LIBAPPARMOR_SRC)/src/.libs
 
-  LIBAPPARMOR_A = $(LOCAL_LIBAPPARMOR_LDPATH)/libapparmor.a
+  LIBAPPARMOR_A = $(LOCAL_LIBAPPARMOR_LDPATH)/libapparmor.so
   INCLUDE_APPARMOR = -I$(LOCAL_LIBAPPARMOR_INCLUDE)
   AARE_LDFLAGS += -L$(LOCAL_LIBAPPARMOR_LDPATH)
   APPARMOR_H = $(LOCAL_LIBAPPARMOR_INCLUDE)/sys/apparmor.h
