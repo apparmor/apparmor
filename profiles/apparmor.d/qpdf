@@ -5,6 +5,9 @@ include <tunables/global>
 # common file formats for qpdf are included: .pdf, .json and .qdf
 @{qpdf_ext} = [qQpP][dD][fF] [jJ][sS][oO][nN]
 
+# Tempfile extensions (when using --replace-input)
+@{qpdf_ext_temp} = ~qpdf-temp# ~qpdf-orig# ~qpdf-orig
+
 profile qpdf /usr/bin/qpdf {
   include <abstractions/base>
 
@@ -12,17 +15,22 @@ profile qpdf /usr/bin/qpdf {
 
   # user's home directories
   owner @{HOME}/[^.]**.@{qpdf_ext} rw,
+  owner @{HOME}/[^.]**.@{qpdf_ext_temp} rw,
   # allow less common .in and .out files within user's directories
   owner @{HOME}/[^.]**.[iI][nN] rw,
   owner @{HOME}/[^.]**.[oO][uU][tT] rw,
 
   # tmp directories
   owner /tmp/**.@{qpdf_ext} rw,
+  owner /tmp/**.@{qpdf_ext_temp} rw,
   owner /var/tmp/**.@{qpdf_ext} rw,
+  owner /var/tmp/**.@{qpdf_ext_temp} rw,
 
   # mounts
   owner /mnt/**.@{qpdf_ext} rw,
+  owner /mnt/**.@{qpdf_ext_temp} rw,
   owner /media/**.@{qpdf_ext} rw,
+  owner /media/**.@{qpdf_ext_temp} rw,
   /mnt/**.@{qpdf_ext} r,
   /media/**.@{qpdf_ext} r,
 
