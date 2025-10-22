@@ -32,6 +32,7 @@ typedef enum {
 	LE_OP,
 	BOOLEAN_OP,
 	DEFINED_OP,
+	BOOLEAN_VALUE,
 } cond_op;
 
 class cond_expr {

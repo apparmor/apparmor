@@ -1255,6 +1255,15 @@ test_parser_variables()
 			        @{foo} += /bar
 				profile a /t/* { @{foo} rw, }" \
 			       "profile a /t/* { /{foo,bar} rw, }"
+
+	# test true/false in expr
+	verify_binary_equality "profile a /t/* {
+			       	       if true { /bar rw, } }" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_inequality "profile a /t/* {
+			       	       if false { /bar rw, } }" \
+			       "profile a /t/* { /bar rw, }"
 }
 
 run_tests()

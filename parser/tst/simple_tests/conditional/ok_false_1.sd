@@ -1,0 +1,10 @@
+#=DESCRIPTION conditional with false
+#=EXRESULT PASS
+
+$FOO=true
+
+/bin/true {
+  if false {
+      /bin/true rix,
+  }
+}

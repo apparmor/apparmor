@@ -1084,8 +1084,17 @@ factor:	id_or_var TOK_LE id_or_var
 		free($3);
 	}
 
+factor: id_or_var
+	{
+		cond_expr *conds = new cond_expr($1, BOOLEAN_VALUE);
+		PDEBUG("Matched: boolean expr %s value: %d\n", $1, conds->eval());
+		$$ = conds;
+		free($1);
+	}
+
 id_or_var: TOK_ID { $$ = $1; }
 id_or_var: TOK_SET_VAR { $$ = $1; };
+id_or_var: TOK_VALUE { $$ = $1; }
 
 opt_target: /* nothing */ { $$ = NULL; }
 opt_target: TOK_ARROW id_or_var { $$ = $2; };
