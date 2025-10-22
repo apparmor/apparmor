@@ -2,40 +2,33 @@ abi <abi/5.0>,
 
 include <tunables/global>
 
+# common file formats for qpdf are included: .pdf, .json and .qdf
+@{qpdf_ext} = [qQpP][dD][fF] [jJ][sS][oO][nN]
+
 profile qpdf /usr/bin/qpdf {
   include <abstractions/base>
 
   /usr/bin/qpdf mr,
 
-  # common file formats for qpdf are included: .pdf, .json and .qdf
   # user's home directories
-  owner @{HOME}/[^.]**.[qQpP][dD][fF] rw,
-  owner @{HOME}/[^.]**.[jJ][sS][oO][nN] rw,
+  owner @{HOME}/[^.]**.@{qpdf_ext} rw,
   # allow less common .in and .out files within user's directories
   owner @{HOME}/[^.]**.[iI][nN] rw,
   owner @{HOME}/[^.]**.[oO][uU][tT] rw,
 
   # tmp directories
-  owner /tmp/**.[qQpP][dD][fF] rw,
-  owner /tmp/**.[jJ][sS][oO][nN] rw,
-  owner /var/tmp/**.[qQpP][dD][fF] rw,
-  owner /var/tmp/**.[jJ][sS][oO][nN] rw,
+  owner /tmp/**.@{qpdf_ext} rw,
+  owner /var/tmp/**.@{qpdf_ext} rw,
 
   # mounts
-  owner /mnt/**.[qQpP][dD][fF] rw,
-  owner /mnt/**.[jJ][sS][oO][nN] rw,
-  owner /media/**.[qQpP][dD][fF] rw,
-  owner /media/**.[jJ][sS][oO][nN] rw,
-  /mnt/**.[qQpP][dD][fF] r,
-  /mnt/**.[jJ][sS][oO][nN] r,
-  /media/**.[qQpP][dD][fF] r,
-  /media/**.[jJ][sS][oO][nN] r,
+  owner /mnt/**.@{qpdf_ext} rw,
+  owner /media/**.@{qpdf_ext} rw,
+  /mnt/**.@{qpdf_ext} r,
+  /media/**.@{qpdf_ext} r,
 
   # system locations
-  /usr/**.[qQpP][dD][fF] r,
-  /usr/**.[jJ][sS][oO][nN] r,
-  /opt/**.[qQpP][dD][fF] r,
-  /opt/**.[jJ][sS][oO][nN] r,
+  /usr/**.@{qpdf_ext} r,
+  /opt/**.@{qpdf_ext} r,
 
   include if exists <local/qpdf>
 }
