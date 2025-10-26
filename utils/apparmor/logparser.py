@@ -334,6 +334,10 @@ class ReadLog:
             PivotRootRule.hashlog_from_event(self.hashlog[aamode][full_profile]['pivot_root'], e)
 
         elif e['class'] and e['class'] == 'net' and e['family'] and e['family'] == 'unix':
+            if not e['denied_mask']:
+                self.debug_logger.debug('ignored garbage unix event with empty denied_mask')
+                return
+
             UnixRule.hashlog_from_event(self.hashlog[aamode][full_profile]['unix'], e)
             return
 

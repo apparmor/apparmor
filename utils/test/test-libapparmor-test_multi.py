@@ -176,6 +176,7 @@ log_to_profile_known_empty_log = [
     'ptrace_garbage_lp1689667_1',  # no denied= in log
     'ptrace_no_denied_mask',  # no denied= in log
     'unconfined-change_hat',  # unconfined trying to change_hat, which isn't allowed
+    'testcase_unix_no_denied_issue541',  # no denied_mask in log
 ]
 
 
