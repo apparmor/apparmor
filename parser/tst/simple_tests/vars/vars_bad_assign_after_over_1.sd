@@ -1,0 +1,5 @@
+#=DESCRIPTION assign after overriding assing creates set var
+#=EXRESULT FAIL
+
+@{FOO}:=bar
+@{FOO}=foo

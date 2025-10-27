@@ -1280,6 +1280,61 @@ test_parser_variables()
 			       "\$foo = true and false
 			       profile a /t/* { if \${foo} { /bar rw, }}" \
 			       "profile a /t/* { /bar rw, }"
+
+	# test overriding assignment
+	verify_binary_equality "@{foo} := creates var" \
+			       "@{foo} := /bar
+			       profile a /t/* { @{foo} rw, }" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_equality "@{foo} :=  overrides existing var" \
+			       "@{foo} = /foo
+			        @{foo} := /bar
+				profile a /t/* { @{foo} rw, }" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_inequality "@{foo} := negative overrides existing var" \
+			       "@{foo} = /bar
+			        @{foo} := /does /not /match
+				profile a /t/* { @{foo} rw, }" \
+			       "profile a /t/* { /bar rw, }"
+
+	# test overriding boolean assignment
+	verify_binary_equality "\${foo} := creates bool var" \
+			       "\${foo} := true
+			        profile a /t/* { if \$foo { /bar rw, }}" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_equality "\${foo} :=  overrides existing bool var" \
+			       "\${foo} = false
+			        \${foo} := true
+				profile a /t/* { if \$foo { /bar rw, }}" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_inequality "${foo} := negative overrides existing bool var" \
+			       "\${foo} = true
+			        \${foo} := false
+				profile a /t/* { if \$foo { /bar rw, }}" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_equality "@{foo} :=  can be added to" \
+			       "@{foo} := /foo
+			        @{foo} += /bar
+				profile a /t/* { @{foo} rw, }" \
+			       "profile a /t/* { /{foo,bar} rw, }"
+
+	verify_binary_inequality "@{foo} := negative can be added to" \
+			       "@{foo} := /bar
+			        @{foo} += /does /not /match
+				profile a /t/* { @{foo} rw, }" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_equality "@{foo} := defines var before ?= " \
+			       "@{foo} := /foo
+			        @{foo} ?= /bar
+				profile a /t/* { @{foo} rw, }" \
+			       "profile a /t/* { /foo rw, }"
+
 }
 
 run_tests()

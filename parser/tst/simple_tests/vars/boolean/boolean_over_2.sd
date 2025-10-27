@@ -1,0 +1,8 @@
+#=DESCRIPTION Simple overriding assignment parsing test after define
+#=EXRESULT PASS
+
+$VAR = True
+$VAR := False
+
+${BOOL} = true
+${BOOL} := false

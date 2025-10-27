@@ -87,6 +87,7 @@ static void abi_features(char *filename, bool search);
 %token TOK_ARROW
 %token TOK_ADD_ASSIGN
 %token TOK_COND_ASSIGN
+%token TOK_OVERRIDE_ASSIGN
 %token TOK_LE
 %token TOK_SET_VAR
 %token TOK_BOOL_VAR
@@ -507,6 +508,7 @@ alias: TOK_ALIAS TOK_ID TOK_ARROW TOK_ID TOK_END_OF_RULE
 assign_op: TOK_EQUALS { $$ = TOK_EQUALS; }
 	| TOK_ADD_ASSIGN { $$ = TOK_ADD_ASSIGN; }
 	| TOK_COND_ASSIGN { $$ = TOK_COND_ASSIGN; }
+	| TOK_OVERRIDE_ASSIGN { $$ = TOK_OVERRIDE_ASSIGN; }
 
 varassign:	TOK_SET_VAR assign_op valuelist
 	{
@@ -514,12 +516,19 @@ varassign:	TOK_SET_VAR assign_op valuelist
 		if ($2 == TOK_ADD_ASSIGN) {
 			err = symtab::add_set_value($1, $3);
 			if (err) {
-				yyerror("variable %s was not previously declared, but is being assigned additional values", $1);
+				yyerror(_("variable %s was not previously declared, but is being assigned additional values"), $1);
 			}
+		} else if ($2 == TOK_OVERRIDE_ASSIGN) {
+			autofree char *var_name = variable::process_var($1);
+			if (!var_name)
+				yyerror(_("invalid variable name '%s'"), $1);
+			variable *old = symtab::delete_var(var_name);
+			delete old;
+			err = symtab::add_var($1, $3);
 		} else { /* TOK_EQUALS | TOK_COND_ASSIGN */
 			err = symtab::add_var($1, $3);
 			if ($2 == TOK_EQUALS && err) {
-				yyerror("variable %s was previously declared", $1);
+				yyerror(_("variable %s was previously declared"), $1);
 				/* FIXME: it'd be handy to report the previous location */
 			}
 		}
@@ -531,11 +540,18 @@ varassign:	TOK_BOOL_VAR assign_op expr
 	{
 		int boolean, err;
 		if ($2 == TOK_ADD_ASSIGN)
-			yyerror("Invalid assignment += not allowed with boolean variables");
+			yyerror(_("Invalid assignment += not allowed with boolean variables"));
 		boolean = $3->eval();
+		if ($2 == TOK_OVERRIDE_ASSIGN) {
+			autofree char *var_name = variable::process_var($1);
+			if (!var_name)
+				yyerror(_("invalid variable name '%s'"), $1);
+			variable *old = symtab::delete_var(var_name);
+			delete old;
+		}
 		err = symtab::add_var($1, boolean);
 		if ($2 == TOK_EQUALS && err) {
-			yyerror("variable %s was previously declared", $1);
+			yyerror(_("variable %s was previously declared"), $1);
 			/* FIXME: it'd be handy to report the previous location */
 		}
 		free($1);
