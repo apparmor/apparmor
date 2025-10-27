@@ -1,0 +1,1 @@
+type=AVC msg=audit(1756114380.219:39003): apparmor="DENIED" operation="file_inherit" class="net" profile="/usr/bin/xxx" pid=619035 comm="xxx" family="unix" sock_type="stream" protocol=0 requested_mask="receive"

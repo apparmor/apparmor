@@ -1,0 +1,15 @@
+START
+File: testcase_unix_no_denied_issue541.in
+Event type: AA_RECORD_DENIED
+Audit ID: 1756114380.219:39003
+Operation: file_inherit
+Mask: receive
+Profile: /usr/bin/xxx
+Command: xxx
+PID: 619035
+Network family: unix
+Socket type: stream
+Protocol: ip
+Class: net
+Epoch: 1756114380
+Audit subid: 39003
