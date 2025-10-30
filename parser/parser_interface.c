@@ -383,7 +383,7 @@ void sd_serialize_rlimits(std::ostringstream &buf, struct aa_rlimits *limits)
 	sd_write_structend(buf);
 }
 
-void sd_serialize_xtable(std::ostringstream &buf, char **table)
+void sd_serialize_xtable(std::ostringstream &buf, const char * const *table)
 {
 	size_t count;
 
@@ -404,10 +404,21 @@ void sd_serialize_xtable(std::ostringstream &buf, char **table)
 		 * with 0, so that the namespace and name are \0 separated
 		 */
 		if (*table[i] == ':') {
-			char *tmp = table[i] + 1;
+			/* don't change table */
+			char *ent = strdup(table[i]);
+			if (!ent) {
+				PERROR("Failed to allocate memory: %s\n", strerror(errno));
+				/* exiting here because there's no
+				 * error handling for serialize functions */
+				exit(errno);
+			}
+			char *tmp = ent + 1;
 			strsep(&tmp, ":");
+			sd_write_strn(buf, ent, len, NULL);
+			free(ent);
 		}
-		sd_write_strn(buf, table[i], len, NULL);
+		else
+			sd_write_strn(buf, table[i], len, NULL);
 	}
 
 	sd_write_arrayend(buf);
