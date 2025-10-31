@@ -16,6 +16,9 @@
 
   @{sys}/devices/@{pci_bus}/**/{revision,config} r,
 
+  # Thread scheduling
+  @{sys}/devices/system/cpu/cpu[0-9]*/cpu_capacity r,
+
   # User files
   owner @{HOME}/.cache/ w, # if user clears all caches
   owner @{HOME}/.cache/mesa_shader_cache/ rw,
