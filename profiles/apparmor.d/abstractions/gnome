@@ -19,6 +19,8 @@
   include <abstractions/xdg-desktop>
   include <abstractions/user-tmp>
   include <abstractions/wayland>
+  include <abstractions/opengl>
+  include <abstractions/vulkan>
 
   # systemwide gtk defaults
   /etc/gnome/gtkrc*               r,
