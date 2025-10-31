@@ -3,6 +3,9 @@
 
   abi <abi/4.0>,
 
+  # Mesa provides the default Vulkan implementation
+  include <abstractions/mesa>
+
   # System files
   /etc/vulkan/icd.d/{,*.json} r,
   /etc/vulkan/{explicit,implicit}_layer.d/{,*.json} r,
