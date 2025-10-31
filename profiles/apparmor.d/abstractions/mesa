@@ -4,6 +4,7 @@
   abi <abi/4.0>,
 
   include <abstractions/dri-common>
+  include <abstractions/dri-enumerate>
 
   # System files
   /dev/udmabuf rw,
