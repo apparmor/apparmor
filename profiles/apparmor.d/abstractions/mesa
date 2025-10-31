@@ -3,8 +3,9 @@
 
   abi <abi/5.0>,
 
+  include <abstractions/dri-common>
+
   # System files
-  /dev/dri/ r, # libGLX_mesa.so calls drmGetDevice2()
   /dev/udmabuf rw,
   /usr/share/libdrm/amdgpu.ids r,
 
