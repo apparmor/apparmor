@@ -210,15 +210,20 @@ class MountTestClean(AATest):
         ('     umount                                                            /foo           ,           ', 'umount /foo,'),
         ('     remount                                                                          ,           ', 'remount,'),
         ('     remount                                                           /foo           ,           ', 'remount /foo,'),
+        (' deny     mount                           fstype  =  (  sysfs  )                      ,           ', 'deny mount fstype=(sysfs),'),
+        ('  deny   umount                                                        /foo           ,           ', 'deny umount /foo,'),
+        ('   deny  remount                                                                      ,           ', 'deny remount,'),
     )
 
     def _run_test(self, rawrule, expected):
         self.assertTrue(MountRule.match(rawrule))
         obj = MountRule.create_instance(rawrule)
         clean = obj.get_clean()
+        cleanspc = obj.get_clean(1)
         raw = obj.get_raw()
 
         self.assertEqual(expected, clean, 'unexpected clean rule')
+        self.assertEqual("  " + expected, cleanspc, 'unexpected clean rule with leading spaces')
         self.assertEqual(rawrule.strip(), raw, 'unexpected raw rule')
 
 
