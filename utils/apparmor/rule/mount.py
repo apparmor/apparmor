@@ -261,8 +261,8 @@ class MountRule(BaseRule):
             if not self.all_dest:
                 dest = ' ' + quote_if_needed(str(self.dest.regex))
 
-        return ('%s%s%s%s%s%s%s,%s' % (self.modifiers_str(),
-                                       space,
+        return ('%s%s%s%s%s%s%s,%s' % (space,
+                                       self.modifiers_str(),
                                        self.operation,
                                        fstype,
                                        options,

@@ -258,6 +258,9 @@ class MountTestClean(AATest):
         ('     umount                                                            /foo           ,           ', 'umount /foo,'),
         ('     remount                                                                          ,           ', 'remount,'),
         ('     remount                                                           /foo           ,           ', 'remount /foo,'),
+        (' deny     mount                           fstype  =  (  sysfs  )                      ,           ', 'deny mount fstype=sysfs,'),
+        ('  deny   umount                                                        /foo           ,           ', 'deny umount /foo,'),
+        ('   deny  remount                                                                      ,           ', 'deny remount,'),
         ('priority =1 mount     ""   -> /foo                                                    ,           ', 'priority=1 mount "" -> /foo,'),
         ('priority=0 audit  mount  "/f /b" -> "/foo bar"                                        ,           ', 'priority=0 audit mount "/f /b" -> "/foo bar",'),
         (' priority  =  +10   umount                                                            ,           ', 'priority=10 umount,'),
@@ -270,9 +273,11 @@ class MountTestClean(AATest):
         self.assertTrue(MountRule.match(rawrule))
         obj = MountRule.create_instance(rawrule)
         clean = obj.get_clean()
+        cleanspc = obj.get_clean(1)
         raw = obj.get_raw()
 
         self.assertEqual(expected, clean, 'unexpected clean rule')
+        self.assertEqual("  " + expected, cleanspc, 'unexpected clean rule with leading spaces')
         self.assertEqual(rawrule.strip(), raw, 'unexpected raw rule')
 
 
