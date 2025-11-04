@@ -37,13 +37,13 @@ cond_expr::cond_expr(const char *var, cond_op op)
 		}
 		result = boolean;
 	} else if (op == cond_op::BOOLEAN_OP) {
-		variable *ref = symtab::get_boolean_var(var);
+		variable *ref = global_symtab.get_boolean_var(var);
 		if (!ref) {
 			yyerror(_("Unset boolean variable %s used in if-expression"), var);
 		}
 		result = ref->boolean;
 	} else if (op == cond_op::DEFINED_OP) {
-		variable *ref = symtab::get_set_var(var);
+		variable *ref = global_symtab.get_set_var(var);
 		if (!ref) {
 			result = false;
 		} else {
@@ -70,7 +70,7 @@ std::set<std::string> cond_expr::get_set(const char *var)
 		/* not a variable */
 		return {var};
 	}
-	variable *ref = symtab::lookup_existing_symbol(var_name);
+	variable *ref = global_symtab.lookup_existing_symbol(var_name);
 	free(var_name);
 	if (!ref) {
 		yyerror(_("Error retrieving variable %s"), var);

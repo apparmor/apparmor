@@ -1263,7 +1263,7 @@ void reset_parser(const char *filename)
 	memset(&cache_tstamp, 0, sizeof(cache_tstamp));
 	mru_skip_cache = 1;
 	free_aliases();
-	symtab::free_symtab();
+	global_symtab.free_symtab();
 	free_policies();
 	reset_include_stack(filename);
 	aa_features_unref(policy_features);
@@ -1423,7 +1423,7 @@ int process_profile(int option, aa_kernel_interface *kernel_interface,
 	}
 
 	if (dump_vars) {
-		symtab::dump(false);
+		global_symtab.dump(false);
 		goto out;
 	}
 
@@ -1434,7 +1434,7 @@ int process_profile(int option, aa_kernel_interface *kernel_interface,
 	}
 
 	if (dump_expanded_vars) {
-		symtab::dump(true);
+		global_symtab.dump(true);
 		goto out;
 	}
 

@@ -281,7 +281,7 @@ int variable::expand_by_alternation(char **name)
 	if (!suffix.empty() && suffix[0] == '/')
 		filter_trailing_slash = true;
 
-	variable *ref = symtab::get_set_var(var.c_str());
+	variable *ref = global_symtab.get_set_var(var.c_str());
 	if (!ref) {
 		PERROR("Failed to find declaration for: %s\n", var.c_str());
 		return 1;
@@ -355,7 +355,7 @@ int variable::expand_variable()
 			continue;
 		}
 		name = variable::process_var(var.c_str());
-		variable *ref = symtab::lookup_existing_symbol(name);
+		variable *ref = global_symtab.lookup_existing_symbol(name);
 		free(name);
 		if (!ref) {
 			PERROR("Failed to find declaration for: %s\n", var.c_str());

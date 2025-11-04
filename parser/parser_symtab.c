@@ -37,14 +37,14 @@ int test_add_set_to_boolean(void)
 	int retval;
 	struct value_list *val;
 	/* test adding a set value to a boolean variable */
-	retval = symtab::add_var("@not_a_set_variable", 1);
+	retval = global_symtab.add_var("@not_a_set_variable", 1);
 	MY_TEST(retval == 0, "new boolean variable 3");
 
 	val = new_value_list(strdup("a set value"));
-	retval = symtab::add_set_value("@not_a_set_variable", val);
+	retval = global_symtab.add_set_value("@not_a_set_variable", val);
 	MY_TEST(retval != 0, "add set value to boolean");
 
-	symtab::free_symtab();
+	global_symtab.free_symtab();
 	free_value_list(val);
 
 	return rc;
@@ -57,16 +57,16 @@ int test_expand_bool_within_set(void)
 	variable *retsym;
 
 	/* test expanding a boolean var within a set variable */
-	retval = symtab::add_var("@not_a_set_variable", 1);
+	retval = global_symtab.add_var("@not_a_set_variable", 1);
 	MY_TEST(retval == 0, "new boolean variable 4");
-	retval = symtab::add_var("set_variable", "set_value@{not_a_set_variable}");
+	retval = global_symtab.add_var("set_variable", "set_value@{not_a_set_variable}");
 	MY_TEST(retval == 0, "add set value with embedded boolean");
-	retsym = symtab::lookup_existing_symbol("set_variable");
+	retsym = global_symtab.lookup_existing_symbol("set_variable");
 	MY_TEST(retsym != NULL, "get set variable w/boolean");
 	retval = retsym->expand_variable();
 	MY_TEST(retval != 0, "expand set variable with embedded boolean");
 
-	symtab::free_symtab();
+	global_symtab.free_symtab();
 
 	return rc;
 }
@@ -78,18 +78,18 @@ int test_expand_recursive_set_vars(void)
 	variable *retsym;
 
 	/* test expanding a recursive var within a set variable */
-	retval = symtab::add_var("recursive_1", "set_value@{recursive_2}");
+	retval = global_symtab.add_var("recursive_1", "set_value@{recursive_2}");
 	MY_TEST(retval == 0, "new recursive set variable 1");
-	retval = symtab::add_var("recursive_2", "set_value@{recursive_3}");
+	retval = global_symtab.add_var("recursive_2", "set_value@{recursive_3}");
 	MY_TEST(retval == 0, "new recursive set variable 2");
-	retval = symtab::add_var("recursive_3", "set_value@{recursive_1}");
+	retval = global_symtab.add_var("recursive_3", "set_value@{recursive_1}");
 	MY_TEST(retval == 0, "new recursive set variable 3");
-	retsym = symtab::lookup_existing_symbol("recursive_1");
+	retsym = global_symtab.lookup_existing_symbol("recursive_1");
 	MY_TEST(retsym != NULL, "get recursive set variable");
 	retval = retsym->expand_variable();
 	MY_TEST(retval != 0, "expand recursive set variable");
 
-	symtab::free_symtab();
+	global_symtab.free_symtab();
 
 	return rc;
 }
@@ -101,14 +101,14 @@ int test_expand_undefined_set_var(void)
 	variable *retsym;
 
 	/* test expanding an undefined var within a set variable */
-	retval = symtab::add_var("defined_var", "set_value@{undefined_var}");
+	retval = global_symtab.add_var("defined_var", "set_value@{undefined_var}");
 	MY_TEST(retval == 0, "new undefined test set variable");
-	retsym = symtab::lookup_existing_symbol("defined_var");
+	retsym = global_symtab.lookup_existing_symbol("defined_var");
 	MY_TEST(retsym != NULL, "get undefined test set variable");
 	retval = retsym->expand_variable();
 	MY_TEST(retval != 0, "expand undefined set variable");
 
-	symtab::free_symtab();
+	global_symtab.free_symtab();
 
 	return rc;
 }
@@ -120,17 +120,17 @@ int test_expand_set_var_during_dump(void)
 	variable *retsym;
 
 	/* test expanding an defined var within a set variable during var dump*/
-	retval = symtab::add_var("set_var_1", "set_value@{set_var_2}");
+	retval = global_symtab.add_var("set_var_1", "set_value@{set_var_2}");
 	MY_TEST(retval == 0, "new dump expansion set variable 1");
-	retval = symtab::add_var("set_var_2", "some other set_value");
+	retval = global_symtab.add_var("set_var_2", "some other set_value");
 	MY_TEST(retval == 0, "new dump expansion set variable 2");
-	retsym = symtab::lookup_existing_symbol("set_var_1");
+	retsym = global_symtab.lookup_existing_symbol("set_var_1");
 	MY_TEST(retsym != NULL, "get dump expansion set variable 1");
 	retsym->dump(false);
 	retsym->dump(true);
 	retsym->dump(false);
 
-	symtab::free_symtab();
+	global_symtab.free_symtab();
 
 	return rc;
 }
@@ -142,14 +142,14 @@ int test_delete_set_var(void)
 	variable *deleted;
 	variable *retsym;
 
-	retval = symtab::add_var("deleteme", "delete this variable");
+	retval = global_symtab.add_var("deleteme", "delete this variable");
 	MY_TEST(retval == 0, "new delete set variable");
-	deleted = symtab::delete_var("deleteme");
+	deleted = global_symtab.delete_var("deleteme");
 	MY_TEST(deleted != NULL, "delete set variable");
-	retsym = symtab::lookup_existing_symbol(deleted->var_name.c_str());
+	retsym = global_symtab.lookup_existing_symbol(deleted->var_name.c_str());
 	MY_TEST(retsym == NULL, "deleteme was deleted from symtable");
 
-	symtab::free_symtab();
+	global_symtab.free_symtab();
 
 	return rc;
 }
@@ -163,7 +163,7 @@ int main(void)
 	variable *retsym;
 
 	val = new_value_list(strdup("a set value"));
-	retval = symtab::add_set_value("@not_a_set_variable", val);
+	retval = global_symtab.add_set_value("@not_a_set_variable", val);
 
 	retval = test_add_set_to_boolean();
 	if (rc == 0)
@@ -189,70 +189,70 @@ int main(void)
 	if (rc == 0)
 		rc = retval;
 
-	retval = symtab::add_var("test", "test value");
+	retval = global_symtab.add_var("test", "test value");
 	MY_TEST(retval == 0, "new set variable 1");
 
-	retval = symtab::add_var("test", "different value");
+	retval = global_symtab.add_var("test", "different value");
 	MY_TEST(retval != 0, "new set variable 2");
 
-	retval = symtab::add_var("testing", "testing");
+	retval = global_symtab.add_var("testing", "testing");
 	MY_TEST(retval == 0, "new set variable 3");
 
-	retval = symtab::add_var("monopuff", "Mockingbird");
+	retval = global_symtab.add_var("monopuff", "Mockingbird");
 	MY_TEST(retval == 0, "new set variable 4");
 
-	retval = symtab::add_var("stereopuff", "Unsupervised");
+	retval = global_symtab.add_var("stereopuff", "Unsupervised");
 	MY_TEST(retval == 0, "new set variable 5");
 
 	val = new_value_list(strdup("Fun to Steal"));
 	list = val;
-	retval = symtab::add_set_value("@stereopuff", val);
+	retval = global_symtab.add_set_value("@stereopuff", val);
 	MY_TEST(retval == 0, "add set value 1");
 
 	val = new_value_list(strdup("/in/direction"));
 	list_append(list, val);
-	retval = symtab::add_set_value("@stereopuff", val);
+	retval = global_symtab.add_set_value("@stereopuff", val);
 	MY_TEST(retval == 0, "add set value 2");
 
 	val = new_value_list(strdup("stereopuff"));
 	list_append(list, val);
-	retval = symtab::add_set_value("@no_such_variable", val);
+	retval = global_symtab.add_set_value("@no_such_variable", val);
 	MY_TEST(retval != 0, "add to non-existent set var");
 
-	retval = symtab::add_var("@abuse", 0);
+	retval = global_symtab.add_var("@abuse", 0);
 	MY_TEST(retval == 0, "new boolean variable 1");
 
-	retval = symtab::add_var("@abuse", 1);
+	retval = global_symtab.add_var("@abuse", 1);
 	MY_TEST(retval != 0, "duplicate boolean variable 1");
 
-	retval = symtab::add_var("@stereopuff", 1);
+	retval = global_symtab.add_var("@stereopuff", 1);
 	MY_TEST(retval != 0, "duplicate boolean variable 2");
 
-	retval = symtab::add_var("@shenanigan", 1);
+	retval = global_symtab.add_var("@shenanigan", 1);
 	MY_TEST(retval == 0, "new boolean variable 2");
 
-	retsym = symtab::get_boolean_var("@shenanigan");
+	retsym = global_symtab.get_boolean_var("@shenanigan");
 	MY_TEST(retsym != NULL, "boolean variable 1 exists");
 	MY_TEST(retsym->boolean == 1, "get boolean variable 1");
 
-	retsym = symtab::get_boolean_var("@abuse");
+	retsym = global_symtab.get_boolean_var("@abuse");
 	MY_TEST(retsym != NULL, "boolean variable 2 exists");
 	MY_TEST(retsym->boolean == 0, "get boolean variable 2");
 
-	retsym = symtab::get_boolean_var("@non_existant");
+	retsym = global_symtab.get_boolean_var("@non_existant");
 	MY_TEST(retsym == NULL, "get nonexistent boolean variable");
 
-	retsym = symtab::get_boolean_var("@stereopuff");
+	retsym = global_symtab.get_boolean_var("@stereopuff");
 	MY_TEST(retsym == NULL, "get boolean variable that's declared a set var");
 
-	retsym = symtab::get_set_var("@daves_not_here_man");
+	retsym = global_symtab.get_set_var("@daves_not_here_man");
 	MY_TEST(retsym == NULL, "get nonexistent set variable");
 
-	retsym = symtab::get_set_var("@abuse");
+	retsym = global_symtab.get_set_var("@abuse");
 	MY_TEST(retsym == NULL, "get set variable that's declared a boolean");
 
 	/* test walking set values */
-	retsym = symtab::get_set_var("@monopuff");
+	retsym = global_symtab.get_set_var("@monopuff");
 	MY_TEST(retsym != NULL, "get set variable 1");
 	MY_TEST(retsym->values.size() == 1, "only one value");
 	MY_TEST(retsym->expanded.size() == 1, "only one expanded");
@@ -267,16 +267,16 @@ int main(void)
 		MY_TEST(retval == 0, "get set value 1 expanded");
 	}
 
-	retval = symtab::add_var("eek", "Mocking@{monopuff}bir@{stereopuff}d@{stereopuff}");
+	retval = global_symtab.add_var("eek", "Mocking@{monopuff}bir@{stereopuff}d@{stereopuff}");
 	MY_TEST(retval == 0, "new set variable 4");
 
-	symtab::dump(false);
-	symtab::expand_variables();
-	symtab::dump(false);
-	symtab::dump(true);
+	global_symtab.dump(false);
+	global_symtab.expand_variables();
+	global_symtab.dump(false);
+	global_symtab.dump(true);
 
 	free_value_list(list);
-	symtab::free_symtab();
+	global_symtab.free_symtab();
 
 	return rc;
 }
