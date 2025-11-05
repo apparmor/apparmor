@@ -303,7 +303,7 @@ def reopen_logfile_if_needed(logfile, logdata, log_inode, log_size):
     return (logdata, log_inode, log_size)
 
 
-def get_apparmor_events_return(logfile, since=0):
+def get_apparmor_events_return(logfile, filters, since=0):
     """Read audit events from log source and return all relevant events."""
     out = []
     # Get logdata from file
@@ -311,7 +311,7 @@ def get_apparmor_events_return(logfile, since=0):
     try:
         with open_file_read(logfile) as logdata:
             for event in parse_logdata(logdata):
-                if event.epoch > since:
+                if event.epoch > since and is_event_in_filter(event, filters):
                     out.append(event)
 
         return out
@@ -1141,7 +1141,7 @@ def main():
             old_time = int(time.time())
             while True:
 
-                raw_evs = get_apparmor_events_return(logfile, old_time)
+                raw_evs = get_apparmor_events_return(logfile, filters, old_time)
                 drop_privileges()
 
                 if len(raw_evs) == 1:  # Single event: we handle it without aggregation
