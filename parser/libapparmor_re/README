@@ -419,12 +419,282 @@ up to 3 oobs
   11 - 3
 
 
-Diff Encode Spanning Tree
+Diff Encode & Spanning Tree
 ============================================
-To build the state machine with diff encoded states and to still meet
-run time guaratees about traversing no more than 2n states for n input
-a spanning tree is use.
+
+State differential encoding is a technique to compress the dfa by
+reducing the number of transition states that need to be stored for a
+give state.  Finding an optimal differential encoding is an
+np-complete problem, instead apparmor uses an algorithm that is
+expexted to be nlogn but does have a worst case of O(n^2).
+
+When the differential code approximates nlogn, and if it removes
+enough transitions, it can speed up the compile time because it
+reduces the number of transitions that need to be considered by the
+O(n^2) comb compression. In the worst case when differential encoding
+approximates O(n^2), and if it doesn't eliminate may transitions it
+can slow the backend of the state machine build down by approximately
+2x.
+
+The algorithm used to do the differential encoding makes sure the
+encode is done in such a way that to provide runtime guaratees that no
+more that for an input of length n, no more than 2N states will be
+traversed for an input of length N.
+
+Understanding the Diff Encode
+-----------------------------
+
+To reduce the number of transitions a state has to encode states can
+be made to encode their transitions as a differential to a "default"
+state. If a transition is not represented in the current state the
+default state is entered and the process is repeated until the
+transition is found or the state is not marked to be encoded relative
+to it default.
+
+An example: Lets say we have two states A and B witht the following
+transitions.
+
+State A				State B
+default -> NULL			default -> NULL
+'a' -> X   			'a' -> X
+'b' -> Y			'b' -> Y
+       				'c' -> Z
+
+diff encoding will not change state A but changes state B
+
+State A	      	       	      	State B (diff*)
+default -> NULL			default -> A
+'a' -> X   			'c' -> Z
+'b' -> Y
+
+matches for state A do not change, but performing a match for state B
+might. Matching input 'c' for state B has no difference the match finds
+that Z is the transition for input 'c' and transitions just as it
+would for the state machine not using diff encoding.
+
+However the match for inputs 'a' and 'b' do change. For inputs 'a' and
+'b' the match will not find a matching transition so the default
+transition will be used which has become state A instead of null, in
+addition the state is detected to be diff encoded, so instead of
+stopping the match on the state transition, that match is rerun
+against State A. For all inputs besides 'c' (which does not get passed
+to state A, the transitions are the same as the original state B, so
+after the match is run against state A, the match is now in the same
+state it would have been without diff encoding.
+
+The diff encode reduced the number of transitions stored in the state
+machine by 2, at the cost of requiring a run time cost of transitioning
+through 2 states to find the state for a single input.
+
+
+Chaining diff state diff encoding
+
+The diff encode is not limited a single state transition. Diff encoded
+states can be chained to obtain further savings.
+
+
+Eg. 2
+
+State A			State B			State C
+default -> NULL		default -> NULL		default -> NULL
+'a' -> W   		'a' -> W   		'a' -> W
+'b' -> X		'b' -> X		'b' -> X
+       			'c' -> Y		'c' -> Y
+       			    			'd' -> Z
+becomes
+
+State A			State B	(diff*)		State C (diff*)
+default -> NULL		default -> A		default -> B
+'a' -> W   		'c' -> Y   		'd' -> Z
+'b' -> X
+
+The match for State B is similar to example 1, transitioning to State A
+to find the rest of its transitions. State C will match input 'd' but
+for other inputs transition to state B, which can directly match input
+'c' but will transition to state A for the rest of its transitions.
+
+This time the diff encode has manged to remove 5 transitions from memory
+at the cost of having to match against up to 2 states from state B, and
+up to 3 states from State C.
+
+
+
+Masking transitions
+
+The diff encode is not limited to just encoding against states with
+a strict subset of transitions as was done in example 1 and 2. It can
+also add transitions to mask transitions down the chain, allowing
+a broader set of states to be used when setting up diff encode chains.
+
+
+Eg. 3
+
+State A				State B
+default -> NULL			default -> NULL
+'a' -> W   			'a' -> X
+'b' -> Y			'b' -> Y
+       				'c' -> Z
+
+can be diff encoded as
+State A				State B (diff*)
+default -> NULL			default -> A
+'a' -> W   			'a' -> X
+'b' -> Y			'c' -> Z
+
+In this case only 1 transition is removed because the 'a' transition
+is kept to override/mask the 'a' transition in state A. When doing
+a transition from state B, its transitions will be consulted first
+the correct transition to state X for input 'a' will be done.
+
+Eg. 4.
+State A				State B
+default -> X			default -> X
+'a' -> W   			'b' -> Y
+'b' -> Y
+
+can be encoded as
+
+State A				State B (diff*)
+default -> NULL			default -> A
+'a' -> W   			'a' -> X
+'b' -> Y
+
+in this case the diff encode doesn't save any transitions so it is not
+worth doing, but a similar situation with transitions could result in
+savings.
+
+
+Loops and diff encode termination
+
+The diff encode if done wrong could create an infinite loop for a
+single input. To avoid this the diff-encode must be built and verified
+so every diff encoded state chain ends on a non-diff-encoded state.
+
+
+
+Building the Diff Encode
+-------------------------
+
+State differential encoding can be quite effective in reducing the
+number of states but it can increase both compile and matching time
+(as multiple states must be traversed for a single match). However if
+the states to encode against are chosen carefully, then both the
+encoding time and matching time can be bounded. Differential encoding
+can even result in a faster HFA as it can reduce the data needed to be
+cached, resulting in improved cache line reuse.
+
+The requirements AppArmor uses to choose the states to encode against are
+    • The state must have been previously matched while walking the
+      dfa (it will be hot in the cache then)
+    • or the state must be at the same level in a DAG decomposition of
+      the dfa, sharing a common ancestor (more on this below)
+
+The first requirement was primarily for performance concerns but in
+practice works out well for compression too, as states that are close
+to each other often have similar transitions. The second allows
+expanding the reach of the compression to a few more likely options
+while keeping a potentially common hot path, without breaking
+the other property of only referencing previously matched states.
+
+In practice requirement 1 can not be met as each match string takes a
+different path through the dfa. It can however be approximated by
+converting the dfa into a directed acyclic graph (DAG) with the start
+state as the root. The DAG provides a good approximation for
+requirement 1 and at the same time it limits how many states have to be
+considered for compression (only backwards in the DAG). It also
+provides guarentees on how many states will be walked at run time (at
+most 2n).
+
+Eg.
+
+TODO: ??? simple dfa to spanning tree graph
+
+
+Converting the HFA into DAG for compression does have a limitation in
+that it removes many of a states immediate neighbours from
+consideration. In a DAG a states neighbours can be broken into five
+classes, immediate predecessor, predecessor on another branch, sibling
+on another branch, immediate successor, successor on another
+branch. The immediate predecessor and immediate successor cases are
+covered by the predecessor differential compression scheme described
+above (successor as the current state is the successor state
+predecessor, and thus will be considered when the successor is
+differentially encoded). However the successor and predecessor on
+another branch and sibling cases are not covered, and they maybe the
+more optimal path for encoding, and may be the hot path the match came
+through.
+
+TODO: ??? diagram showing the 5 classes
+
+To help account for this, AppArmor also compares to the immediate
+successors of the state being consider if there are transitions
+between the states. Sibling states are also considered if there are
+transitions between the state and the sibling is differentially
+encoded against a predecessor (not another sibling), or not
+differentially encoded. This broadens the set of states considered but
+limits it to states that were potentially matched against and thus in
+the cache. It also has the property of looking backwards in the DAG
+thus keeping the maximum number of states that are required to be
+transitioned to in a match to a linear constant. If only branch
+predecessor where used then the limit could be kept at 2n but because
+immediate siblings can be used iff they transition to a predecessor
+the limit is bounded to a slightly higher value of 5/2n.
+
+When considering which state to differentially encode against AppArmor
+computes a weighted value and chooses the best one. The value is
+computed as follows.
+
+    • For each defined transition in the state
+    
+        +0 to candidate state weight - if the transition is
+           undefined in the candidate state (the transition must be
+           represented in the current state)
+	
+        +1 to candidate state weight - if the candidate state has
+           the same transition to the same state (the transition can be
+           eliminated from the current state)
+	
+        -1 to candidate state weight - if the transition is defined
+           in the candidate state and it is not the same transition
+           (current state must add a transition entry to override
+           candidate transition)
+	
+    • For each undefined transition in the state
+    
+        +0 to candidate state weight - if the transition is
+           undefined in the candidate state
+	
+        -1 to candidate state weight - if the transition is defined
+	   in candidate state (current state must add an entry to
+	   override the candidate transition) The current state will be
+	   differentially encoded against the candidate state with the
+	   largest weight > 0. If there is no weighting > 0 then no
+	   differential encoding for the state will be done as their is
+	   no benefit to doing so.
+
+Note: differential encoding can case reduce a state to 0 stored
+transitions. This can happen when two states have the exact same
+transitions but belong in different partitions when minimized. This
+would happen for example when one state was an accept state and the
+other a none accepting state. Other wise if states have the same
+transitions they are redundant and removed during state minimization.
+
+
+DFA WELDING
+-----------
+* TODO *
+
+
+DFA SET OPERATIONS
+------------------
+
+If two DFAs can be aligned on partitioning scheme the set operations
+of union, intersecions and differences can be used to create a new
+DFA that represents the results of the operation.
 
 * TODO *
 
 
+DFA ALIAS REWRITE
+-----------------
+* TODO *
