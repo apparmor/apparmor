@@ -33,36 +33,7 @@
 #include "signal.h"
 #include "immunix.h"
 #include "perms.h"
-
-class Profile;
-
-class block {
-public:
-
-};
-
-
-struct deref_profileptr_lt {
-	bool operator()(Profile * const &lhs, Profile * const &rhs) const;
-};
-
-class ProfileList {
-public:
-	std::set<Profile *, deref_profileptr_lt> list;
-
-	typedef std::set<Profile *, deref_profileptr_lt>::iterator iterator;
-	iterator begin() { return list.begin(); }
-	iterator end() { return list.end(); }
-
-	ProfileList() { };
-	virtual ~ProfileList() { clear(); }
-	virtual bool empty(void) { return list.empty(); }
-	virtual std::pair<ProfileList::iterator,bool> insert(Profile *);
-	virtual void erase(ProfileList::iterator pos);
-	void clear(void);
-	void dump(void);
-	void dump_profile_names(bool children);
-};
+#include "profilelist.h"
 
 extern const char*profile_mode_table[];
 /* use profile_mode_packed to convert to the packed representation */
