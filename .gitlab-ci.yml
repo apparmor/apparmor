@@ -195,8 +195,7 @@ coverity:
 .image-garden-x86_64:
   stage: spread
   interruptible: true
-  # TODO: use tagged release once container tagging is improved upstream.
-  image: registry.gitlab.com/zygoon/image-garden:latest
+  image: registry.gitlab.com/zygoon/image-garden:v0.4
   tags:
     - linux
     - x86_64
