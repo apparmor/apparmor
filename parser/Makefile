@@ -24,13 +24,11 @@ include $(COMMONDIR)/Make.rules
 
 DESTDIR=/
 APPARMOR_BIN_PREFIX=${DESTDIR}/lib/apparmor
-SBINDIR=${DESTDIR}/sbin
 USR_SBINDIR=${DESTDIR}/usr/sbin
-SYSTEMD_UNIT_DIR=${DESTDIR}/usr/lib/systemd/system
 CONFDIR=/etc/apparmor
 INSTALL_CONFDIR=${DESTDIR}${CONFDIR}
 LOCALEDIR=/usr/share/locale
-MANPAGES=apparmor.d.5 apparmor.7 apparmor_parser.8 aa-teardown.8 apparmor_xattrs.7
+MANPAGES=apparmor.d.5 apparmor.7 apparmor_parser.8 apparmor_xattrs.7
 
 # Test for bison version
 # parse.error added in version 3.0
@@ -399,26 +397,10 @@ tests: apparmor_parser ${TESTS}
 $(AAREOBJECT): FORCE
 	$(MAKE) -C $(AAREDIR) CFLAGS="$(EXTRA_CXXFLAGS)"
 
-.PHONY: install-redhat
-install-redhat: install-systemd
 
-.PHONY: install-suse
-install-suse: install-systemd
-	install -m 755 -d $(SBINDIR)
-	ln -sf service $(SBINDIR)/rcapparmor
 
-.PHONY: install-slackware
-install-slackware:
-	install -m 755 -d $(APPARMOR_BIN_PREFIX)/install
-	install -m 755 frob_slack_rc $(APPARMOR_BIN_PREFIX)/install
-	install -m 755 -d $(DESTDIR)/etc/rc.d
-	install -m 755 rc.apparmor.$(subst install-,,$(@)) $(DESTDIR)/etc/rc.d/rc.apparmor
 
-.PHONY: install-debian
-install-debian:
 
-.PHONY: install-unknown
-install-unknown:
 
 INSTALLDEPS=arch
 
@@ -453,26 +435,14 @@ install:
 
 .PHONY: install-arch
 install-arch: $(INSTALLDEPS)
-	install -m 755 -d $(SBINDIR)
-	install -m 755 ${TOOLS} $(SBINDIR)
 
 .PHONY: install-indep
 install-indep: indep
 	install -m 755 -d $(INSTALL_CONFDIR)
 	install -m 644 parser.conf $(INSTALL_CONFDIR)
 	install -m 755 -d $(APPARMOR_BIN_PREFIX)
-	install -m 755 rc.apparmor.functions $(APPARMOR_BIN_PREFIX)
-	install -m 755 profile-load $(APPARMOR_BIN_PREFIX)
 	$(MAKE) -C po install NAME=${NAME} DESTDIR=${DESTDIR}
 	$(MAKE) install_manpages DESTDIR=${DESTDIR}
-
-.PHONY: install-systemd
-install-systemd:
-	install -m 755 -d $(SYSTEMD_UNIT_DIR)
-	install -m 644 apparmor.service $(SYSTEMD_UNIT_DIR)
-	install -m 755 apparmor.systemd $(APPARMOR_BIN_PREFIX)
-	install -m 755 -d $(USR_SBINDIR)
-	install -m 755 aa-teardown $(USR_SBINDIR)
 
 ifndef VERBOSE
 .SILENT: clean
