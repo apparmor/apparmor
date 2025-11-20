@@ -312,7 +312,7 @@ image-ubuntu-cloud-24.04-x86_64:
     - printf '\e[0K%s:%s:%s\r\e[0K%s\n' section_start "$(date +%s)" run_spread "Running spread for $GARDEN_SYSTEM..."
     # TODO: transform to inject ^...$ to properly select jobs to run.
     - mkdir -p spread-logs spread-artifacts
-    - ./spread -list $SPREAD_ARGS |
+    - ./spread -list $SPREAD_ARGS | sort |
       split --number=l/"${CI_NODE_INDEX:-1}"/"${CI_NODE_TOTAL:-1}" |
       xargs --verbose ./spread -v -artifacts ./spread-artifacts -v | tee spread-logs/"$GARDEN_SYSTEM".log
     - printf '\e[0K%s:%s:%s\r\e[0K\n' section_end "$(date +%s)" run_spread
