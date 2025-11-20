@@ -12,6 +12,7 @@ DIRS=libraries/libapparmor \
      binutils \
      parser \
      utils \
+     init \
      changehat/mod_apparmor \
      changehat/pam_apparmor \
      profiles \
