@@ -9,8 +9,8 @@ from pathlib import Path
 
 def is_excluded(f):
     return (re.match(
-        # skip test scripts and the rc.apparmor.slackware initscript
-        r"^([.]git/|parser/tst/|tests/|utils/test/|init/rc[.]apparmor[.]slackware)"
+        # skip test scripts
+        r"^([.]git/|parser/tst/|tests/|utils/test/)"
         + "|"
         # skip several files generated during libapparmor build
         + r"^libraries/libapparmor/(compile|config[.]guess|config[.]status|config[.]sub|configure|depcomp|install-sh|libtool|ltmain[.]sh|missing|test-driver|ylwrap|testsuite/test_multi[.]multi)",

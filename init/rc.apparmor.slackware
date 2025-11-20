@@ -2,6 +2,7 @@
 # ----------------------------------------------------------------------
 #    Copyright (c) 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007
 #    NOVELL (All rights reserved)
+#    Copyright (c) 2025 Christian Boltz
 #
 #    This program is free software; you can redistribute it and/or
 #    modify it under the terms of version 2 of the GNU General Public
@@ -16,40 +17,43 @@
 #    along with this program; if not, contact Novell, Inc.
 # ----------------------------------------------------------------------
 # rc.apparmor by Steve Beattie
-#
+
+# shellcheck disable=SC2317  # Don't warn about unreachable commands in this file
+#                              since most functions get called via rc.apparmor.functions
+
 # /etc/rc.d/rc.apparmor
 APPARMOR_FUNCTIONS=/lib/apparmor/rc.apparmor.functions
 
 aa_action() {
 	STRING=$1
 	shift
-	$*
+	"$@"
 	rc=$?
-	if [ $rc -eq 0 ] ; then
-		aa_log_success_msg $"$STRING "
+	if [ "$rc" -eq 0 ] ; then
+		aa_log_success_msg "$STRING"
 	else
-		aa_log_failure_msg $"$STRING "
+		aa_log_failure_msg "$STRING"
 	fi
-	return $rc
+	return "$rc"
 }
 
 aa_log_warning_msg() {
-	[ -n "$1" ] && echo -n $1
+	[ -n "$1" ] && echo -n "$1"
 	echo ": Warning."
 }
 
 aa_log_success_msg() {
-	[ -n "$1" ] && echo -n $1
+	[ -n "$1" ] && echo -n "$1"
 	echo ": OK."
 }
 
 aa_log_failure_msg() {
-	[ -n "$1" ] && echo -n $1
+	[ -n "$1" ] && echo -n "$1"
 	echo ": Failed."
 }
 
 aa_log_skipped_msg() {
-	[ -n "$1" ] && echo -n $1
+	[ -n "$1" ] && echo -n "$1"
 	echo ": Skipped."
 }
 
