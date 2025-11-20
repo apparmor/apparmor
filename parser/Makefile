@@ -2,7 +2,7 @@
 #    Copyright (c) 1999, 2000, 2001, 2002, 2004, 2005, 2006, 2007
 #    NOVELL (All rights reserved)
 #
-#    Copyright (c) Christian Boltz 2018
+#    Copyright (c) Christian Boltz 2018-2025
 #
 #    This program is free software; you can redistribute it and/or
 #    modify it under the terms of version 2 of the GNU General Public
@@ -397,54 +397,13 @@ tests: apparmor_parser ${TESTS}
 $(AAREOBJECT): FORCE
 	$(MAKE) -C $(AAREDIR) CFLAGS="$(EXTRA_CXXFLAGS)"
 
-.PHONY: install-redhat
-install-redhat:
-
-.PHONY: install-suse
-install-suse:
-
-.PHONY: install-slackware
-install-slackware:
-
-.PHONY: install-debian
-install-debian:
-
-.PHONY: install-unknown
-install-unknown:
-
-INSTALLDEPS=arch
-
-ifndef DISTRO
-DISTRO=$(shell if [ -f /etc/slackware-version ] ; then \
-	         echo slackware ; \
-	       elif [ -f /etc/debian_version ] ; then \
-	         echo debian ;\
-	       elif which rpm > /dev/null ; then \
-	         if [ "$$(rpm --eval '0%{?suse_version}')" != "0" ] ; then \
-	             echo suse ;\
-	         elif [ "$$(rpm --eval '%{_host_vendor}')" = redhat ] ; then \
-	            echo redhat ;\
-	         elif [ "$$(rpm --eval '0%{?fedora}')" != "0" ] ; then \
-	            echo redhat ;\
-	         else \
-	            echo unknown ;\
-	         fi ;\
-	       else \
-	          echo unknown ;\
-	       fi)
-endif
-
-ifdef DISTRO
-INSTALLDEPS+=install-$(DISTRO)
-endif
-
 .PHONY: install
 install:
 	$(MAKE) install-indep
 	$(MAKE) install-arch
 
 .PHONY: install-arch
-install-arch: $(INSTALLDEPS)
+install-arch: arch
 	install -m 755 -d $(SBINDIR)
 	install -m 755 ${TOOLS} $(SBINDIR)
 
