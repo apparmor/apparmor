@@ -230,7 +230,7 @@ class MountTestClean(AATest):
         ('     umount                                                            /foo           ,           ', 'umount /foo,'),
         ('     remount                                                                          ,           ', 'remount,'),
         ('     remount                                                           /foo           ,           ', 'remount /foo,'),
-        (' deny     mount                           fstype  =  (  sysfs  )                      ,           ', 'deny mount fstype=sysfs,'),
+        (' deny     mount                           fstype  =  (  sysfs  )                      ,           ', 'deny mount fstype=(sysfs),'),
         ('  deny   umount                                                        /foo           ,           ', 'deny umount /foo,'),
         ('   deny  remount                                                                      ,           ', 'deny remount,'),
         ('priority =1 mount     ""   -> /foo                                                    ,           ', 'priority=1 mount "" -> /foo,'),
