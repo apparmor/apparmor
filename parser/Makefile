@@ -23,7 +23,7 @@ COMMONDIR=../common/
 include $(COMMONDIR)/Make.rules
 
 DESTDIR=/
-APPARMOR_BIN_PREFIX=${DESTDIR}/lib/apparmor
+SBINDIR=${DESTDIR}/sbin
 USR_SBINDIR=${DESTDIR}/usr/sbin
 CONFDIR=/etc/apparmor
 INSTALL_CONFDIR=${DESTDIR}${CONFDIR}
@@ -397,10 +397,20 @@ tests: apparmor_parser ${TESTS}
 $(AAREOBJECT): FORCE
 	$(MAKE) -C $(AAREDIR) CFLAGS="$(EXTRA_CXXFLAGS)"
 
+.PHONY: install-redhat
+install-redhat:
 
+.PHONY: install-suse
+install-suse:
 
+.PHONY: install-slackware
+install-slackware:
 
+.PHONY: install-debian
+install-debian:
 
+.PHONY: install-unknown
+install-unknown:
 
 INSTALLDEPS=arch
 
@@ -435,12 +445,13 @@ install:
 
 .PHONY: install-arch
 install-arch: $(INSTALLDEPS)
+	install -m 755 -d $(SBINDIR)
+	install -m 755 ${TOOLS} $(SBINDIR)
 
 .PHONY: install-indep
 install-indep: indep
 	install -m 755 -d $(INSTALL_CONFDIR)
 	install -m 644 parser.conf $(INSTALL_CONFDIR)
-	install -m 755 -d $(APPARMOR_BIN_PREFIX)
 	$(MAKE) -C po install NAME=${NAME} DESTDIR=${DESTDIR}
 	$(MAKE) install_manpages DESTDIR=${DESTDIR}
 
