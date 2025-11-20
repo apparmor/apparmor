@@ -37,7 +37,6 @@ htmlmanpages:	$(HTMLMANPAGES)
 docs:	manpages htmlmanpages
 
 indep: docs
-	$(Q)$(MAKE) -C po all
 
 all:	indep
 
@@ -95,10 +94,10 @@ install:
 .PHONY: install-arch
 install-arch: $(INSTALLDEPS)
 	install -m 755 -d $(SBINDIR)
-	install -m 755 ${TOOLS} $(SBINDIR)
 
 .PHONY: install-indep
 install-indep: indep
+	install -m 755 -d $(APPARMOR_BIN_PREFIX)
 	install -m 755 rc.apparmor.functions $(APPARMOR_BIN_PREFIX)
 	install -m 755 profile-load $(APPARMOR_BIN_PREFIX)
 	$(MAKE) install_manpages DESTDIR=${DESTDIR}
