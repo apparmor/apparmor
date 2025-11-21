@@ -40,6 +40,12 @@ indep: docs
 
 all:	indep
 
+.SILENT: check
+.PHONY: check
+check: check_pod_files tests
+
+.SILENT: tests
+tests:
 
 .PHONY: install-redhat
 install-redhat: install-systemd

@@ -73,9 +73,11 @@ binutils/	source for basic utilities written in compiled languages
 changehat/	source for using changehat with Apache, PAM and Tomcat
 common/		common makefile rules
 desktop/	empty
-kernel-patches/	compatibility patches for various kernel versions
+documentation/	misc docs (not man pages), logos, ...
+init/		initscript fns and corresponding documentation
+kernel-patches/	compatibility patches for various kernel versions - deprecated
 libraries/	libapparmor source and language bindings
-parser/		source for parser/loader and corresponding documentation
+parser/		source for parser
 profiles/	configuration files, reference profiles and abstractions
 tests/		regression and stress testsuites
 utils/		high-level utilities for working with AppArmor
@@ -153,6 +155,12 @@ $ make check
 $ make install
 ```
 
+### Init:
+```
+$ make -j $(nproc)
+$ make check
+$ make install
+```
 
 ### Utilities:
 
