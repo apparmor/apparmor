@@ -792,6 +792,7 @@ class TestResolveVariables(AATest):
         ('/@{f}/',      ['/AAABBB/', '/CC/', '/CCC/']),
         ('@{g}',        ['/bin/AAABBB/{foo,bar}', '/bin/CC/{foo,bar}', '/bin/CCC/{foo,bar}']),
         ('@nota{var}',  ['@nota{var}']),  # not a variable to be expanded
+        ('@{foo,bar}',  ['@{foo,bar}']),  # @ followed by alternation, not a variable to be expanded
     )
 
     def _run_test(self, params, expected):
