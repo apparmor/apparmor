@@ -2,12 +2,20 @@
 Description=Load AppArmor profiles
 DefaultDependencies=no
 Before=sysinit.target
+After=local-fs.target
 After=systemd-journald-audit.socket
-# profile cache: /var/cache/apparmor/ and /usr/share/apparmor/cache/
-After=var.mount var-cache.mount usr.mount usr-share.mount
+After=systemd-sysctl.service
+RequiresMountsFor=/var/cache/apparmor
+AssertPathIsReadWrite=/sys/kernel/security/apparmor/.load
 ConditionSecurity=apparmor
 Documentation=man:apparmor(7)
 Documentation=https://gitlab.com/apparmor/apparmor/wikis/home/
+
+# Don't start this unit on the Ubuntu Live CD
+ConditionPathExists=!/rofs/etc/apparmor.d
+
+# Don't start this unit on the Debian Live CD when using overlayfs
+ConditionPathExists=!/run/live/overlay/work
 
 [Service]
 Type=oneshot
@@ -25,4 +33,4 @@ ExecStop=/bin/true
 RemainAfterExit=yes
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=sysinit.target
