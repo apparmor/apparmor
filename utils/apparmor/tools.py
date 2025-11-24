@@ -37,6 +37,10 @@ class aa_tools:
         self.do_reload = args.do_reload
         self.requires_binary = tool_name in ('autodep',)
 
+        self.explicit_profile = getattr(args, 'profile', None)
+        self.explicit_profile_file = getattr(args, 'profile_file', None)
+        self.explicit_executable = getattr(args, 'executable_file', None)
+
         if tool_name == 'audit':
             self.remove = args.remove
         elif tool_name == 'autodep':
@@ -92,6 +96,46 @@ class aa_tools:
 
     def get_next_to_profile(self):
         """Iterator function to walk the list of arguments passed"""
+
+        if self.explicit_profile_file:
+            prof_filename = apparmor.get_full_path(self.explicit_profile_file).strip()
+            if not os.path.isfile(prof_filename):
+                aaui.UI_Info(_("Profile file %s does not exist.") % self.explicit_profile_file)
+            else:
+                profiles = list(apparmor.active_profiles.profiles_in_file(prof_filename))
+                if not profiles:
+                    aaui.UI_Info(_("No profiles found in %s.") % prof_filename)
+                else:
+                    for profile in profiles:
+                        yield (profile, profile, prof_filename)
+
+        if self.explicit_profile:
+            profile = self.explicit_profile
+            if apparmor.active_profiles.profile_exists(profile):
+                prof_filename = apparmor.get_profile_filename_from_profile_name(profile)
+                yield (profile, profile, prof_filename)
+            elif os.path.exists(os.path.join(apparmor.profile_dir, profile)):
+                prof_filename = apparmor.get_full_path(os.path.join(apparmor.profile_dir, profile)).strip()
+                yield (None, profile, prof_filename)
+            else:
+                aaui.UI_Info(_("Profile for %s not found, skipping") % profile)
+
+        if self.explicit_executable:
+            program = apparmor.get_full_path(self.explicit_executable).strip()
+            profile = apparmor.active_profiles.profile_from_attachment(program)
+            prof_filename = apparmor.get_profile_filename_from_attachment(program, True)
+            if not profile or not apparmor.active_profiles.profile_exists(profile):
+                if not os.path.isfile(prof_filename):
+                    aaui.UI_Info(_("Profile for %s not found, skipping") % program)
+                else:
+                    profiles = list(apparmor.active_profiles.profiles_in_file(prof_filename))
+                    if profiles:
+                        for prof in profiles:
+                            yield (program, prof, prof_filename)
+                    else:
+                        aaui.UI_Info(_("Profile for %s not found, skipping") % program)
+            else:
+                yield (program, profile, prof_filename)
 
         for p in self.profiling:
             if not p:
@@ -197,14 +241,14 @@ class aa_tools:
     def clean_profile(self, program, profile, prof_filename):
         import apparmor.cleanprofile as cleanprofile
 
+        if not prof_filename:
+            raise AppArmorException(_('The profile for %s does not exist. Nothing to clean.') % program)
+
         prof = cleanprofile.Prof(prof_filename)
         cleanprof = cleanprofile.CleanProf(True, prof, prof)
         deleted = cleanprof.remove_duplicate_rules(profile)
         aaui.UI_Info(_("\nDeleted %s rules.") % deleted)
         apparmor.changed[profile] = True
-
-        if not prof_filename:
-            raise AppArmorException(_('The profile for %s does not exists. Nothing to clean.') % program)
 
         if self.silent:
             apparmor.write_profile_ui_feedback(profile, True)
