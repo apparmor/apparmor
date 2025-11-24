@@ -13,7 +13,6 @@
 #
 # ----------------------------------------------------------------------
 import os
-import sys
 from shutil import which
 
 import apparmor.aa as apparmor
@@ -36,6 +35,7 @@ class aa_tools:
         self.profiling = args.program
         self.silent = None
         self.do_reload = args.do_reload
+        self.requires_binary = tool_name in ('autodep',)
 
         if tool_name == 'audit':
             self.remove = args.remove
@@ -45,6 +45,51 @@ class aa_tools:
         elif tool_name == 'cleanprof':
             self.silent = args.silent
 
+    def _resolve_path_argument(self, p):
+        """Resolve a path argument to (program, profile, prof_filename) or None if invalid."""
+        fq_path = apparmor.get_full_path(p).strip()
+
+        if os.path.commonprefix([apparmor.profile_dir, fq_path]) == apparmor.profile_dir:
+            return (None, None, fq_path)
+
+        program = fq_path
+        profile = apparmor.active_profiles.profile_from_attachment(fq_path)
+        prof_filename = apparmor.get_profile_filename_from_attachment(fq_path, True)
+
+        if not os.path.exists(fq_path) and not self.requires_binary:
+            has_profile = profile and apparmor.active_profiles.profile_exists(profile)
+            has_file = os.path.isfile(prof_filename)
+            if not has_profile and not has_file:
+                aaui.UI_Info(_("%s does not exist, please double-check the path.") % p)
+                return None
+
+        return (program, profile, prof_filename)
+
+    def _resolve_name_argument(self, p):
+        """Resolve a name argument to (program, profile, prof_filename) or None if invalid."""
+        if apparmor.active_profiles.profile_exists(p):
+            prof_filename = apparmor.get_profile_filename_from_profile_name(p)
+            return (p, p, prof_filename)
+
+        which_ = which(p)
+        if which_ is not None:
+            program = apparmor.get_full_path(which_)
+            prof_filename = apparmor.get_profile_filename_from_attachment(program, True)
+            return (program, program, prof_filename)
+
+        profile_path = os.path.join(apparmor.profile_dir, p)
+        if os.path.exists(profile_path):
+            prof_filename = apparmor.get_full_path(profile_path).strip()
+            return (None, p, prof_filename)
+
+        if '/' not in p:
+            aaui.UI_Info(_("Can't find %(program)s in the system path list. If the name of the application\nis correct, please run 'which %(program)s' as a user with correct PATH\nenvironment set up in order to find the fully-qualified path and\nuse the full path as parameter.")
+                         % {'program': p})
+        else:
+            aaui.UI_Info(_("%s does not exist, please double-check the path.") % p)
+
+        return None
+
     def get_next_to_profile(self):
         """Iterator function to walk the list of arguments passed"""
 
@@ -53,39 +98,12 @@ class aa_tools:
                 continue
 
             if os.path.exists(p) or p.startswith('/'):
-                fq_path = apparmor.get_full_path(p).strip()
-                if os.path.commonprefix([apparmor.profile_dir, fq_path]) == apparmor.profile_dir:
-                    program = None
-                    prof_filename = fq_path
-                    profile = None
-                else:
-                    program = fq_path
-                    profile = apparmor.active_profiles.profile_from_attachment(fq_path)
-                    prof_filename = apparmor.get_profile_filename_from_attachment(fq_path, True)
+                result = self._resolve_path_argument(p)
             else:
-                which_ = which(p)
-                if self.name == 'cleanprof' and apparmor.active_profiles.profile_exists(p):
-                    program = p  # not really correct, but works
-                    profile = p
-                    prof_filename = apparmor.get_profile_filename_from_profile_name(profile)
-                elif which_ is not None:
-                    program = apparmor.get_full_path(which_)
-                    profile = program
-                    prof_filename = apparmor.get_profile_filename_from_attachment(program, True)
-                elif os.path.exists(os.path.join(apparmor.profile_dir, p)):
-                    program = None
-                    profile = p
-                    prof_filename = apparmor.get_full_path(os.path.join(apparmor.profile_dir, p)).strip()
-                else:
-                    if '/' not in p:
-                        aaui.UI_Info(_("Can't find %(program)s in the system path list. If the name of the application\nis correct, please run 'which %(program)s' as a user with correct PATH\nenvironment set up in order to find the fully-qualified path and\nuse the full path as parameter.")
-                                     % {'program': p})
-                    else:
-                        aaui.UI_Info(_("%s does not exist, please double-check the path.") % p)
+                result = self._resolve_name_argument(p)
 
-                    continue
-
-            yield (program, profile, prof_filename)
+            if result:
+                yield result
 
     def get_next_for_modechange(self):
         """common code for mode/flags changes"""
@@ -99,28 +117,28 @@ class aa_tools:
 
             yield (program, prof_filename, output_name)
 
+    def _clean_profiles_in_file(self, prof_filename):
+        """Clean all profiles found in the given file. Returns True if profiles were found and cleaned."""
+        if prof_filename and os.path.isfile(prof_filename):
+            profiles_in_file = list(apparmor.active_profiles.profiles_in_file(prof_filename))
+            if profiles_in_file:
+                for prof in profiles_in_file:
+                    self.clean_profile(prof, prof, prof_filename)
+                return True
+        return False
+
     def cleanprof_act(self):
         for (program, profile, prof_filename) in self.get_next_to_profile():
             if program is None:
                 program = profile
 
-            if not program or not (os.path.exists(program) or apparmor.active_profiles.profile_exists(profile)):
-                if program and not program.startswith('/'):
-                    program = aaui.UI_GetString(_('The given program cannot be found, please try with the fully qualified path name of the program: '), '')
-                else:
-                    aaui.UI_Info(_("%s does not exist, please double-check the path.") % program)
-                    sys.exit(1)
-
-            if program and apparmor.active_profiles.profile_exists(profile):
+            if profile and apparmor.active_profiles.profile_exists(profile):
                 self.clean_profile(program, profile, prof_filename)
-
+            elif self._clean_profiles_in_file(prof_filename):
+                pass
             else:
-                if '/' not in program:
-                    aaui.UI_Info(_("Can't find %(program)s in the system path list. If the name of the application\nis correct, please run 'which %(program)s' as a user with correct PATH\nenvironment set up in order to find the fully-qualified path and\nuse the full path as parameter.")
-                                 % {'program': program})
-                else:
-                    aaui.UI_Info(_("%s does not exist, please double-check the path.") % program)
-                    sys.exit(1)
+                output_name = program if program else prof_filename
+                aaui.UI_Info(_('Profile for %s not found, skipping') % output_name)
 
     def cmd_disable(self):
         for (program, prof_filename, output_name) in self.get_next_for_modechange():
