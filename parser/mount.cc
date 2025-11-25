@@ -482,7 +482,7 @@ static void process_one_option(struct cond_entry *&opts, unsigned int &flags,
 }
 
 mnt_rule::mnt_rule(struct cond_entry *src_conds, char *device_p,
-		   struct cond_entry *dst_conds unused, char *mnt_point_p,
+		   struct cond_entry *dst_conds aa_unused, char *mnt_point_p,
 		   perm32_t perms_p):
 	perms_rule_t(AA_CLASS_MOUNT),
 	mnt_point(mnt_point_p), device(device_p), trans(NULL), opts(NULL),

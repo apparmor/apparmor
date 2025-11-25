@@ -1514,7 +1514,7 @@ struct dir_cb_data {
 };
 
 /* data - pointer to a dir_cb_data */
-static int profile_dir_cb(int dirfd unused, const char *name, struct stat *st,
+static int profile_dir_cb(int dirfd aa_unused, const char *name, struct stat *st,
 			  void *data)
 {
 	int rc = 0;
@@ -1538,7 +1538,7 @@ static int profile_dir_cb(int dirfd unused, const char *name, struct stat *st,
 }
 
 /* data - pointer to a dir_cb_data */
-static int binary_dir_cb(int dirfd unused, const char *name, struct stat *st,
+static int binary_dir_cb(int dirfd aa_unused, const char *name, struct stat *st,
 			 void *data)
 {
 	int rc = 0;

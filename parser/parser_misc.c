@@ -170,7 +170,7 @@ static const unordered_map<string, int> rlimit_table = {
 };
 
 /* for alpha matches, check for keywords */
-static int get_table_token(const char *name unused, const unordered_map<string, int> &table,
+static int get_table_token(const char *name aa_unused, const unordered_map<string, int> &table,
 			   const string &keyword)
 {
 	auto token_entry = table.find(keyword);
@@ -557,7 +557,7 @@ void warn_uppercase(void)
 	}
 }
 
-static perm32_t parse_sub_perms(const char *str_perms, const char *perms_desc unused)
+static perm32_t parse_sub_perms(const char *str_perms, const char *perms_desc aa_unused)
 {
 
 #define IS_DIFF_QUAL(perms, q) (((perms) & AA_MAY_EXEC) && (((perms) & AA_EXEC_TYPE) != ((q) & AA_EXEC_TYPE)))
@@ -744,7 +744,7 @@ perm32_t parse_perms(const char *str_perms)
 	return perms;
 }
 
-static int parse_X_sub_perms(const char *X, const char *str_perms, perm32_t *result, int fail, const char *perms_desc unused)
+static int parse_X_sub_perms(const char *X, const char *str_perms, perm32_t *result, int fail, const char *perms_desc aa_unused)
 {
 	perm32_t perms = 0;
 	const char *p;

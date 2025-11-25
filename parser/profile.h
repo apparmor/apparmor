@@ -14,6 +14,10 @@
 #ifndef __AA_PROFILE_H
 #define __AA_PROFILE_H
 
+#ifndef aa_unused
+#define aa_unused __attribute__ ((unused))
+#endif
+
 #include <set>
 #include <vector>
 #include <string>
