@@ -1,0 +1,4 @@
+CompileFlags:
+    Add:
+        - -std=gnu++0x
+        - -I../../libraries/libapparmor/include
