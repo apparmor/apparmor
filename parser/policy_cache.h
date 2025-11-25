@@ -19,6 +19,8 @@
 #ifndef __AA_POLICY_CACHE_H
 #define __AA_POLICY_CACHE_H
 
+#include <stdio.h>
+
 extern struct timespec cache_tstamp, mru_policy_tstamp;
 
 /* returns true if time is more recent than mru_tstamp */
@@ -37,10 +39,12 @@ extern int force_clear_cache;		/* force clearing regargless of state */
 extern int create_cache_dir;		/* create the cache dir if missing? */
 extern int mru_skip_cache;
 
+struct aa_policy_cache;
+
 void set_cache_tstamp(struct timespec t);
 void update_mru_tstamp(FILE *file, const char *path);
 bool valid_cached_file_version(const char *cachename);
-char *cache_filename(aa_policy_cache *pc, int dir, const char *basename);
+char *cache_filename(struct aa_policy_cache *pc, int dir, const char *basename);
 void valid_read_cache(const char *cachename);
 int cache_hit(const char *cachename);
 int setup_cache_tmp(const char **cachetmpname, const char *cachename);
