@@ -24,6 +24,7 @@
 
 
 #include <endian.h>
+#include <stdarg.h>
 #include <string.h>
 #include <sys/resource.h>
 
@@ -38,6 +39,7 @@
 #include "libapparmor_re/aare_rules.h"
 #include "rule.h"
 #include "bignum.h"
+#include "common_flags.h"
 
 #include <string>
 
@@ -358,14 +360,24 @@ extern FILE *ofile;
 extern int read_implies_exec;
 extern IncludeCache_t *g_includecache;
 
-extern void pwarnf(bool werr, const char *fmt, ...) __attribute__((__format__(__printf__, 2, 3)));
 extern void common_warn_once(const char *name, const char *msg, const char **warned_name);
 bool prompt_compat_mode_supported(int mode);
 int default_prompt_compat_mode();
 void print_prompt_compat_mode(FILE *f);
 
+void pvwarnf(bool werr, const char *fmt, va_list ap);
 
-#define pwarn(F, args...) do { if (parseopts.warn & (F)) pwarnf((parseopts.Werror & (F)), ## args); } while (0)
+static inline void pwarn(unsigned int warn_flag, const char *fmt, ...) __attribute__((__format__(__printf__, 2, 3)));
+static inline void pwarn(unsigned int warn_flag, const char *fmt, ...)
+{
+	if (parseopts.warn & warn_flag) {
+		va_list ap;
+
+		va_start(ap, fmt);
+		pvwarnf(parseopts.Werror & warn_flag, fmt, ap);
+		va_end(ap);
+	}
+}
 
 /* from parser_main (cannot be used in tst builds) */
 extern int force_complain;
