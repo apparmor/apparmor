@@ -562,7 +562,7 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 
 	sd_serialize_xattrs(buf, profile->xattrs);
 
-	sd_serialize_rlimits(buf, &profile->rlimits);
+	sd_serialize_rlimits(buf, &profile->rules->rlimits);
 
 	/* choice to support / downgrade needs to already have been made */
 	if (features_supports_network_policydb) {

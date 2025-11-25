@@ -855,100 +855,10 @@ rules:	rules cond_rule
 
 rules: rules TOK_SET TOK_RLIMIT TOK_ID TOK_LE TOK_VALUE opt_id TOK_END_OF_RULE
 	{
-		rlim_t value = RLIM_INFINITY;
-		long long tmp;
-		char *end;
-
-		int limit = get_rlimit($4);
-		if (limit == -1)
-			yyerror("INVALID RLIMIT '%s'\n", $4);
-
-		if (strcmp($6, "infinity") == 0) {
-			value = RLIM_INFINITY;
-		} else {
-			const char *kb = "KB";
-			const char *mb = "MB";
-			const char *gb = "GB";
-
-			tmp = strtoll($6, &end, 0);
-			switch (limit) {
-			case RLIMIT_CPU:
-				if (!end || $6 == end || tmp < 0)
-					yyerror("RLIMIT '%s' invalid value %s\n", $4, $6);
-				tmp = convert_time_units(tmp, SECONDS_P_MS, $7);
-				if (tmp == -1LL)
-					yyerror("RLIMIT '%s %s' < minimum value of 1s\n", $4, $6);
-				else if (tmp < 0LL)
-					yyerror("RLIMIT '%s' invalid value %s\n", $4, $6);
-				if (!$7)
-					pwarn(WARN_MISSING, _("RLIMIT 'cpu' no units specified using default units of seconds\n"));
-				value = tmp;
-				break;
-#ifdef RLIMIT_RTTIME
-			case RLIMIT_RTTIME:
-				/* RTTIME is measured in microseconds */
-				if (!end || $6 == end || tmp < 0)
-					yyerror("RLIMIT '%s' invalid value %s %s\n", $4, $6, $7 ? $7 : "");
-				tmp = convert_time_units(tmp, 1LL, $7);
-				if (tmp < 0LL)
-					yyerror("RLIMIT '%s' invalid value %s %s\n", $4, $6, $7 ? $7 : "");
-				if (!$7)
-					pwarn(WARN_MISSING, _("RLIMIT 'rttime' no units specified using default units of microseconds\n"));
-				value = tmp;
-				break;
-#endif
-			case RLIMIT_NOFILE:
-			case RLIMIT_NPROC:
-			case RLIMIT_LOCKS:
-			case RLIMIT_SIGPENDING:
-#ifdef RLIMIT_RTPRIO
-			case RLIMIT_RTPRIO:
-#endif
-				if (!end || $6 == end || $7 || tmp < 0)
-					yyerror("RLIMIT '%s' invalid value %s %s\n", $4, $6, $7 ? $7 : "");
-				value = tmp;
-				break;
-
-#ifdef RLIMIT_NICE
-			case RLIMIT_NICE:
-				if (!end || $6 == end || $7)
-					yyerror("RLIMIT '%s' invalid value %s %s\n", $4, $6, $7 ? $7 : "");
-				if (tmp < -20 || tmp > 19)
-					yyerror("RLIMIT '%s' out of range (-20 .. 19) %lld\n", $4, tmp);
-				value = tmp + 20;
-				break;
-#endif
-			case RLIMIT_FSIZE:
-			case RLIMIT_DATA:
-			case RLIMIT_STACK:
-			case RLIMIT_CORE:
-			case RLIMIT_RSS:
-			case RLIMIT_AS:
-			case RLIMIT_MEMLOCK:
-			case RLIMIT_MSGQUEUE:
-				if ($6 == end || tmp < 0)
-					yyerror("RLIMIT '%s' invalid value %s %s\n", $4, $6, $7 ? $7 : "");
-				if (!$7) {
-					; /* use default of bytes */
-				} else if (strstr(kb, $7) == kb) {
-					tmp *= 1024;
-				} else if (strstr(mb, $7) == mb) {
-					tmp *= 1024*1024;
-				} else if (strstr(gb, $7) == gb) {
-					tmp *= 1024*1024*1024;
-				} else {
-					yyerror("RLIMIT '%s' invalid value %s %s\n", $4, $6, $7);
-				}
-				value = tmp;
-				break;
-			default:
-				yyerror("Unknown RLIMIT %s\n", $4);
-			}
-		}
-		$1->rlimits.specified |= 1 << limit;
-		$1->rlimits.limits[limit] = value;
+		$1->rules->add_rlimit($4, $6, $7);
 		free($4);
 		free($6);
+		free($7);
 		$$ = $1;
 	};
 

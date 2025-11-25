@@ -166,6 +166,19 @@ struct cod_entry {
 struct aa_rlimits {
 	unsigned int specified;			/* limits that are set */
 	rlim_t limits[RLIMIT_NLIMITS];
+
+	bool add_prefix(const prefixes &p, const char *&error)
+	{
+		if (specified != 0 &&
+		    (p.rule_mode != rule_mode_t::UNSPECIFIED ||
+		     p.audit != audit_t::UNSPECIFIED ||
+		     p.owner != owner_t::UNSPECIFIED ||
+		     p.priority != 0)) {
+			error = _("prefix not allowed on rlimit rules");
+			return false;
+		}
+		return true;
+	}
 };
 
 struct alt_name {

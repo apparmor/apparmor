@@ -407,8 +407,6 @@ public:
 	block_rules *rules;
 	network_rule net;
 
-	struct aa_rlimits rlimits;
-
 	char *exec_table[AA_EXEC_COUNT];
 	struct cod_entry *entries;
 	RuleList rule_ents;
@@ -435,7 +433,6 @@ public:
 		parent = NULL;
 
 		flags.init();
-		rlimits = {0, {}};
 
 		std::fill(exec_table, exec_table + AA_EXEC_COUNT, (char *)NULL);
 

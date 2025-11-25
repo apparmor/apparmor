@@ -106,9 +106,10 @@ struct capabilities {
 
 class block_rules {
 public:
+	struct aa_rlimits rlimits;
 	struct capabilities caps;
 
-	block_rules(void)
+	block_rules(void): rlimits({0, {}})
 	{
 	}
 
@@ -117,10 +118,12 @@ public:
 	}
 
 	ostream &dump(ostream &os) {
+		// TODO add rlimit dump
 		caps.dump();
 		return os;
 	}
 
+	void add_rlimit(const char *id, const char *in_value, const char *unit);
 	void add_capabilities(struct prefixes prefix, uint64_t cap);
 	void merge_block_rules(block_rules *b);
 };
