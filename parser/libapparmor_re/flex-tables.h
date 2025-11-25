@@ -15,7 +15,7 @@ enum {
 };
 
 struct table_set_header {
-	uint32_t	th_magic;	/* TH_MAGIC */
+	uint32_t	th_magic;	/* YYTH_REGEX_MAGIC (in network byte order) */
 	uint32_t	th_hsize;
 	uint32_t	th_ssize;
 	uint16_t	th_flags;
