@@ -141,6 +141,27 @@ void block_rules::add_capabilities(struct prefixes prefix, uint64_t cap)
 
 }
 
+void block_rules::add_compat_net(const network_rule *entry)
+{
+	/* there is no need to generate compat_net since rules are
+	 * already stored in policydb */
+	if (features_supports_network_policydb)
+		return;
+
+	if (entry->allow) {
+		size_t i;
+		if (!net.alloc_net_table())
+			yyerror(_("Memory allocation error."));
+		for (i = 0; i < get_af_max(); i++) {
+			net.allow[i] |= entry->allow[i];
+			net.audit[i] |= entry->audit[i];
+			net.deny[i] |= entry->deny[i];
+			net.quiet[i] |= entry->quiet[i];
+		}
+	}
+
+}
+
 void block_rules::merge_block_rules(block_rules *b)
 {
 	if (!b)
@@ -162,6 +183,9 @@ void block_rules::merge_block_rules(block_rules *b)
 	}
 
 	rule_ents.splice(rule_ents.end(), b->rule_ents);
+
+	/* add already does merge due to the nature of compat_net */
+	add_compat_net(&(b->net));
 }
 
 static bool comp(rule_t *lhs, rule_t *rhs)

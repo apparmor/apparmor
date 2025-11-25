@@ -247,10 +247,10 @@ public:
 
 	/* array of type masks indexed by AF_FAMILY */
 	/* allow, audit, deny and quiet are used for compatibility with AA_CLASS_NET */
-	static unsigned int *allow;
-	static unsigned int *audit;
-	static unsigned int *deny;
-	static unsigned int *quiet;
+	unsigned int *allow = NULL;
+	unsigned int *audit = NULL;
+	unsigned int *deny = NULL;
+	unsigned int *quiet = NULL;
 
 	bool alloc_net_table(void);
 

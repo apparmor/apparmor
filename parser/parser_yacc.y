@@ -784,6 +784,7 @@ rules: rules opt_prefix network_rule
 			}
 		}
 		$1->rules->add_rule($3);
+		$1->rules->add_compat_net($3);
 		$$ = $1;
 	}
 

@@ -1171,12 +1171,6 @@ fail:
 
 }
 
-/* initialize static members */
-unsigned int *network_rule::allow = NULL;
-unsigned int *network_rule::audit = NULL;
-unsigned int *network_rule::deny = NULL;
-unsigned int *network_rule::quiet = NULL;
-
 bool network_rule::alloc_net_table()
 {
 	if (allow && audit && deny && quiet)
@@ -1221,9 +1215,9 @@ out:
  */
 void network_rule::update_compat_net(const prefixes &p)
 {
-	/* there is no need to generate compat_net since rules are
-	 * already stored in policydb */
-	if (features_supports_network_policydb)
+	/* there is no need to generate compat_net when rules are
+	 * already stored in policydb, same if network_map is empty */
+	if (features_supports_network_policydb || network_map.empty())
 		return;
 
 	if (!alloc_net_table())

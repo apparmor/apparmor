@@ -180,16 +180,6 @@ Profile *merge_policy(Profile *a, Profile *b)
 
 	a->rules->merge_block_rules(b->rules);
 
-	if (a->net.allow) {
-		size_t i;
-		for (i = 0; i < get_af_max(); i++) {
-			a->net.allow[i] |= b->net.allow[i];
-			a->net.audit[i] |= b->net.audit[i];
-			a->net.deny[i] |= b->net.deny[i];
-			a->net.quiet[i] |= b->net.quiet[i];
-		}
-	}
-
 	merge_hats(a, b->hat_table);
 	delete b;
 out:

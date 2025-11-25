@@ -82,6 +82,7 @@ void all_rule::add_implied_rules(Profile &prof)
 	rule = new network_rule(0, (struct cond_entry *)NULL, (struct cond_entry *)NULL);
 	(void) rule->add_prefix(*prefix);
 	prof.rules->add_rule(rule);
+	prof.rules->add_compat_net(static_cast<network_rule *>(rule));
 	
 	/* rules that have not been converted to use rule.h */
 

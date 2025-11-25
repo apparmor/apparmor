@@ -34,6 +34,7 @@
 #include "parser.h"
 #include "rule.h"
 #include "network.h"
+#include "libapparmor_re/aare_rules.h"
 #include "signal.h"
 #include "immunix.h"
 #include "perms.h"
@@ -405,7 +406,6 @@ public:
 
 	flagvals flags;
 	block_rules *rules;
-	network_rule net;
 
 	char *exec_table[AA_EXEC_COUNT];
 	struct cod_entry *entries;

@@ -21,6 +21,7 @@
 #include "parser.h"
 #include "capability.h"
 #include "rule.h"
+#include "network.h"
 
 struct capabilities {
 	uint64_t allow;
@@ -110,6 +111,7 @@ public:
 	struct aa_rlimits rlimits;
 	struct capabilities caps;
 	RuleList rule_ents;
+	network_rule net;
 
 	block_rules(void): rlimits({0, {}})
 	{
@@ -123,6 +125,7 @@ public:
 	}
 
 	ostream &dump(ostream &os) {
+		// TODO add compat net dump
 		// TODO add rlimit dump
 		caps.dump();
 
@@ -136,6 +139,7 @@ public:
 	void add_rule(rule_t *entry);
 	void add_rlimit(const char *id, const char *in_value, const char *unit);
 	void add_capabilities(struct prefixes prefix, uint64_t cap);
+	void add_compat_net(const network_rule *entry);
 	void merge_block_rules(block_rules *b);
 	int merge_duplicated_rules(void);
 	int process_variables(void);
