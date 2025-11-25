@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
   */
 
-#ifndef APPARMOR_RE_H
-#define APPARMOR_RE_H
+#ifndef __LIBAA_RE_APPARMOR_RE_H
+#define __LIBAA_RE_APPARMOR_RE_H
 
 #include "../common_flags.h"
 

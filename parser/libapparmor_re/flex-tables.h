@@ -1,5 +1,5 @@
-#ifndef __FLEX_TABLES_H
-#define __FLEX_TABLES_H
+#ifndef __LIBAA_RE_FLEX_TABLES_H
+#define __LIBAA_RE_FLEX_TABLES_H
 
 #include <stdlib.h>
 #include <stdint.h>

@@ -15,8 +15,8 @@
  *   along with this program; if not, contact Novell, Inc. or Canonical
  *   Ltd.
  */
-#ifndef __AA_POLICY_COMPAT_H
-#define __AA_POLICY_COMPAT_H
+#ifndef __LIBAA_RE_POLICY_COMPAT_H
+#define __LIBAA_RE_POLICY_COMPAT_H
 
 struct aa_perms compute_fperms_user(uint32_t accept1, uint32_t accept2, uint32_t accept3);
 struct aa_perms compute_fperms_other(uint32_t accept1, uint32_t accept2, uint32_t accept3);
