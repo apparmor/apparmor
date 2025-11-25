@@ -154,10 +154,10 @@ enum pattern_t {
 #define HAS_EXEC_UNSAFE(mode) 		((mode) & AA_EXEC_UNSAFE)
 #define HAS_CHANGE_PROFILE(mode)	((mode) & AA_CHANGE_PROFILE)
 
-#include <stdio.h>
-#include <errno.h>
 
 #ifdef DEBUG
+#include <stdio.h>
+#include <errno.h>
 #define PDEBUG(fmt, args...)				\
 do {							\
 	int pdebug_error = errno;			\
