@@ -140,19 +140,7 @@ void all_rule::add_implied_rules(Profile &prof)
 	}
 	// caps
 	{
-		if (prefix->owner != owner_t::UNSPECIFIED)
-			yyerror(_("owner prefix not allowed on capability rules"));
-
-		if (rule_mode == rule_mode_t::DENY && audit == audit_t::FORCE) {
-			prof.caps.deny |= 0xffffffffffffffff;
-		} else if (rule_mode == rule_mode_t::DENY) {
-			prof.caps.deny |= 0xffffffffffffffff;
-			prof.caps.quiet |= 0xffffffffffffffff;
-		} else {
-			prof.caps.allow |= 0xffffffffffffffff;
-			if (audit != audit_t::UNSPECIFIED)
-				prof.caps.audit |= 0xffffffffffffffff;
-		}
+		prof.rules->add_capabilities(*prefix, 0xffffffffffffffff);
 	}
 	
 	// TODO: rlimit

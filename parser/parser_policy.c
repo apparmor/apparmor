@@ -178,10 +178,7 @@ Profile *merge_policy(Profile *a, Profile *b)
 
 	a->flags.audit = a->flags.audit || b->flags.audit;
 
-	a->caps.allow |= b->caps.allow;
-	a->caps.audit |= b->caps.audit;
-	a->caps.deny |= b->caps.deny;
-	a->caps.quiet |= b->caps.quiet;
+	a->rules->merge_block_rules(b->rules);
 
 	if (a->net.allow) {
 		size_t i;

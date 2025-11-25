@@ -31,7 +31,6 @@
 #include <iostream>
 #include <map>
 
-#include "capability.h"
 #include "parser.h"
 #include "rule.h"
 #include "network.h"
@@ -39,6 +38,7 @@
 #include "immunix.h"
 #include "perms.h"
 #include "profilelist.h"
+#include "block_rules.h"
 
 class aare_rules;
 
@@ -374,27 +374,6 @@ public:
 	}
 };
 
-struct capabilities {
-	uint64_t allow;
-	uint64_t audit;
-	uint64_t deny;
-	uint64_t quiet;
-
-	capabilities(void) { allow = audit = deny = quiet = 0; }
-
-	void dump()
-		{
-			if (allow != 0ull)
-				__debug_capabilities(allow, "Capabilities");
-			if (audit != 0ull)
-				__debug_capabilities(audit, "Audit Caps");
-			if (deny != 0ull)
-				__debug_capabilities(deny, "Deny Caps");
-			if (quiet != 0ull)
-				__debug_capabilities(quiet, "Quiet Caps");
-		};
-};
-
 struct dfa_stuff {
 	aare_rules *rules;
 	void *dfa;
@@ -425,7 +404,7 @@ public:
 	Profile *parent;
 
 	flagvals flags;
-	struct capabilities caps;
+	block_rules *rules;
 	network_rule net;
 
 	struct aa_rlimits rlimits;
@@ -441,6 +420,7 @@ public:
 
 	Profile(void)
 	{
+		rules = new block_rules();
 		uses_prompt_rules = false;
 		ns = name = attachment = NULL;
 		altnames = NULL;
@@ -511,7 +491,8 @@ public:
 		}
 
 		flags.dump(cerr);
-		caps.dump();
+		if (rules)
+			rules->dump(cerr);
 
 		if (entries)
 			debug_cod_entries(entries);

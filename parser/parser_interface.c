@@ -544,16 +544,16 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 
 #define low_caps(X) ((u32) ((X) & 0xffffffff))
 #define high_caps(X) ((u32) (((X) >> 32) & 0xffffffff))
-	allowed_caps = (profile->caps.allow) & ~profile->caps.deny;
+	allowed_caps = (profile->rules->caps.allow) & ~profile->rules->caps.deny;
 	sd_write_uint32(buf, low_caps(allowed_caps));
-	sd_write_uint32(buf, low_caps(allowed_caps & profile->caps.audit));
-	sd_write_uint32(buf, low_caps(profile->caps.deny & profile->caps.quiet));
+	sd_write_uint32(buf, low_caps(allowed_caps & profile->rules->caps.audit));
+	sd_write_uint32(buf, low_caps(profile->rules->caps.deny & profile->rules->caps.quiet));
 	sd_write_uint32(buf, 0);
 
 	sd_write_struct(buf, "caps64");
 	sd_write_uint32(buf, high_caps(allowed_caps));
-	sd_write_uint32(buf, high_caps(allowed_caps & profile->caps.audit));
-	sd_write_uint32(buf, high_caps(profile->caps.deny & profile->caps.quiet));
+	sd_write_uint32(buf, high_caps(allowed_caps & profile->rules->caps.audit));
+	sd_write_uint32(buf, high_caps(profile->rules->caps.deny & profile->rules->caps.quiet));
 	sd_write_uint32(buf, 0);
 	sd_write_structend(buf);
 

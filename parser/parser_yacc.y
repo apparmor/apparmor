@@ -825,20 +825,7 @@ rules:	rules opt_prefix change_profile
 
 rules:  rules opt_prefix capability
 	{
-		if ($2.owner != owner_t::UNSPECIFIED)
-			yyerror(_("owner conditional not allowed on capability rules"));
-
-		if ($2.rule_mode == rule_mode_t::DENY && $2.audit == audit_t::FORCE) {
-			$1->caps.deny |= $3;
-		} else if ($2.rule_mode == rule_mode_t::DENY) {
-			$1->caps.deny |= $3;
-			$1->caps.quiet |= $3;
-		} else {
-			$1->caps.allow |= $3;
-			if ($2.audit != audit_t::UNSPECIFIED)
-				$1->caps.audit |= $3;
-		}
-
+		$1->rules->add_capabilities($2, $3);
 		$$ = $1;
 	};
 
