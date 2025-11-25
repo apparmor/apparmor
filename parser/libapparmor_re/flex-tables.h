@@ -5,7 +5,6 @@
 #include <stdint.h>
 
 enum {
-	YYTH_MAGIC = 0xF13C57B1,
 	YYTH_REGEX_MAGIC = 0x1B5E783D,
 };
 
