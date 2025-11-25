@@ -21,7 +21,6 @@
 
 #include <ostream>
 #include <iostream>
-#include <fstream>
 #include <sstream>
 #include <ext/stdio_filebuf.h>
 #include <assert.h>
@@ -32,7 +31,6 @@
 #include "parse.h"
 #include "hfa.h"
 #include "chfa.h"
-#include "../immunix.h"
 
 using namespace std;
 

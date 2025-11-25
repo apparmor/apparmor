@@ -34,8 +34,6 @@
 #include <stdint.h>
 
 #include "expr-tree.h"
-#include "policy_compat.h"
-#include "../rule.h"
 extern int prompt_compat_mode;
 
 #define DiffEncodeFlag 1

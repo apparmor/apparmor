@@ -24,12 +24,10 @@
 
 #include <list>
 #include <vector>
-#include <stack>
 #include <set>
 #include <map>
 #include <ostream>
 #include <iostream>
-#include <fstream>
 #include <string.h>
 #include <stdint.h>
 #include "expr-tree.h"

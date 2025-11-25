@@ -28,11 +28,9 @@
  */
 
 #include <stdint.h>
-#include <iostream>
 
 #include "policy_compat.h"
 #include "../perms.h"
-#include "../rule.h"
 extern int prompt_compat_mode;
 
 
