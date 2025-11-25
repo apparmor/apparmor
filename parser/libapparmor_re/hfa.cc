@@ -1560,7 +1560,7 @@ int accept_perms(optflags const &opts, NodeVec *state, perms_t &perms,
 {
 	int error = 0;
 	// scaling priority by *4
-	std::vector<int>  priority(sizeof(perm32_t)*8,  MIN_INTERNAL_PRIORITY<<2);	// 32 but wan't tied to perm32_t
+	std::vector<int>  priority(sizeof(perm32_t)*8,  MIN_INTERNAL_PRIORITY*4);	// 32 but wan't tied to perm32_t
 	perms.clear();
 
 	if (!state)
