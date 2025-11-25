@@ -1163,7 +1163,7 @@ fail:
 	return RULE_ERROR;
 }
 
-void mnt_rule::post_parse_profile(Profile &prof)
+void mnt_rule::post_parse_profile(Profile &prof aa_unused)
 {
 	if (trans) {
 		/* TODO: pivot_root profile transition */
