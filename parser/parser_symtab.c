@@ -18,15 +18,16 @@
 #include <search.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <string.h>
-#include <errno.h>
 #include <linux/limits.h>
 
+
+#ifdef UNIT_TEST
+
+#include <string.h>
+#include <errno.h>
 #include "immunix.h"
 #include "parser.h"
 #include "symtab.h"
-
-#ifdef UNIT_TEST
 
 #include "unit_test.h"
 
