@@ -20,6 +20,7 @@
 
 #include "parser.h"
 #include "capability.h"
+#include "rule.h"
 
 struct capabilities {
 	uint64_t allow;
@@ -108,6 +109,7 @@ class block_rules {
 public:
 	struct aa_rlimits rlimits;
 	struct capabilities caps;
+	RuleList rule_ents;
 
 	block_rules(void): rlimits({0, {}})
 	{
@@ -115,17 +117,33 @@ public:
 
 	~block_rules(void)
 	{
+		for (rule_t *rule : rule_ents) {
+			delete rule;
+		}
 	}
 
 	ostream &dump(ostream &os) {
 		// TODO add rlimit dump
 		caps.dump();
+
+		for (rule_t *rule : rule_ents) {
+			rule->dump(os);
+		}
+
 		return os;
 	}
 
+	void add_rule(rule_t *entry);
 	void add_rlimit(const char *id, const char *in_value, const char *unit);
 	void add_capabilities(struct prefixes prefix, uint64_t cap);
 	void merge_block_rules(block_rules *b);
+	int merge_duplicated_rules(void);
+	int process_variables(void);
+	bool post_process(Profile *prof);
+	void post_parse_profile(Profile *prof);
+	void add_implied_rules(Profile *prof);
+private:
+	int merge_rule_t(void);
 };
 
 #endif /* __AA_BLOCK_RULES_H */

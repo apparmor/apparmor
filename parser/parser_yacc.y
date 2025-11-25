@@ -780,10 +780,10 @@ rules: rules opt_prefix network_rule
 								$2.audit, $2.rule_mode);
 				if (!rule)
 					yyerror(_("Memory allocation error."));
-				$1->rule_ents.push_back(rule);
+				$1->rules->add_rule(rule);
 			}
 		}
-		$1->rule_ents.push_back($3);
+		$1->rules->add_rule($3);
 		$$ = $1;
 	}
 
@@ -802,7 +802,7 @@ rules:  rules opt_prefix prefix_rule
 		const char *error;
 		if (!$3->add_prefix($2, error))
 			yyerror("%s", error);
-		$1->rule_ents.push_back($3);
+		$1->rules->add_rule($3);
 		$$ = $1;
 	}
 

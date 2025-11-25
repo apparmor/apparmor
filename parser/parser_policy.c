@@ -190,8 +190,6 @@ Profile *merge_policy(Profile *a, Profile *b)
 		}
 	}
 
-	a->rule_ents.splice(a->rule_ents.end(), b->rule_ents);
-
 	merge_hats(a, b->hat_table);
 	delete b;
 out:

@@ -37,51 +37,51 @@ void all_rule::add_implied_rules(Profile &prof)
 
 	rule = new unix_rule(0xffffffff, audit, rule_mode);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.rules->add_rule(rule);
 
 	rule = new dbus_rule(0, NULL, NULL);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.rules->add_rule(rule);
 
 	rule = new io_uring_rule(0, NULL, NULL);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.rules->add_rule(rule);
 
 	rule = new mqueue_rule(0, NULL);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.rules->add_rule(rule);
 
 	rule = new ptrace_rule(0, NULL);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.rules->add_rule(rule);
 
 	rule = new signal_rule(0, NULL);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.rules->add_rule(rule);
 
 	rule = new userns_rule(0, NULL);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.rules->add_rule(rule);
 
 	rule = new mnt_rule(NULL, NULL, NULL, NULL, AA_MAY_MOUNT);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.rules->add_rule(rule);
 
 	rule = new mnt_rule(NULL, NULL, NULL, NULL, AA_DUMMY_REMOUNT);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.rules->add_rule(rule);
 
 	rule = new mnt_rule(NULL, NULL, NULL, NULL, AA_MAY_UMOUNT);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.rules->add_rule(rule);
 
 	rule = new mnt_rule(NULL, NULL, NULL, NULL, AA_MAY_PIVOTROOT);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.rules->add_rule(rule);
 
 	rule = new network_rule(0, (struct cond_entry *)NULL, (struct cond_entry *)NULL);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.rules->add_rule(rule);
 	
 	/* rules that have not been converted to use rule.h */
 

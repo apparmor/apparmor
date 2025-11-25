@@ -409,7 +409,6 @@ public:
 
 	char *exec_table[AA_EXEC_COUNT];
 	struct cod_entry *entries;
-	RuleList rule_ents;
 
 	ProfileList hat_table;
 
@@ -493,35 +492,6 @@ public:
 
 		if (entries)
 			debug_cod_entries(entries);
-
-		std::map<rule_t *, unsigned int> visible_rule_lines;
-		unsigned int fake_lineno = 1;
-		for (auto i = rule_ents.cbegin(); i != rule_ents.cend(); i++) {
-			if ((*i)->skip()) {
-				if (((*i)->flags & rule_flags_t::MERGED) != rule_flags_t::NONE && (*i)->removed_by)
-					fake_lineno += 2;  // merged rules print two lines.
-				continue;
-			}
-			visible_rule_lines[*i] = fake_lineno++;
-		}
-
-		fake_lineno = 1;
-		for (auto i = rule_ents.cbegin(); i != rule_ents.cend(); i++) {
-			if ((*i)->skip()) {
-				if (((*i)->flags & rule_flags_t::MERGED) != rule_flags_t::NONE && (*i)->removed_by) {
-					auto merged_into = visible_rule_lines.find((*i)->removed_by);
-					std::cout << fake_lineno << ": # The following rule was merged into a rule on line " << merged_into->second << std::endl;
-					fake_lineno++;
-					std::cout << fake_lineno << ": # ";
-					(*i)->dump(std::cout);
-					fake_lineno++; // account for the extra comment.
-				}
-				continue;
-			}
-			std::cout << fake_lineno << ": ";
-			(*i)->dump(std::cout);
-			fake_lineno++;
-		}
 
 		printf("\n");
 		hat_table.dump();

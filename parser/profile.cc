@@ -44,8 +44,6 @@ Profile::~Profile()
 	free_cod_entries(entries);
 	free_cond_entry_list(xattrs);
 
-	for (RuleList::iterator i = rule_ents.begin(); i != rule_ents.end(); i++)
-		delete *i;
 	if (dfa.rules)
 		delete dfa.rules;
 	if (dfa.dfa)
@@ -71,39 +69,12 @@ Profile::~Profile()
 		delete rules;
 }
 
-static bool comp (rule_t *lhs, rule_t *rhs)
-{
-	return (*lhs < *rhs);
-}
-
 // TODO: move to block rule
 // returns number of rules merged
 // returns negative number on error
 int Profile::merge_rules(void)
 {
-	int count = 0;
-	std::vector<rule_t *> table;
-
-	for (RuleList::iterator i = rule_ents.begin(); i != rule_ents.end(); i++) {
-		if ((*i)->is_mergeable() && !(*i)->skip())
-			table.push_back(*i);
-	}
-	if (table.size() < 2)
-		return 0;
-	std::sort(table.begin(), table.end(), comp);
-	unsigned long n = table.size();
-	for (unsigned long i = 0, j = 1; j < n; j++) {
-		if (table[j]->skip())
-			continue;
-		if (table[i]->cmp(*table[j]) == 0) {
-			if (table[i]->merge(*table[j]))
-				count++;
-			continue;
-		}
-		i = j;
-	}
-
-	return count;
+	return rules->merge_duplicated_rules();
 }
 
 
@@ -268,16 +239,6 @@ void post_process_file_entries(Profile *prof)
 	}
 }
 
-void post_process_rule_entries(Profile *prof)
-{
-	for (RuleList::iterator i = prof->rule_ents.begin(); i != prof->rule_ents.end(); i++) {
-		if ((*i)->skip())
-			continue;
-		(*i)->post_parse_profile(*prof);
-  }
-}
-
-
 #define CHANGEHAT_PATH "/proc/[0-9]*/attr/{apparmor/,}current"
 
 /* add file rules to access /proc files to call change_hat()
@@ -316,18 +277,14 @@ void Profile::post_parse_profile(void)
 		}
 	}
 	post_process_file_entries(this);
-	post_process_rule_entries(this);
+	rules->post_parse_profile(this);
 }
 
 void Profile::add_implied_rules(void)
 {
 	int error;
 
-	for (RuleList::iterator i = rule_ents.begin(); i != rule_ents.end(); i++) {
-		if ((*i)->skip())
-			continue;
-		(*i)->add_implied_rules(*this);
-	}
+	rules->add_implied_rules(this);
 
 	error = profile_add_hat_rules(this);
 	if (error) {

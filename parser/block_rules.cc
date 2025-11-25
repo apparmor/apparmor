@@ -16,6 +16,12 @@
  */
 
 #include "block_rules.h"
+#include <algorithm>
+
+void block_rules::add_rule(rule_t *entry)
+{
+	rule_ents.push_back(entry);
+}
 
 void block_rules::add_rlimit(const char *id, const char *in_value, const char *unit)
 {
@@ -153,5 +159,87 @@ void block_rules::merge_block_rules(block_rules *b)
 	for (int i = 0; i <  RLIMIT_NLIMITS; i++) {
 		if (b->rlimits.limits[i])
 			rlimits.limits[i] = b->rlimits.limits[i];
+	}
+
+	rule_ents.splice(rule_ents.end(), b->rule_ents);
+}
+
+static bool comp(rule_t *lhs, rule_t *rhs)
+{
+	return (*lhs < *rhs);
+}
+
+int block_rules::merge_rule_t(void)
+{
+	int count = 0;
+	std::vector<rule_t *> table;
+
+	for (rule_t *rule : rule_ents) {
+		if (rule->is_mergeable() && !rule->skip())
+			table.push_back(rule);
+	}
+	if (table.size() < 2)
+		return 0;
+	std::sort(table.begin(), table.end(), comp);
+	unsigned long n = table.size();
+	for (unsigned long i = 0, j = 1; j < n; j++) {
+		if (table[j]->skip())
+			continue;
+		if (table[i]->cmp(*table[j]) == 0) {
+			if (table[i]->merge(*table[j]))
+				count++;
+			continue;
+		}
+		i = j;
+	}
+
+	return count;
+}
+
+int block_rules::merge_duplicated_rules(void)
+{
+	return merge_rule_t();
+}
+
+int block_rules::process_variables(void)
+{
+	for (rule_t *rule : rule_ents) {
+		if (rule->skip())
+			continue;
+		int error = rule->expand_variables();
+		if (error)
+			return error;
+	}
+
+	return 0;
+}
+
+bool block_rules::post_process(Profile *prof)
+{
+	for (rule_t *rule : rule_ents) {
+		if (rule->skip())
+			continue;
+		if (rule->gen_policy_re(*prof) == rule_result_t::ERROR)
+			return false;
+	}
+
+	return true;
+}
+
+void block_rules::post_parse_profile(Profile *prof)
+{
+	for (rule_t *rule : rule_ents) {
+		if (rule->skip())
+			continue;
+		rule->post_parse_profile(*prof);
+	}
+}
+
+void block_rules::add_implied_rules(Profile *prof)
+{
+	for (rule_t *rule : rule_ents) {
+		if (rule->skip())
+			continue;
+		rule->add_implied_rules(*prof);
 	}
 }

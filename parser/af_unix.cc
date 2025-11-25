@@ -216,7 +216,7 @@ void unix_rule::downgrade_rule(Profile &prof) {
 		network_rule *netv8 = new network_rule(perms, AF_UNIX, sock_type_n);
 		if(!netv8->add_prefix({0, audit, rule_mode, owner}, error))
 			yyerror("%s", error);
-		prof.rule_ents.push_back(netv8);
+		prof.rules->add_rule(netv8);
 	} else {
 		/* deny rules have to be dropped because the downgrade makes
 		 * the rule less specific meaning it will make the profile more
