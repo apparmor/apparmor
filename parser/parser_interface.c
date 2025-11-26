@@ -353,6 +353,11 @@ void sd_serialize_permstable(std::ostringstream &buf, vector <aa_perms> &perms_t
 	}
 	sd_write_arrayend(buf);
 	sd_write_structend(buf);
+	// FIXME: This should be emitted only when both accept2 and perms are in use.
+	if (perms_table.size() > 0) {
+		sd_write_name(buf, "permsv");
+		sd_write_uint32(buf, 3);
+	}
 }
 
 void sd_serialize_dfa(std::ostringstream &buf, void *dfa, size_t size,
