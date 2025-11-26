@@ -133,9 +133,8 @@ int read_implies_exec = 1;
 int read_implies_exec = 0;
 #endif
 
-void pwarnf(bool werr, const char *fmt, ...)
+void pvwarnf(bool werr, const char *fmt, va_list ap)
 {
-        va_list arg;
         char *newfmt;
 
         if (conf_quiet || names_only || option == OPTION_REMOVE)
@@ -150,9 +149,7 @@ void pwarnf(bool werr, const char *fmt, ...)
 		     fmt) == -1)
                 return;
 
-        va_start(arg, fmt);
-        vfprintf(stderr, newfmt, arg);
-        va_end(arg);
+        vfprintf(stderr, newfmt, ap);
 
         free(newfmt);
 
