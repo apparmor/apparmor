@@ -326,7 +326,7 @@ spread-ubuntu-cloud-24.04-x86_64:
   extends: .spread-x86_64
   variables:
     GARDEN_SYSTEM: ubuntu-cloud-24.04
-    SPREAD_ARGS: garden:$GARDEN_SYSTEM:tests/regression/ garden:$GARDEN_SYSTEM:tests/profiles/
+    SPREAD_ARGS: garden:$GARDEN_SYSTEM:tests/regression/ garden:$GARDEN_SYSTEM:tests/profiles/ garden:$GARDEN_SYSTEM:tests/snapd/
     CACHE_POLICY: pull
   dependencies: []
   needs:
