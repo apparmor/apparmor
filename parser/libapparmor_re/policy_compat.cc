@@ -64,24 +64,56 @@ static uint32_t dfa_map_xindex(uint16_t mask)
 /*
  * map old dfa inline permissions to new format
  */
-#define dfa_user_allow(accept1) (((accept1) & 0x7f) | \
-				    ((accept1) & 0x80000000))
-#define dfa_user_xbits(accept1) (((accept1) >> 7) & 0x7f)
-#define dfa_user_audit(accept1, accept2) ((accept2) & 0x7f)
-#define dfa_user_quiet(accept1, accept2) (((accept2) >> 7) & 0x7f)
-#define dfa_user_xindex(accept1) \
-	(dfa_map_xindex(accept1 & 0x3fff))
 
-#define dfa_other_allow(accept1) ((((accept1) >> 14) & \
-				      0x7f) |				\
-				     ((accept1) & 0x80000000))
-#define dfa_other_xbits(accept1) \
-	((((accept1) >> 7) >> 14) & 0x7f)
-#define dfa_other_audit(accept1, accept2) (((accept2) >> 14) & 0x7f)
-#define dfa_other_quiet(accept1, accept2) \
-	((((accept2) >> 7) >> 14) & 0x7f)
-#define dfa_other_xindex(accept1) \
-	dfa_map_xindex((accept1 >> 14) & 0x3fff)
+static inline uint32_t dfa_user_allow(uint32_t accept1)
+{
+	return (accept1 & 0x7f) | (accept1 & 0x80000000);
+}
+
+static inline uint32_t dfa_user_xbits(uint32_t accept1)
+{
+	return (accept1 >> 7) & 0x7f;
+}
+
+static inline uint32_t dfa_user_audit(uint32_t accept1 __attribute__((unused)), uint32_t accept2)
+{
+	return accept2 & 0x7f;
+}
+
+static inline uint32_t dfa_user_quiet(uint32_t accept1 __attribute__((unused)), uint32_t accept2)
+{
+	 return (accept2 >> 7) & 0x7f;
+}
+
+static inline uint32_t dfa_user_xindex(uint32_t accept1)
+{
+	return dfa_map_xindex(accept1 & 0x3fff);
+}
+
+static inline uint32_t dfa_other_allow(uint32_t accept1)
+{
+	return ((accept1 >> 14) & 0x7f) | (accept1 & 0x80000000);
+}
+
+static inline uint32_t dfa_other_xbits(uint32_t accept1)
+{
+	return ((accept1 >> 7) >> 14) & 0x7f;
+}
+
+static inline uint32_t dfa_other_audit(uint32_t accept1 __attribute__((unused)), uint32_t accept2)
+{
+	return (accept2 >> 14) & 0x7f;
+}
+
+static inline uint32_t dfa_other_quiet(uint32_t accept1 __attribute__((unused)), uint32_t accept2)
+{
+	return ((accept2 >> 7) >> 14) & 0x7f;
+}
+
+static inline uint32_t dfa_other_xindex(uint32_t accept1)
+{
+	return dfa_map_xindex((accept1 >> 14) & 0x3fff);
+}
 
 /**
  * map_old_perms - map old file perms layout to the new layout
