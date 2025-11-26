@@ -22,6 +22,8 @@
 #ifndef __LIBAA_RE_PARSE_H
 #define __LIBAA_RE_PARSE_H
 
+#include "expr-tree.h"
+
 int regex_parse(Node **tree, const char *rule);
 
 #endif /* __LIBAA_RE_PARSE_H */

@@ -23,9 +23,6 @@
 #include <vector>
 #include <ostream>
 #include <iostream>
-#include <fstream>
-
-#include <limits>
 
 #include <arpa/inet.h>
 #include <stdio.h>
@@ -33,8 +30,6 @@
 
 #include "hfa.h"
 #include "chfa.h"
-#include "../immunix.h"
-#include "../policydb.h"
 #include "flex-tables.h"
 
 using namespace std;
