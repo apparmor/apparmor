@@ -1,0 +1,51 @@
+summary: check runtime behavior of owner rules
+systems:
+  - ubuntu-cloud-22.04
+  - ubuntu-cloud-24.04
+prepare: |
+  ../../../parser/apparmor_parser \
+    --base ../../../profiles/apparmor.d \
+    --config-file ../../../parser/parser.conf \
+    --warn all \
+    --Werror \
+    --skip-cache \
+    --skip-kernel-load \
+    --verbose \
+    --ofile owner.bin \
+    owner.aa
+  ../../../parser/apparmor_parser \
+    --skip-cache \
+    --replace \
+    --verbose \
+    --binary \
+    owner.bin
+execute: |
+  dmesg -c >/dev/null
+
+  echo "Confined root can read and write the file (confined root has both permissions, file is owned by root.)"
+  echo "Hello, World!" | aa-exec -p test-owner busybox tee /foo
+  aa-exec -p test-owner busybox cat /foo | MATCH "Hello, World!"
+
+  echo "Chown the file to non-root user and group so that owner checks will no longer match."
+  chmod -v 666 /foo
+  chown -v 1000:1000 /foo
+
+  echo "Confined root can still read the file (non-owner has read permission)."
+  aa-exec -p test-owner busybox cat /foo | MATCH "Hello, World!"
+  if echo "Goodbye, World!" | aa-exec -p test-owner busybox tee /foo; then
+    echo "Confined root process was able to write to the file despite owner constraint, test failed." >&2
+    exit 1
+  fi
+
+  echo "The file still has the original content."
+  MATCH "Hello, World!" /foo
+
+restore: |
+  echo -n test-owner >/sys/kernel/security/apparmor/.remove
+  rm -f /foo
+  rm -f owner.bin
+
+debug: |
+  snap install --beta apparmor-insight
+  /snap/apparmor-insight/current/bin/apparmor-insight \
+    info -0 owner.bin | grep "profile\\[0\\].file.hfa.accept[12] "
