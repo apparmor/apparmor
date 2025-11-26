@@ -348,7 +348,6 @@ void CHFA::dump(ostream &os)
  * (Only the -Cf and -Ce formats are currently supported.)
  */
 
-#define YYTH_REGEX_MAGIC 0x1B5E783D
 
 static inline size_t pad64(size_t i)
 {

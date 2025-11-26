@@ -4,12 +4,17 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#define YYTH_MAGIC	0xF13C57B1
-#define YYTH_FLAG_DIFF_ENCODE 1
-#define YYTH_FLAG_OOB_TRANS 2
+enum {
+	YYTH_REGEX_MAGIC = 0x1B5E783D,
+};
+
+enum {
+	YYTH_FLAG_DIFF_ENCODE = 1,
+	YYTH_FLAG_OOB_TRANS = 2,
+};
 
 struct table_set_header {
-	uint32_t	th_magic;	/* TH_MAGIC */
+	uint32_t	th_magic;	/* YYTH_REGEX_MAGIC (in network byte order) */
 	uint32_t	th_hsize;
 	uint32_t	th_ssize;
 	uint16_t	th_flags;
@@ -18,18 +23,22 @@ struct table_set_header {
 	char		th_pad64[];*/
 } __attribute__ ((packed));
 
-#define	YYTD_ID_ACCEPT	1
-#define YYTD_ID_BASE	2
-#define YYTD_ID_CHK	3
-#define YYTD_ID_DEF	4
-#define YYTD_ID_EC	5
-#define YYTD_ID_META	6
-#define YYTD_ID_ACCEPT2 7
-#define YYTD_ID_NXT	8
+enum {
+	YYTD_ID_ACCEPT = 1,
+	YYTD_ID_BASE = 2,
+	YYTD_ID_CHK = 3,
+	YYTD_ID_DEF = 4,
+	YYTD_ID_EC = 5,
+	YYTD_ID_META = 6,
+	YYTD_ID_ACCEPT2 = 7,
+	YYTD_ID_NXT = 8,
+};
 
-#define YYTD_DATA8	1
-#define YYTD_DATA16	2
-#define YYTD_DATA32	4
+enum {
+	YYTD_DATA8 = 1,
+	YYTD_DATA16 = 2,
+	YYTD_DATA32 = 4,
+};
 
 struct table_header {
 	uint16_t	td_id;
