@@ -94,12 +94,14 @@ void all_rule::add_implied_rules(Profile &prof)
 		const char *error;
 		struct cod_entry *entry;
 		char *path = strdup("/{**,}");
-		int perms = (AA_BASE_PERMS & ~(AA_EXEC_TYPE | AA_MAY_EXEC));
-		if (rule_mode != RULE_DENY)
-		/* duplicate to other permission set */
-		perms |= perms << AA_OTHER_SHIFT;
-		if (!path)
+		if (!path) {
 			yyerror(_("Memory allocation error."));
+		}
+		int perms = (AA_BASE_PERMS & ~(AA_EXEC_TYPE | AA_MAY_EXEC));
+		if (rule_mode != RULE_DENY) {
+			/* duplicate to other permission set */
+			perms |= perms << AA_OTHER_SHIFT;
+		}
 		entry = new_entry(path, perms, NULL);
 		if (!entry_add_prefix(entry, *prefix, error)) {
 			yyerror(_("%s"), error);
