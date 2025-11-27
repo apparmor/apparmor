@@ -106,7 +106,7 @@ void all_rule::add_implied_rules(Profile &prof)
 		if (!entry_add_prefix(entry, *prefix, error)) {
 			yyerror(_("%s"), error);
 		}
-		add_entry_to_policy(&prof, entry);
+		prof.rules->add_entry(entry);
 	}
 	// lower priority ix
 	{
@@ -137,7 +137,7 @@ void all_rule::add_implied_rules(Profile &prof)
 		if (!entry_add_prefix(entry, ix_prefix, error)) {
 			yyerror(_("%s"), error);
 		}
-		add_entry_to_policy(&prof, entry);
+		prof.rules->add_entry(entry);
 	}
 	// caps
 	{

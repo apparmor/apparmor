@@ -586,7 +586,7 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 		sd_serialize_dfa(buf, profile->policy.dfa, profile->policy.size,
 				 profile->policy.perms_table, false);
 		if (kernel_supports_permstable32) {
-			sd_serialize_xtable(buf, profile->exec_table);
+			sd_serialize_xtable(buf, profile->rules->exec_table);
 
 		}
 		sd_write_structend(buf);
@@ -596,7 +596,7 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 			 profile->dfa.perms_table, true);
 	if (profile->dfa.dfa) {
 		// fprintf(stderr, "profile %s: dfa xtable\n", profile->name);
-		sd_serialize_xtable(buf, profile->exec_table);
+		sd_serialize_xtable(buf, profile->rules->exec_table);
 	}
 	sd_write_structend(buf);
 }

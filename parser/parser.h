@@ -465,6 +465,8 @@ extern int clear_and_convert_entry(std::string& buffer, const char *entry);
 extern bool process_profile_name_xmatch(Profile *prof);
 extern int process_profile_regex(Profile *prof);
 extern int process_profile_policydb(Profile *prof);
+extern bool process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry);
+extern int process_profile_rules(Profile *prof);
 
 extern void filter_slashes(char *path);
 extern const char *local_name(const char *name);
@@ -517,9 +519,6 @@ extern long long convert_time_units(long long value, long long base, const char 
 extern int new_alias(const char *from, const char *to);
 extern int replace_profile_aliases(Profile *prof);
 extern void free_aliases(void);
-
-/* parser_merge.c */
-extern int profile_merge_rules(Profile *prof);
 
 /* parser_interface.c */
 extern int load_profile(int option, aa_kernel_interface *kernel_interface,

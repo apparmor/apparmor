@@ -728,7 +728,7 @@ rules:  rules opt_prefix rule
 		if (!entry_add_prefix($3, $2, error)) {
 			yyerror(_("%s"), error);
 		}
-		add_entry_to_policy($1, $3);
+		$1->rules->add_entry($3);
 		$$ = $1;
 	};
 
@@ -749,7 +749,7 @@ rules: rules opt_prefix block
 		       $2.rule_mode == rule_mode_t::DENY ? "deny " : "",
 		       $2.rule_mode == rule_mode_t::PROMPT ? "prompt " : "",
 		       $2.owner == owner_t::SPECIFIED ? "owner " : "");
-		list_for_each_safe($3->entries, entry, tmp) {
+		list_for_each_safe($3->rules->entries, entry, tmp) {
 			const char *error;
 			entry->next = NULL;
 			if (!entry_add_prefix(entry, $2, error)) {
@@ -759,9 +759,9 @@ rules: rules opt_prefix block
 			 * apply add_prefix to block rule and have it do
 			 * the work
 			 */
-			add_entry_to_policy($1, entry);
+			$1->rules->add_entry(entry);
 		}
-		$3->entries = NULL;
+		$3->rules->entries = NULL;
 		// fix me transfer rules and free sub profile
 		delete $3;
 		$$ = $1;
@@ -820,7 +820,7 @@ rules:	rules opt_prefix change_profile
 		if (!generic_add_prefix($3, $2, error))
 			yyerror("%s", error);
 
-		add_entry_to_policy($1, $3);
+		$1->rules->add_entry($3);
 		$$ = $1;
 	};
 

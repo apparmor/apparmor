@@ -39,31 +39,6 @@ int expand_entry_variables(char **name)
 	return variable::expand_by_alternation(name);
 }
 
-static int process_variables_in_entries(struct cod_entry *entry_list)
-{
-	int error = 0;
-	struct cod_entry *entry;
-
-	list_for_each(entry_list, entry) {
-		error = expand_entry_variables(&entry->name);
-		if (error)
-			return error;
-		if (entry->link_name) {
-			error = expand_entry_variables(&entry->link_name);
-			if (error)
-				return error;
-		}
-	}
-
-	return 0;
-}
-
-static int process_variables_in_rules(Profile &prof)
-{
-	return prof.rules->process_variables();
-}
-
-
 static int process_variable_in_attach_disconnected(char **disconnected)
 {
 	int error = expand_entry_variables(disconnected);
@@ -199,15 +174,8 @@ int process_profile_variables(Profile *prof)
 			return error;
 	}
 
-	error = process_variables_in_entries(prof->entries);
-	if (error)
-		return error;
-
-	error = process_variables_in_rules(*prof);
-	if (error)
-		return error;
-
-	return 0;
+	error = prof->rules->process_variables();
+	return error;
 }
 
 #ifdef UNIT_TEST

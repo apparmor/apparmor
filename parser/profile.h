@@ -386,7 +386,6 @@ struct dfa_stuff {
 
 class Profile final {
 public:
-	bool uses_prompt_rules;
 	char *ns;
 	char *name;
 	char *attachment;
@@ -407,9 +406,6 @@ public:
 	flagvals flags;
 	block_rules *rules;
 
-	char *exec_table[AA_EXEC_COUNT];
-	struct cod_entry *entries;
-
 	ProfileList hat_table;
 
 	struct dfa_stuff dfa;
@@ -418,7 +414,6 @@ public:
 	Profile(void)
 	{
 		rules = new block_rules();
-		uses_prompt_rules = false;
 		ns = name = attachment = NULL;
 		altnames = NULL;
 		xmatch = NULL;
@@ -432,10 +427,6 @@ public:
 		parent = NULL;
 
 		flags.init();
-
-		std::fill(exec_table, exec_table + AA_EXEC_COUNT, (char *)NULL);
-
-		entries = NULL;
 	};
 
 	~Profile();
@@ -489,9 +480,6 @@ public:
 		flags.dump(cerr);
 		if (rules)
 			rules->dump(cerr);
-
-		if (entries)
-			debug_cod_entries(entries);
 
 		printf("\n");
 		hat_table.dump();

@@ -23,6 +23,15 @@
 #include "rule.h"
 #include "network.h"
 
+#define CHANGEPROFILE_PATH "/proc/*/attr/{apparmor/,}{current,exec}"
+#define CHANGEHAT_PATH "/proc/[0-9]*/attr/{apparmor/,}current"
+
+enum class process_result_t : int {
+	SUCCESS,
+	REGEX_ERR,
+	POLICYDB_ERR,
+};
+
 struct capabilities {
 	uint64_t allow;
 	uint64_t audit;
@@ -108,13 +117,19 @@ struct capabilities {
 
 class block_rules {
 public:
+	char *exec_table[AA_EXEC_COUNT];
+	struct cod_entry *entries;
 	struct aa_rlimits rlimits;
 	struct capabilities caps;
 	RuleList rule_ents;
 	network_rule net;
+	bool uses_prompt_rules;
 
-	block_rules(void): rlimits({0, {}})
+	block_rules(void): entries(NULL),
+			   rlimits({0, {}}),
+			   uses_prompt_rules(false)
 	{
+		std::fill(exec_table, exec_table + AA_EXEC_COUNT, (char *)NULL);
 	}
 
 	~block_rules(void)
@@ -122,12 +137,21 @@ public:
 		for (rule_t *rule : rule_ents) {
 			delete rule;
 		}
+		free_cod_entries(entries);
+		for (int i = (AA_EXEC_LOCAL >> 10) + 1; i < AA_EXEC_COUNT; i++)
+			if (exec_table[i]) {
+				free(exec_table[i]);
+				exec_table[i] = NULL;
+			}
 	}
 
 	ostream &dump(ostream &os) {
 		// TODO add compat net dump
 		// TODO add rlimit dump
 		caps.dump();
+
+		if (entries)
+			debug_cod_entries(entries);
 
 		for (rule_t *rule : rule_ents) {
 			rule->dump(os);
@@ -136,18 +160,24 @@ public:
 		return os;
 	}
 
+	void add_entry(struct cod_entry *entry);
 	void add_rule(rule_t *entry);
 	void add_rlimit(const char *id, const char *in_value, const char *unit);
 	void add_capabilities(struct prefixes prefix, uint64_t cap);
 	void add_compat_net(const network_rule *entry);
 	void merge_block_rules(block_rules *b);
-	int merge_duplicated_rules(void);
+	int merge_duplicated_rules(const char *profname);
 	int process_variables(void);
-	bool post_process(Profile *prof);
+	process_result_t post_process(Profile *prof);
 	void post_parse_profile(Profile *prof);
 	void add_implied_rules(Profile *prof);
+	bool add_proc_access(const char *rule);
 private:
 	int merge_rule_t(void);
+	int merge_file(const char *profname);
+	void post_parse_profile_file(Profile *prof);
+	int add_entry_to_x_table(char *name);
+	int add_named_transition(Profile *prof, struct cod_entry *entry);
 };
 
 #endif /* __AA_BLOCK_RULES_H */

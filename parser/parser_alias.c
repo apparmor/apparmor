@@ -195,8 +195,8 @@ int replace_profile_aliases(Profile *prof)
 	target_prof = prof;
 	twalk(alias_table, process_name);
 
-	if (prof->entries) {
-		target_list = prof->entries;
+	if (prof->rules->entries) {
+		target_list = prof->rules->entries;
 		target_prof = prof;
 		twalk(alias_table, process_entries);
 	}
