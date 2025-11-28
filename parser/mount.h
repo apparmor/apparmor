@@ -157,7 +157,7 @@ public:
 
 
 	mnt_rule(struct cond_entry *src_conds, char *device_p,
-		   struct cond_entry *dst_conds unused, char *mnt_point_p,
+		   struct cond_entry *dst_conds aa_unused, char *mnt_point_p,
 		   perm32_t perms_p);
 	~mnt_rule() override
 	{
@@ -178,7 +178,7 @@ public:
 	ostream &dump(ostream &os) override;
 	int expand_variables(void) override;
 	int gen_policy_re(Profile &prof) override;
-	void post_parse_profile(Profile &prof unused) override;
+	void post_parse_profile(Profile &prof aa_unused) override;
 
 	bool is_mergeable(void) override { return true; }
 	int cmp(rule_t const &rhs) const override;

@@ -20,6 +20,9 @@
 
 #include "rule.h"
 
+#ifndef aa_unused
+#define aa_unused __attribute__ ((unused))
+#endif
 #define AA_IO_URING_OVERRIDE_CREDS AA_MAY_APPEND
 #define AA_IO_URING_SQPOLL AA_MAY_CREATE
 
@@ -62,11 +65,11 @@ public:
 
 	void add_implied_rules(Profile &prof) override;
 
-	int gen_policy_re(Profile &prof unused) override { return RULE_OK; };
+	int gen_policy_re(Profile &prof aa_unused) override { return RULE_OK; };
 
 protected:
-  void warn_once(const char *name unused, const char *msg unused) override { };
-  void warn_once(const char *name unused) override  { };
+  void warn_once(const char *name aa_unused, const char *msg aa_unused) override { };
+  void warn_once(const char *name aa_unused) override  { };
 };
 
 #endif /* __AA_ALL_H */

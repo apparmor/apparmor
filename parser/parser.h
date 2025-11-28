@@ -214,8 +214,8 @@ do {						\
 #define MIN_PORT 0
 #define MAX_PORT 65535
 
-#ifndef unused
-#define unused __attribute__ ((unused))
+#ifndef aa_unused
+#define aa_unused __attribute__ ((unused))
 #endif
 
 
