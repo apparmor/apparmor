@@ -20,9 +20,16 @@
 
 #include "rule.h"
 
+#include <libintl.h>
+
+#ifndef _
+#define _(s) gettext(s)
+#endif
+
 #ifndef aa_unused
 #define aa_unused __attribute__ ((unused))
 #endif
+
 #define AA_IO_URING_OVERRIDE_CREDS AA_MAY_APPEND
 #define AA_IO_URING_SQPOLL AA_MAY_CREATE
 
