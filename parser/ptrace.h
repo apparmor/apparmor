@@ -65,6 +65,25 @@ public:
 			    (rule_cast<ptrace_rule const &>(rhs)).peer_label);
 	};
 
+	ptrace_rule(const ptrace_rule &r) : perms_rule_t(r), peer_label(NULL)
+	{
+		if (r.peer_label)
+			peer_label = strdup(r.peer_label);
+	}
+
+	ptrace_rule(ptrace_rule &&r) noexcept : perms_rule_t(std::move(r)), peer_label(r.peer_label)
+	{
+		r.peer_label = NULL;
+	}
+
+	ptrace_rule& operator=(const ptrace_rule& r) = delete;
+
+	ptrace_rule& operator=(ptrace_rule&& r) noexcept = delete;
+
+	rule_t* clone() const {
+		return new ptrace_rule(*this);
+	}
+
 protected:
 	void warn_once(const char *name) override;
 };

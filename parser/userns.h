@@ -50,6 +50,16 @@ public:
 	};
 	/* merge perms not required atm since there's only one permission */
 
+	userns_rule(const userns_rule &r) : perms_rule_t(r) {}
+
+	userns_rule(userns_rule &&r) noexcept : perms_rule_t(std::move(r)) { }
+
+	userns_rule& operator=(const userns_rule& r) = delete;
+
+	userns_rule& operator=(userns_rule&& r) noexcept = delete;
+
+	rule_t* clone() const { return new userns_rule(*this); }
+
 protected:
 	void warn_once(const char *name) override;
 };

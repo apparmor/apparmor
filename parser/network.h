@@ -153,7 +153,7 @@ public:
 
 	bool is_none = false;
 
-	void free_conds() {
+	void free_conds(void) {
 		if (sip) {
 			free(sip);
 			sip = NULL;
@@ -162,9 +162,56 @@ public:
 			free(sport);
 			sport = NULL;
 		}
-		if (iface)
+		if (iface) {
 			free(iface);
+			iface = NULL;
+		}
+		if (label_match) {
+			free(label_match);
+			label_match = NULL;
+		}
 	}
+
+	ip_conds(void) {}
+
+	~ip_conds(void)
+	{
+		free_conds();
+	}
+
+	ip_conds(const ip_conds &r) : sip(NULL), sport(NULL),
+				      iface(NULL), label_match(NULL),
+				      is_ip(r.is_ip), is_port(r.is_port),
+				      from_port(r.from_port),
+				      to_port(r.to_port), ip(r.ip),
+				      is_none(r.is_none)
+	{
+		if (r.sip)
+			sip = strdup(r.sip);
+		if (r.sport)
+			sport = strdup(r.sport);
+		if (r.iface)
+			iface = strdup(r.iface);
+		if (r.label_match)
+			label_match = strdup(r.label_match);
+	}
+
+	ip_conds(ip_conds &&r) noexcept : sip(r.sip), sport(r.sport),
+					  iface(r.iface), label_match(r.label_match),
+					  is_ip(r.is_ip), is_port(r.is_port),
+					  from_port(r.from_port),
+					  to_port(r.to_port), ip(r.ip),
+					  is_none(r.is_none)
+	{
+		r.sip = NULL;
+		r.sport = NULL;
+		r.iface = NULL;
+		r.label_match = NULL;
+	}
+
+	ip_conds& operator=(const ip_conds& r) = delete;
+
+	ip_conds& operator=(ip_conds&& r) noexcept = delete;
 };
 
 class network_rule: public dedup_perms_rule_t {
@@ -253,6 +300,42 @@ public:
 	unsigned int *quiet = NULL;
 
 	bool alloc_net_table(void);
+
+	network_rule(const network_rule &r) : dedup_perms_rule_t(r),
+					      network_map(r.network_map),
+					      network_perms(r.network_perms),
+					      peer(r.peer), local(r.local)
+	{
+		if (r.allow) {
+			if (!alloc_net_table())
+				yyerror(_("Memory allocation error."));
+			for (size_t i = 0; i < get_af_max(); i++) {
+				allow[i] = r.allow[i];
+				audit[i] = r.audit[i];
+				deny[i] = r.deny[i];
+				quiet[i] = r.quiet[i];
+			}
+		}
+	}
+
+	network_rule(network_rule &&r) noexcept : dedup_perms_rule_t(std::move(r)),
+						  network_map(std::move(r.network_map)),
+						  network_perms(std::move(r.network_perms)),
+						  peer(std::move(r.peer)), local(std::move(r.local)),
+						  allow(r.allow), audit(r.audit),
+						  deny(r.deny), quiet(r.quiet)
+	{
+		r.allow = NULL;
+		r.audit = NULL;
+		r.deny = NULL;
+		r.quiet = NULL;
+	}
+
+	network_rule& operator=(const network_rule& r) = delete;
+
+	network_rule& operator=(network_rule&& r) noexcept = delete;
+
+	rule_t* clone() const { return new network_rule(*this); }
 
 protected:
 	void warn_once(const char *name) override;

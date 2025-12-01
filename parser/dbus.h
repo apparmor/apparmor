@@ -88,6 +88,43 @@ public:
 		return null_strcmp(member, trhs.member);
 	};
 
+	dbus_rule(const dbus_rule &r) : perms_rule_t(r), bus(NULL),
+					name(NULL), peer_label(NULL),
+					path(NULL), interface(NULL),
+					member(NULL)
+	{
+		if (r.bus)
+			bus = strdup(r.bus);
+		if (r.name)
+			name = strdup(r.name);
+		if (r.peer_label)
+			peer_label = strdup(r.peer_label);
+		if (r.path)
+			path = strdup(r.path);
+		if (r.interface)
+			interface = strdup(r.interface);
+		if (r.member)
+			member = strdup(r.member);
+	}
+
+	dbus_rule(dbus_rule &&r) noexcept : perms_rule_t(std::move(r)), bus(r.bus),
+					    name(r.name), peer_label(r.peer_label),
+					    path(r.path), interface(r.interface),
+					    member(r.member)
+	{
+		r.bus = NULL;
+		r.name = NULL;
+		r.peer_label = NULL;
+		r.path = NULL;
+		r.interface = NULL;
+		r.member = NULL;
+	}
+
+	dbus_rule& operator=(const dbus_rule& r) = delete;
+
+	dbus_rule& operator=(dbus_rule&& r) noexcept = delete;
+
+	rule_t* clone() const { return new dbus_rule(*this); }
 
 protected:
 	void warn_once(const char *name) override;
