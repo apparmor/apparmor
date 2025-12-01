@@ -39,7 +39,7 @@ void ProfileList::dump_profile_names(bool children)
 	for (ProfileList::iterator i = list.begin(); i != list.end();i++) {
 		(*i)->dump_name(true);
 		printf("\n");
-		if (children && !(*i)->hat_table.empty())
-			(*i)->hat_table.dump_profile_names(children);
+		if (children && !(*i)->main_block->defined_hats.empty())
+			(*i)->main_block->defined_hats.dump_profile_names(children);
 	}
 }

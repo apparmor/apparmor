@@ -1,0 +1,10 @@
+#
+#=DESCRIPTION rlimits in a plain (prefix-less) block are allowed
+#=EXRESULT PASS
+
+profile rlimit {
+  {
+    set rlimit cpu <= 10,
+    set rlimit nofile <= 1024,
+  }
+}

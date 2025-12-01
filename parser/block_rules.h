@@ -132,7 +132,9 @@ public:
 		std::fill(exec_table, exec_table + AA_EXEC_COUNT, (char *)NULL);
 	}
 
-	~block_rules(void)
+	block_rules(const block_rules &p);
+
+	void clear(void)
 	{
 		for (rule_t *rule : rule_ents) {
 			delete rule;
@@ -145,7 +147,11 @@ public:
 			}
 	}
 
-	ostream &dump(ostream &os) {
+	~block_rules(void)
+	{}
+
+	ostream &dump(ostream &os)
+	{
 		// TODO add compat net dump
 		// TODO add rlimit dump
 		caps.dump();
@@ -172,6 +178,7 @@ public:
 	void post_parse_profile(Profile *prof);
 	void add_implied_rules(Profile *prof);
 	bool add_proc_access(const char *rule);
+	bool add_prefix(const prefixes &p, const char *&error);
 private:
 	int merge_rule_t(void);
 	int merge_file(const char *profname);

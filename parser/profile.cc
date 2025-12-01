@@ -16,6 +16,7 @@
 #include "profile.h"
 #include "rule.h"
 #include "parser.h"
+#include "block.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -39,7 +40,6 @@ const char *profile_mode_table[] = {
 
 Profile::~Profile()
 {
-	hat_table.clear();
 	flags.clear();
 	free_cond_entry_list(xattrs);
 
@@ -61,15 +61,24 @@ Profile::~Profile()
 		free_value_list(identities);
 	if (ns)
 		free(ns);
-	if (rules)
+	if (rules) {
+		rules->clear();
 		delete rules;
+	}
+	if (main_block)
+		delete main_block;
 }
 
 // TODO: move to block rule
 // returns number of rules merged
 // returns negative number on error
-int Profile::merge_rules(void)
+int Profile::merge_rules(int debug_only)
 {
+	if (debug_only) {
+		int ret = main_block->merge_duplicated_rules();
+		if (ret < 0)
+			return ret;
+	}
 	return rules->merge_duplicated_rules(name);
 }
 
@@ -79,7 +88,7 @@ static int profile_add_hat_rules(Profile *prof)
 {
 	/* don't add hat rules if not hat or profile doesn't have hats */
 	if (!has_profile_flag(prof->flags.flags, profile_flag_t::HAT) &&
-	    prof->hat_table.empty())
+	    prof->main_block->defined_hats.empty())
 		return 0;
 
 	if (!prof->rules->add_proc_access(CHANGEHAT_PATH))
@@ -115,7 +124,7 @@ void Profile::add_implied_rules(void)
 {
 	int error;
 
-	rules->add_implied_rules(this);
+	main_block->add_implied_rules(*this);
 
 	error = profile_add_hat_rules(this);
 	if (error) {
@@ -123,11 +132,48 @@ void Profile::add_implied_rules(void)
 		       name);
 		//return error;
 	}
-
 }
 
 /* do we want to warn once/profile or just once per compile?? */
 void Profile::warn_once(const char *name, const char *msg)
 {
 	common_warn_once(name, msg, &warned_name);
+}
+
+void Profile::dump(void)
+{
+	if (ns)
+		printf("Ns:\t\t%s\n", ns);
+
+	if (name)
+		printf("Name:\t\t%s\n", name);
+	else
+		printf("Name:\t\t<NULL>\n");
+	if (attachment)
+		printf("Attachment:\t%s\n", attachment);
+	else {
+		const char *local = local_name(name);
+		printf("Attachment:\t%s\n", local[0] == '/' ? local : "<NULL>");
+	}
+	if (parent)
+		printf("Local To:\t%s\n", parent->name);
+	else
+		printf("Local To:\t<NULL>\n");
+
+	if (identities) {
+		printf("Identities:\t(");
+		print_value_list(identities, std::cout);
+		printf(")\n");
+	}
+
+	flags.dump(cerr);
+	main_block->dump(cerr);
+
+	printf("\n");
+}
+
+void Profile::add_block(block *b)
+{
+	main_block = b;
+	main_block->update_parent(this);
 }

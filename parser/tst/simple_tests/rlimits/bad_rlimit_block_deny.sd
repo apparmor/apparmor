@@ -1,0 +1,9 @@
+#
+#=DESCRIPTION rlimits do not support a deny prefix, even via a block
+#=EXRESULT FAIL
+
+profile rlimit {
+  deny {
+    set rlimit cpu <= 10,
+  }
+}

@@ -38,8 +38,8 @@
 #include "signal.h"
 #include "immunix.h"
 #include "perms.h"
-#include "profilelist.h"
 #include "block_rules.h"
+#include "block.h"
 
 class aare_rules;
 
@@ -404,16 +404,15 @@ public:
 	Profile *parent;
 
 	flagvals flags;
-	block_rules *rules;
 
-	ProfileList hat_table;
+	block_rules *rules;
+	block *main_block;
 
 	struct dfa_stuff dfa;
 	struct dfa_stuff policy;
 
 	Profile(void)
 	{
-		rules = new block_rules();
 		ns = name = attachment = NULL;
 		altnames = NULL;
 		xmatch = NULL;
@@ -427,6 +426,7 @@ public:
 		parent = NULL;
 
 		flags.init();
+		main_block = NULL;
 	};
 
 	~Profile();
@@ -449,41 +449,7 @@ public:
 	 * Requires the merged rules have customized methods
 	 * cmp(), is_mergeable() and merge()
 	 */
-	virtual int merge_rules(void);
-
-	void dump(void)
-	{
-		if (ns)
-			printf("Ns:\t\t%s\n", ns);
-
-		if (name)
-			printf("Name:\t\t%s\n", name);
-		else
-			printf("Name:\t\t<NULL>\n");
-		if (attachment)
-			printf("Attachment:\t%s\n", attachment);
-		else {
-			const char *local = local_name(name);
-			printf("Attachment:\t%s\n", local[0] == '/' ? local : "<NULL>");
-		}
-		if (parent)
-			printf("Local To:\t%s\n", parent->name);
-		else
-			printf("Local To:\t<NULL>\n");
-
-		if (identities) {
-			printf("Identities:\t(");
-			print_value_list(identities, std::cout);
-			printf(")\n");
-		}
-
-		flags.dump(cerr);
-		if (rules)
-			rules->dump(cerr);
-
-		printf("\n");
-		hat_table.dump();
-	}
+	virtual int merge_rules(int debug_only);
 
 	std::string hname(void)
 	{
@@ -515,6 +481,8 @@ public:
 		std::cout << get_name(fqp);;
 	}
 
+	void dump(void);
+	void add_block(block *b);
 	void post_parse_profile(void);
 	void add_implied_rules(void);
 

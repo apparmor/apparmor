@@ -473,7 +473,7 @@ extern const char *local_name(const char *name);
 
 /* parser_variable.c */
 extern int expand_entry_variables(char **name);
-extern int process_profile_variables(Profile *prof);
+extern int process_profile_variables(Profile *prof, int debug_only);
 
 /* parser_misc.c */
 extern void warn_uppercase(void);
@@ -517,7 +517,8 @@ extern long long convert_time_units(long long value, long long base, const char 
 
 /* parser_alias.c */
 extern int new_alias(const char *from, const char *to);
-extern int replace_profile_aliases(Profile *prof);
+extern int replace_entries_aliases(Profile *prof, struct cod_entry *entries);
+extern int replace_profile_aliases(Profile *prof, int debug_only);
 extern void free_aliases(void);
 
 /* parser_interface.c */
@@ -534,7 +535,6 @@ extern int cache_fd;
 extern void add_to_list(Profile *profile);
 extern void add_hat_to_policy(Profile *policy, Profile *hat);
 extern int post_process_policy(int debug_only);
-extern Profile *merge_policy(Profile *a, Profile *b);
 extern int load_policy(int option, aa_kernel_interface *kernel_interface,
 		       int cache_fd);
 extern int load_hats(std::ostringstream &buf, Profile *prof);

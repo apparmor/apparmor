@@ -159,3 +159,10 @@ cond_expr::cond_expr(const char *lhv, cond_op op, const char *rhv)
 		yyerror(_("Can only compare numbers with numbers\n"));
 	}
 }
+
+ostream &cond_expr::dump(ostream &os)
+{
+	os << eval() << "\n";
+	cond_block->dump(os);
+	return os;
+}

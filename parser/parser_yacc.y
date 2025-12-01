@@ -207,6 +207,7 @@ static void abi_features(char *filename, bool search);
 	#include "all_rule.h"
 	#include "cond_expr.h"
 	#include "symtab.h"
+	#include "block.h"
 }
 
 %union {
@@ -217,6 +218,7 @@ static void abi_features(char *filename, bool search);
 	Profile *prof;
 	struct cod_net_entry *net_entry;
 	struct cod_entry *user_entry;
+	block *rule_block;
 
 	mnt_rule *mnt_entry;
 	dbus_rule *dbus_entry;
@@ -248,6 +250,7 @@ static void abi_features(char *filename, bool search);
 	audit_t audit;
 	rule_mode_t rule_mode;
 	cond_expr *cond;
+	cond_expr_set *conds;
 }
 
 %type <id> 	TOK_ID
@@ -257,11 +260,11 @@ static void abi_features(char *filename, bool search);
 %type <fperms>   file_perms
 %type <prof>	profile_base
 %type <prof> 	profile
-%type <prof>	rules
-%type <prof>	block
+%type <rule_block>	rules
+%type <rule_block>	block
 %type <prof>	hat
 %type <prof>	local_profile
-%type <prof>	cond_rule
+%type <conds>	cond_rule
 %type <network_entry> network_rule
 %type <user_entry> rule
 %type <user_entry> file_rule
@@ -395,12 +398,12 @@ profile_base: TOK_ID opt_id_or_var opt_cond_list identities flags TOK_OPEN
 	}
     rules TOK_CLOSE
 	{
-		Profile *prof = $8;
 		bool self_stack = false;
-
+		Profile *prof = new Profile();
 		if (!prof) {
 			yyerror(_("Memory allocation error."));
 		}
+		prof->add_block($8);
 
 		parse_label(&self_stack, &prof->ns, &prof->name, $1, true);
 		free($1);
@@ -444,6 +447,8 @@ profile_base: TOK_ID opt_id_or_var opt_cond_list identities flags TOK_OPEN
 			 */
 			prof->flags.mode = profile_mode::COMPLAIN;
 
+		/* get policy from block, subblocks, conditions, etc */
+		prof->rules = prof->main_block->consolidate_block_rules();
 		prof->post_parse_profile();
 		prof->flags.debug(cerr);
 
@@ -707,13 +712,13 @@ opt_prefix: opt_priority opt_audit_flag opt_rule_mode opt_owner_flag
 		$$.owner = $4;
 	}
 
-rules:	{ /* nothing */ 
-	Profile *prof = new Profile();
-		if (!prof) {
+rules:	{ /* nothing */
+		block *rule_block = new block();
+		if (!rule_block) {
 			yyerror(_("Memory allocation error."));
 		}
 
-		$$ = prof;
+		$$ = rule_block;
 	};
 
 rules: rules abi_rule { /* nothing */ }
@@ -728,7 +733,7 @@ rules:  rules opt_prefix rule
 		if (!entry_add_prefix($3, $2, error)) {
 			yyerror(_("%s"), error);
 		}
-		$1->rules->add_entry($3);
+		$1->add_entry($3);
 		$$ = $1;
 	};
 
@@ -739,32 +744,20 @@ block: TOK_OPEN rules TOK_CLOSE
 
 rules: rules opt_prefix block
 	{
-		struct cod_entry *entry, *tmp;
-
-		if (($2).priority != 0) {
-			yyerror(_("priority is not allowed on rule blocks"));
-		}
+		const char *error;
+		block *subblock = $3;
+		block *current = $1;
 		PDEBUG("matched: %s%s%s%sblock\n",
 		       $2.audit == audit_t::FORCE ? "audit " : "",
 		       $2.rule_mode == rule_mode_t::DENY ? "deny " : "",
 		       $2.rule_mode == rule_mode_t::PROMPT ? "prompt " : "",
 		       $2.owner == owner_t::SPECIFIED ? "owner " : "");
-		list_for_each_safe($3->rules->entries, entry, tmp) {
-			const char *error;
-			entry->next = NULL;
-			if (!entry_add_prefix(entry, $2, error)) {
-				yyerror(_("%s"), error);
-			}
-			/* transfer rule for now, TODO keep block and just
-			 * apply add_prefix to block rule and have it do
-			 * the work
-			 */
-			$1->rules->add_entry(entry);
-		}
-		$3->rules->entries = NULL;
-		// fix me transfer rules and free sub profile
-		delete $3;
-		$$ = $1;
+
+		if (!subblock->add_prefix($2, error))
+			yyerror(_("%s"), error);
+		if (!current->add_subblock(subblock, error))
+			yyerror(_("%s"), error);
+		$$ = current;
 	};
 
 rules: rules opt_prefix network_rule
@@ -777,14 +770,17 @@ rules: rules opt_prefix network_rule
 		if (nm_af_unix != $3->network_map.end()) {
 			for (auto& entry : nm_af_unix->second) {
 				unix_rule *rule = new unix_rule(entry.type,
-								$2.audit, $2.rule_mode);
+								audit_t::UNSPECIFIED,
+								rule_mode_t::UNSPECIFIED);
 				if (!rule)
 					yyerror(_("Memory allocation error."));
-				$1->rules->add_rule(rule);
+				if (!rule->add_prefix($2, error))
+					yyerror("%s", error);
+				$1->add_rule(rule);
 			}
 		}
-		$1->rules->add_rule($3);
-		$1->rules->add_compat_net($3);
+		$1->add_rule($3);
+		$1->add_compat_net($3);
 		$$ = $1;
 	}
 
@@ -803,7 +799,7 @@ rules:  rules opt_prefix prefix_rule
 		const char *error;
 		if (!$3->add_prefix($2, error))
 			yyerror("%s", error);
-		$1->rules->add_rule($3);
+		$1->add_rule($3);
 		$$ = $1;
 	}
 
@@ -820,13 +816,13 @@ rules:	rules opt_prefix change_profile
 		if (!generic_add_prefix($3, $2, error))
 			yyerror("%s", error);
 
-		$1->rules->add_entry($3);
+		$1->add_entry($3);
 		$$ = $1;
 	};
 
 rules:  rules opt_prefix capability
 	{
-		$1->rules->add_capabilities($2, $3);
+		$1->add_capabilities($2, $3);
 		$$ = $1;
 	};
 
@@ -835,7 +831,7 @@ rules:	rules hat
 		PDEBUG("Matched: hat rule\n");
 		if (!$2)
 			yyerror(_("Assert: 'hat rule' returned NULL."));
-		add_hat_to_policy($1, $2);
+		$1->add_hat($2);
 		$$ = $1;
 	};
 
@@ -844,19 +840,20 @@ rules:	rules local_profile
 		PDEBUG("Matched: hat rule\n");
 		if (!$2)
 			yyerror(_("Assert: 'local_profile rule' returned NULL."));
-		add_hat_to_policy($1, $2);
+		$1->add_hat($2);
 		$$ = $1;
 	};
 
 rules:	rules cond_rule
 	{
 		PDEBUG("Matched: conditional rules\n");
-		$$ = merge_policy($1, $2);
+		$1->add_cond_set($2);
+		$$ = $1;
 	}
 
 rules: rules TOK_SET TOK_RLIMIT TOK_ID TOK_LE TOK_VALUE opt_id TOK_END_OF_RULE
 	{
-		$1->rules->add_rlimit($4, $6, $7);
+		$1->add_rlimit($4, $6, $7);
 		free($4);
 		free($6);
 		free($7);
@@ -866,45 +863,41 @@ rules: rules TOK_SET TOK_RLIMIT TOK_ID TOK_LE TOK_VALUE opt_id TOK_END_OF_RULE
 
 cond_rule: TOK_IF expr block
 	{
-		Profile *ret = NULL;
 		PDEBUG("Matched: found conditional rules\n");
-		if ($2->eval()) {
-			ret = $3;
-		} else {
-			delete $3;
-		}
-		delete $2;
-		$$ = ret;
+		$2->cond_block = $3;
+
+		cond_expr_set *l = new cond_expr_set();
+		l->add_cond($2);
+		$$ = l;
 	}
 
 cond_rule: TOK_IF expr block TOK_ELSE block
 	{
-		Profile *ret = NULL;
 		PDEBUG("Matched: found conditional else rules\n");
-		if ($2->eval()) {
-			ret = $3;
-			delete $5;
-		} else {
-			ret = $5;
-			delete $3;
-		}
-		delete $2;
-		$$ = ret;
+
+		cond_expr *if_cond = $2;
+		cond_expr *else_cond = new cond_expr(!(if_cond->eval()));
+		if_cond->cond_block = $3;
+		else_cond->cond_block = $5;
+
+		cond_expr_set *l = new cond_expr_set();
+		l->add_cond(if_cond);
+		l->add_cond(else_cond);
+
+		$$ = l;
 	}
 
 cond_rule: TOK_IF expr block TOK_ELSE cond_rule
 	{
-		Profile *ret = NULL;
 		PDEBUG("Matched: found conditional else-if rules\n");
-		if ($2->eval()) {
-			ret = $3;
-			delete $5;
-		} else {
-			ret = $5;
-			delete $3;
-		}
-		delete $2;
-		$$ = ret;
+		cond_expr *if_cond = $2;
+		if_cond->cond_block = $3;
+
+		cond_expr_set *l = new cond_expr_set();
+		l->add_cond(if_cond);
+		l->merge($5);
+		delete $5;
+		$$ = l;
 	}
 
 

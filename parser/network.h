@@ -285,6 +285,55 @@ public:
 		return rc;
 	}
 
+	void apply_compat_prefix(const prefixes &p) {
+		if (!allow)	/* no aggregated network rules */
+			return;
+
+		if (p.rule_mode == rule_mode_t::UNSPECIFIED &&
+		    p.audit == audit_t::UNSPECIFIED)
+			return;	/* nothing to change */
+
+		for (size_t i = 0; i < get_af_max(); i++) {
+			/* nothing to do if there are no perms for family */
+			if ((allow[i] | audit[i] | deny[i] | quiet[i]) == 0)
+				continue;
+
+			/* decompose current state into the four
+			 * mutually exclusive groups */
+			uint64_t allow_noaudit = allow[i] & ~audit[i] & ~deny[i];
+			uint64_t allow_audit = allow[i] & audit[i] & ~deny[i];
+			uint64_t deny_quiet = deny[i] & quiet[i];	/* plain deny */
+			uint64_t deny_audit = deny[i] & ~quiet[i];	/* audit deny */
+
+			allow[i] = audit[i] = deny[i] = quiet[i] = 0;
+
+			if (p.rule_mode == rule_mode_t::DENY) {
+				/* deny wins: every perm becomes
+				 * denied. what was quiet remains
+				 * quiet unless the audit prefix was
+				 * specified.
+				 */
+				deny[i] = allow_noaudit | allow_audit | deny_quiet | deny_audit;
+				unsigned int  audited = allow_audit | deny_audit;
+				if (p.audit == audit_t::FORCE) {
+					audited |= (allow_noaudit | deny_quiet);
+				}
+				quiet[i] = (allow_noaudit | deny_quiet) & ~audited;
+			} else {	/* audit prefix, not deny */
+				allow[i] = allow_noaudit | allow_audit;
+				deny[i] = deny_quiet | deny_audit;
+				if (p.audit == audit_t::FORCE) {
+					audit[i] = allow[i];
+					/* audited denials are no longer quieted */
+					quiet[i] = 0;
+				} else {
+					audit[i] = allow_audit;
+					quiet[i] = deny_quiet;
+				}
+			}
+		}
+	}
+
 	ostream &dump(ostream &os) override;
 	int expand_variables(void) override;
 	rule_result_t gen_policy_re(Profile &prof) override;

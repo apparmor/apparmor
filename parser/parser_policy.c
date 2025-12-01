@@ -67,18 +67,6 @@ void add_to_list(Profile *prof)
 	}
 }
 
-void add_hat_to_policy(Profile *prof, Profile *hat)
-{
-	hat->parent = prof;
-
-	pair<ProfileList::iterator, bool> res = prof->hat_table.insert(hat);
-	if (!res.second) {
-		PERROR("Multiple definitions for hat %s in profile %s exist,"
-		       "bailing out.\n", hat->name, prof->name);
-		exit(1);
-	}
-}
-
 int load_policy_list(ProfileList &list, int option,
 		     aa_kernel_interface *kernel_interface, int cache_fd)
 {
@@ -96,7 +84,7 @@ int load_policy_list(ProfileList &list, int option,
 int load_flattened_hats(Profile *prof, int option,
 			aa_kernel_interface *kernel_interface, int cache_fd)
 {
-	return load_policy_list(prof->hat_table, option, kernel_interface,
+	return load_policy_list(prof->main_block->defined_hats, option, kernel_interface,
 				cache_fd);
 }
 
@@ -107,8 +95,8 @@ int load_policy(int option, aa_kernel_interface *kernel_interface, int cache_fd)
 
 int load_hats(std::ostringstream &buf, Profile *prof)
 {
-	for (ProfileList::iterator i = prof->hat_table.begin(); i != prof->hat_table.end(); i++) {
-		sd_serialize_profile(buf, *i, 0);
+	for (Profile *hat : prof->main_block->defined_hats) {
+		sd_serialize_profile(buf, hat, 0);
 	}
 
 	return 0;
@@ -125,56 +113,10 @@ void dump_policy_names(void)
 	policy_list.dump_profile_names(true);
 }
 
-/* merge_hats: merges hat_table into hat_table owned by prof */
-static void merge_hats(Profile *prof, ProfileList &hats)
+
+int profile_merge_rules(Profile *prof, int debug_only)
 {
-	for (ProfileList::iterator i = hats.begin(); i != hats.end(); ) {
-		ProfileList::iterator cur = i++;
-		add_hat_to_policy(prof, *cur);
-		hats.erase(cur);
-	}
-
-}
-
-Profile *merge_policy(Profile *a, Profile *b)
-{
-	Profile *ret = a;
-
-	if (!a) {
-		ret = b;
-		goto out;
-	}
-	if (!b)
-		goto out;
-
-	if (a->name || b->name) {
-                PERROR("ASSERT: policy merges shouldn't have names %s %s\n",
-		       a->name ? a->name : "",
-		       b->name ? b->name : "");
-		exit(1);
-	}
-
-	if (merge_profile_mode(a->flags.mode, b->flags.mode) == profile_mode::CONFLICT) {
-		PERROR("ASSERT: policy merge with different modes 0x%x != 0x%x\n",
-		       static_cast<unsigned int>(a->flags.mode),
-		       static_cast<unsigned int>(b->flags.mode));
-		exit(1);
-	}
-
-	a->flags.audit = a->flags.audit || b->flags.audit;
-
-	a->rules->merge_block_rules(b->rules);
-
-	merge_hats(a, b->hat_table);
-	delete b;
-out:
-	return ret;
-}
-
-
-int profile_merge_rules(Profile *prof)
-{
-	int res = prof->merge_rules();
+	int res = prof->merge_rules(debug_only);
 	if (res < 0)
 		return -res;
 
@@ -188,20 +130,20 @@ int post_process_profile(Profile *profile, int debug_only)
 
 	profile->add_implied_rules();
 
-	error = process_profile_variables(profile);
+	error = process_profile_variables(profile, debug_only);
 	if (error) {
 		PERROR(_("ERROR expanding variables for profile %s, failed to load\n"), profile->name);
 		exit(1);
 		return error;
 	}
 
-	error = replace_profile_aliases(profile);
+	error = replace_profile_aliases(profile, debug_only);
 	if (error) {
 		PERROR(_("ERROR replacing aliases for profile %s, failed to load\n"), profile->name);
 		return error;
 	}
 
-	error = profile_merge_rules(profile);
+	error = profile_merge_rules(profile, debug_only);
 	if (error) {
 		PERROR(_("ERROR merging rules for profile %s, failed to load\n"), profile->name);
 		exit(1);
@@ -214,7 +156,7 @@ int post_process_profile(Profile *profile, int debug_only)
 			return error;
 	}
 
-	error = post_process_policy_list(profile->hat_table, debug_only);
+	error = post_process_policy_list(profile->main_block->defined_hats, debug_only);
 
 	if (prompt_compat_mode == prompt_compat_t::FLAG && profile->rules->uses_prompt_rules)
 		profile->flags.mode = profile_mode::PROMPT;

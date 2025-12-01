@@ -1,0 +1,9 @@
+#
+#=DESCRIPTION rlimits do not support an owner prefix, even via a block
+#=EXRESULT FAIL
+
+profile rlimit {
+  owner {
+    set rlimit cpu <= 10,
+  }
+}

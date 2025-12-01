@@ -778,7 +778,7 @@ int __sd_serialize_profile(int option, aa_kernel_interface *kernel_interface,
 		free(compressed_buffer);
 	}
 
-	if (!prof->hat_table.empty() && option != OPTION_REMOVE) {
+	if (!prof->main_block->defined_hats.empty() && option != OPTION_REMOVE) {
 		if (load_flattened_hats(prof, option, kernel_interface, cache_fd) == 0)
 			return 0;
 	}

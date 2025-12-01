@@ -203,12 +203,24 @@ void block_rules::merge_block_rules(block_rules *b)
 	}
 	b->entries = NULL;
 
-	rule_ents.splice(rule_ents.end(), b->rule_ents);
+	for (rule_t *rule : b->rule_ents) {
+		rule_ents.push_back(rule);
+	}
+	b->rule_ents.clear();
 
 	/* add already does merge due to the nature of compat_net */
 	add_compat_net(&(b->net));
 
 	uses_prompt_rules = uses_prompt_rules || b->uses_prompt_rules;
+
+	bool is_empty = std::all_of(exec_table, exec_table + AA_EXEC_COUNT,
+				    [](char* ptr) { return ptr == NULL; });
+	if (!is_empty) {
+		PERROR("Invalid condition, exec_table should be empty");
+		exit(1);
+	}
+	for (int i = (AA_EXEC_LOCAL >> 10) + 1; i < AA_EXEC_COUNT; i++)
+		exec_table[i] = b->exec_table[i];
 }
 
 static int strrcmp(const char *a, int ta,
@@ -586,4 +598,69 @@ void block_rules::post_parse_profile_file(Profile *prof)
 		if (!prof->rules->add_proc_access(CHANGEPROFILE_PATH))
 			exit(1);
 	}
+}
+
+bool block_rules::add_prefix(const prefixes &p, const char *&error)
+{
+
+	struct cod_entry *entry;
+
+	if (p.rule_mode == rule_mode_t::PROMPT)
+		uses_prompt_rules = true;
+
+	list_for_each(entries, entry) {
+		if (!entry_add_prefix(entry, p, error))
+			return false;
+	}
+
+	for (rule_t *r : rule_ents) {
+		prefix_rule_t *rule = (prefix_rule_t *)r;
+		if (!rule->add_prefix(p, error))
+			return false;
+	}
+
+	net.apply_compat_prefix(p);
+
+	if (!caps.add_prefix(p, error))
+		return false;
+
+	if (!rlimits.add_prefix(p, error))
+		return false;
+
+	return true;
+}
+
+block_rules::block_rules(const block_rules &p)
+{
+	struct cod_entry *entry, **list;
+
+	entries = NULL;
+	std::fill(exec_table, exec_table + AA_EXEC_COUNT, (char *)NULL);
+
+	for (int i = (AA_EXEC_LOCAL >> 10) + 1; i < AA_EXEC_COUNT; i++)
+		if (p.exec_table[i])
+			exec_table[i] = strdup(p.exec_table[i]);
+
+	if (entries) {
+		list_last_entry(entries, entry);
+		list = &(entry->next);
+	} else {
+		list = &entries;
+	}
+
+	list_for_each(p.entries, entry) {
+		struct cod_entry *copy = copy_cod_entry(entry);
+		copy->next = NULL;
+		*list = copy;
+		list = &(copy->next);
+	}
+
+	for (rule_t *r : p.rule_ents) {
+		add_rule(r->clone());
+	}
+
+	rlimits = p.rlimits;
+	caps = p.caps;
+	add_compat_net(&(p.net));
+	uses_prompt_rules = p.uses_prompt_rules;
 }
