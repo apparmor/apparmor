@@ -331,6 +331,16 @@ $ cd profiles
 $ make && make check
 ```
 
+To benchmark the parser CLI, install hyperfine, build the parser, and run
+
+```
+$ cd profiles
+$ make bench-parser-cli
+```
+
+The `bench-parser-outputsize` target can be similarly used to measure the
+final size of the compiled profiles.
+
 Stress Tests
 ------------
 To run AppArmor stress tests:
