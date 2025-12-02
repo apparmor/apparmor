@@ -24,10 +24,16 @@ _ = init_translation()  # setup module translations
 parser = argparse.ArgumentParser(description=_('Switch the given programs to audit mode'))
 parser.add_argument('-d', '--dir', type=str, help=_('path to profiles'))
 parser.add_argument('-r', '--remove', action='store_true', help=_('remove audit mode'))
-parser.add_argument('program', type=str, nargs='+', help=_('name of program'))
+parser.add_argument('program', type=str, nargs='*', help=_('name of program'))
 parser.add_argument('--no-reload', dest='do_reload', action='store_false', default=True, help=_('Do not reload the profile after modifying it'))
+parser.add_argument('--profile', type=str, help=_('profile name to operate on'))
+parser.add_argument('--profile-file', dest='profile_file', type=str, help=_('path to profile file'))
+parser.add_argument('--executable-file', dest='executable_file', type=str, help=_('path to executable (derive profile from it)'))
 parser.add_argument('--configdir', type=str, help=argparse.SUPPRESS)
 args = parser.parse_args()
+
+if not args.program and not args.profile and not args.profile_file and not args.executable_file:
+    parser.error(_('Please specify a program, --profile, --profile-file, or --executable-file'))
 
 tool = apparmor.tools.aa_tools('audit', args)
 
