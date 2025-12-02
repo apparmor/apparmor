@@ -27,6 +27,7 @@ profile mbsync /usr/bin/mbsync {
 
   @{etc_ro}/gss/mech.d/ r,
   /usr/bin/mbsync mr,
+  owner @{HOME}/.config/isyncrc r,
   owner @{HOME}/.mbsyncrc r,
   owner @{HOME}/Mail/**/ rw,
   owner @{HOME}/Mail/**/.mbsyncstate rw,
