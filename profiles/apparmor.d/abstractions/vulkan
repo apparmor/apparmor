@@ -5,6 +5,8 @@
 
   # Mesa provides the default Vulkan implementation
   include <abstractions/mesa>
+  # NVIDIA is another implementation we want to allow by default
+  include <abstractions/nvidia>
 
   # System files
   /etc/vulkan/icd.d/{,*.json} r,
