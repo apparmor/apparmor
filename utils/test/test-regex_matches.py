@@ -727,16 +727,19 @@ class TestStripQuotes(AATest):
 
 class TestExpandBraces(AATest):
     tests = (
-        ('foo',                     ['foo']),
-        ('/{,foo}',                 ['/', '/foo']),
-        ('/{,foo,bar}',             ['/', '/foo', '/bar']),
-        ('/{bin,sbin}/runc',        ['/bin/runc', '/sbin/runc']),
-        ('/{,usr/}{,s}bin/runc',    ['/bin/runc', '/sbin/runc', '/usr/bin/runc', '/usr/sbin/runc']),
-        ('/{,usr/{,s}}bin/runc',    ['/bin/runc', '/usr/bin/runc', '/usr/sbin/runc']),
-        ('{{a,b},{c,{d,e}},f}',     ['a', 'b', 'c', 'd', 'e', 'f']),
-        ('{,b}{d,e}',               ['d', 'e', 'bd', 'be']),
-        ('{aa,b}{d,e}',             ['aad', 'aae', 'bd', 'be']),
-        ('{{foo,bar},{baz,qux}}',   ['foo', 'bar', 'baz', 'qux']),
+        ('foo',                     {'foo'}),
+        ('/{,foo}',                 {'/', '/foo'}),
+        ('/{,foo,bar}',             {'/', '/foo', '/bar'}),
+        ('/{bin,sbin}/runc',        {'/bin/runc', '/sbin/runc'}),
+        ('/{,usr/}{,s}bin/runc',    {'/bin/runc', '/sbin/runc', '/usr/bin/runc', '/usr/sbin/runc'}),
+        ('/{,usr/{,s}}bin/runc',    {'/bin/runc', '/usr/bin/runc', '/usr/sbin/runc'}),
+        ('{{a,b},{c,{d,e}},f}',     {'a', 'b', 'c', 'd', 'e', 'f'}),
+        ('{,b}{d,e}',               {'d', 'e', 'bd', 'be'}),
+        ('{aa,b}{d,e}',             {'aad', 'aae', 'bd', 'be'}),
+        ('{{foo,bar},{baz,qux}}',   {'foo', 'bar', 'baz', 'qux'}),
+        # Naive expansion as a list would cause exponential blowup
+        # 2^4=16 possibilities when there are in reality 5 distinct strings
+        ('{,a}{,a}{,a}{,a}',        {'', 'a', 'aa', 'aaa', 'aaaa'}),
     )
 
     def _run_test(self, params, expected):
