@@ -376,7 +376,7 @@ def expand_braces(s):
     if i == -1:
         if '}' in s:
             raise AppArmorException('Unbalanced braces in pattern {}'.format(s))
-        return [s]
+        return {s}
 
     level = 0
     for j in range(i, len(s)):
@@ -410,10 +410,9 @@ def expand_braces(s):
     alts.append(curr)
 
     # Recursively combine prefix, each alternative, and suffix
-    results = []
+    results = set()
     for alt in alts:
-        for expansion in expand_braces(prefix + alt + suffix):
-            results.append(expansion)
+        results.update(expand_braces(prefix + alt + suffix))
     if len(results) <= 1:
         raise AppArmorException('Braces should provide at least two alternatives, found {}: {}'.format(len(results), s))
     return results
