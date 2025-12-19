@@ -53,7 +53,11 @@ HDRS =
 BINTOOLS = aa-enabled aa-exec aa-features-abi
 SBINTOOLS = aa-status aa-load
 
-AALIB = -Wl,-Bstatic -lapparmor  -Wl,-Bdynamic -lpthread
+ifdef WITH_STATIC_LINKING
+  AALIB = -Wl,-Bstatic -lapparmor  -Wl,-Bdynamic -lpthread
+else
+  AALIB = -lapparmor -lpthread
+endif
 
 ifdef WITH_LIBINTL
 	AALIB += -lintl
@@ -70,7 +74,11 @@ else
   LOCAL_LIBAPPARMOR_INCLUDE = $(LIBAPPARMOR_SRC)/include
   LOCAL_LIBAPPARMOR_LDPATH = $(LIBAPPARMOR_SRC)/src/.libs
 
-  LIBAPPARMOR_A = $(LOCAL_LIBAPPARMOR_LDPATH)/libapparmor.a
+  ifdef WITH_STATIC_LINKING
+    LIBAPPARMOR_A = $(LOCAL_LIBAPPARMOR_LDPATH)/libapparmor.a
+  else
+    LIBAPPARMOR_A = $(LOCAL_LIBAPPARMOR_LDPATH)/libapparmor.so
+  endif
   INCLUDE_APPARMOR = -I$(LOCAL_LIBAPPARMOR_INCLUDE)
   APPARMOR_H = $(LOCAL_LIBAPPARMOR_INCLUDE)/sys/apparmor.h
   LIBAPPARMOR_LDFLAGS = -L$(LOCAL_LIBAPPARMOR_LDPATH)
