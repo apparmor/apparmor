@@ -35,7 +35,7 @@ enum class cond_op {
 	BOOLEAN_VALUE,
 };
 
-class cond_expr {
+class cond_expr final {
 private:
 	bool result;
 public:
@@ -45,9 +45,6 @@ public:
 	std::set<std::string> get_set(const char *var);
 	template <typename T>
 	void compare(cond_op op, const T &lhs, const T &rhs);
-	virtual ~cond_expr()
-	{
-	};
 
 	bool eval(void) { return result; }
 };

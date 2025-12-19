@@ -24,12 +24,11 @@
 /* TODO: have includecache be a frontend for file cache, don't just
  * store name.
  */
-class IncludeCache_t {
+class IncludeCache_t final {
 public:
 	std::set<std::string> cache;
 
 	IncludeCache_t() = default;
-	virtual ~IncludeCache_t() = default;
 
 	/* return true if in set */
 	bool find(const char *name) {

@@ -35,7 +35,7 @@
 typedef std::vector<std::pair<const State *, size_t> > DefaultBase;
 typedef std::vector<std::pair<const State *, const State *> > NextCheck;
 
-class CHFA {
+class CHFA final {
       public:
 	CHFA(void);
 	CHFA(DFA &dfa, std::map<transchar, transchar> &eq, optflags const &opts,

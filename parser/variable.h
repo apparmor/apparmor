@@ -27,7 +27,7 @@ enum class var_type {
 	sd_set,
 };
 
-class variable {
+class variable final {
 public:
 	var_type type;
 	std::string var_name;
@@ -46,8 +46,6 @@ public:
 	static int expand_by_alternation(char **name);
 	void dump_set_values(const std::set<std::string> &values);
 	void dump(bool expanded);
-
-	virtual ~variable() {};
 
 	/* strip off surrounding delimiters around variables */
 	static char *process_var(const char *var);

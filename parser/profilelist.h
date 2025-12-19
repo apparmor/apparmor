@@ -23,7 +23,7 @@ struct deref_profileptr_lt {
 	bool operator()(Profile * const &lhs, Profile * const &rhs) const;
 };
 
-class ProfileList {
+class ProfileList final {
 public:
 	std::set<Profile *, deref_profileptr_lt> list;
 
