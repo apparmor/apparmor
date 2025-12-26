@@ -25,7 +25,7 @@ profile znc /usr/bin/znc {
   owner @{HOME}/.znc/configs/ rw,
   owner @{HOME}/.znc/configs/znc.conf rwk,
   # Tilde version is used when the config is updated by ZNC
-  owner @{HOME}/.znc/configs/znc.conf~ rw,
+  owner @{HOME}/.znc/configs/znc.conf~ rwk,
   owner @{HOME}/.znc/modules/ rw,
   owner @{HOME}/.znc/modules/* mrw,
   owner @{HOME}/.znc/moddata/ rw,
