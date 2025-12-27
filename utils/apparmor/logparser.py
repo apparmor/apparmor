@@ -38,6 +38,21 @@ from apparmor.translations import init_translation
 _ = init_translation()
 
 
+def mode_convert(aamode):
+    mode_convertor = {0: 'UNKNOWN',
+                      1: 'ERROR',
+                      2: 'AUDIT',
+                      3: 'ALLOWED',
+                      4: 'DENIED',
+                      5: 'HINT',
+                      6: 'STATUS'
+                      }
+    try:
+        return mode_convertor[aamode]
+    except KeyError:
+        return None
+
+
 class ReadLog:
 
     # used to pre-filter log lines so that we hand over only relevant lines to LibAppArmor parsing
@@ -255,19 +270,7 @@ class ReadLog:
 
         if ev['aamode']:
             # Convert aamode values to their counter-parts
-            mode_convertor = {0: 'UNKNOWN',
-                              1: 'ERROR',
-                              2: 'AUDIT',
-                              3: 'ALLOWED',
-                              4: 'DENIED',
-                              5: 'HINT',
-                              6: 'STATUS'
-                              }
-            try:
-                ev['aamode'] = mode_convertor[ev['aamode']]
-            except KeyError:
-                ev['aamode'] = None
-
+            ev['aamode'] = mode_convert(ev['aamode'])
         # "translate" disconnected paths to errors, which means the event will be ignored.
         # XXX Ideally we should propose to add the attach_disconnected flag to the profile
         if ev['error_code'] == 13 and ev['info'] == 'Failed name lookup - disconnected path':

@@ -125,6 +125,14 @@ System-wide configuration for B<aa-notify> is done via
   # OPTIONAL - custom notification filtering
   # Filters are used to reduce the output of information to only those entries that will match the filter. Filters use Python's regular expression syntax.
   filter.profile="^(foo|bar)$"	# Match the profile:		Only shows notifications for profiles "foo" or "bar"
+  filter.mode="^STATUS$"	# Match the mode:		Only show notifications for "STATUS" messages, where mode can be:
+	UNKNOWN		an unknown AppArmor mode
+	ERROR		an error other than a regular denial occured
+	ALLOWED		a permissions request which did not match a rule, was allowed due to complain mode.
+	DENIED		a permissions request was denied
+	HINT		additional context information
+	STATUS		some policy or enforcement change has occured
+	KILLED		a permission request was denied and the process that attempted the access was killed.
   filter.operation="^open$"	# Match the operation:		Only shows notifications for "open" operation
   filter.name="^(?!/usr/lib/)"	# Match the name:		Excludes notifications for names starting by "/usr/lib/"
   filter.denied="^r$"		# Match the denied_mask:	Only shows notifications where "r", and only "r", was denied
