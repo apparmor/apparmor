@@ -49,6 +49,11 @@ option to display a summary on startup.
 set the DISPLAY environment variable to $DISPLAY
 (might be needed if sudo resets $DISPLAY)
 
+=item --xauthority XAUTHORITY
+
+set the XAUTHORITY environment variable (might be needed if sudo
+resets XAUTHORITY)
+
 =item -f FILE, --file=FILE
 
 search FILE for AppArmor messages
@@ -71,6 +76,43 @@ This has no effect when running under sudo.
 
 wait NUM seconds before displaying notifications (for use with -p)
 
+=item -m, --merge-notifications
+
+Merge notification for improved readability (with -p)
+
+=item -F, --foreground
+
+Do not fork to the background
+
+=item --prompt-filter operation
+
+Which operations should use a popup prompt window instead of a system
+notification.
+
+eg.
+  --prompt-filter="userns"
+
+=item --filter.TYPE FILTER
+
+Apply filters as to select which apparmor messages should be allowed
+through based on which messages match the filter parameters (see also
+custom notification filtering in CONFIGURATION). Filters use Python's
+regular expression syntax.
+
+Supported Filter TYPE:
+
+=over 4
+
+=item profile   - name of the profile
+=item mode      - mode eg, DENIED, ALLOWED, STATUS
+-item operation - operation being mediated eg. open
+-item name      - name of object, eg. file name /home/foo/bar
+-item denied    - permissons that were denied
+-item family    - socket family, eg. inet, inet6, netlink
+-item socket    - socket type. eg. stream, dgram, rdm
+
+=back
+
 =item -L, --local [{yes,no,auto}]
 
 add rules to a local profiles instead of the real profiles.
@@ -82,6 +124,10 @@ This simplify profiles' deployment by keeping local modifications self-contained
 =item -v, --verbose
 
 show messages with summaries.
+
+=item debug
+
+provide debug output
 
 =item -h, --help
 
