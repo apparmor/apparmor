@@ -540,7 +540,7 @@ def get_more_info_about_event(rl, ev, special_profiles, profile_path, header='')
         if value:
             out += '\t{} = {}\n'.format(_(key), value)
 
-    if ev['aamode'] == 'REJECTING':
+    if ev['aamode'] == 'DENIED':
         out += _('\nThe profile that denied this operation is {}\n').format(ev['profile'])
     else:
         out += _('\nThe profile that triggered this alert is {}\n').format(ev['profile'])

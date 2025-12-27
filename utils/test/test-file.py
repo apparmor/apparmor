@@ -168,7 +168,7 @@ class FileTestParseFromLog(FileTest):
             'name2': None,
             'resource': None,
             'info': None,
-            'aamode': 'PERMITTING',
+            'aamode': 'ALLOWED',
             'time': 1236774787,
             'active_hat': None,
             'pid': 13726,

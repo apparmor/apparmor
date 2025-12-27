@@ -1022,9 +1022,9 @@ def order_globs(globs, original_path):
 def ask_the_questions(log_dict):
     for aamode in sorted(log_dict.keys()):
         # Describe the type of changes
-        if aamode == 'PERMITTING':
+        if aamode == 'ALLOWED':
             aaui.UI_Info(_('Complain-mode changes:'))
-        elif aamode == 'REJECTING':
+        elif aamode == 'DENIED':
             aaui.UI_Info(_('Enforce-mode changes:'))
         elif aamode == 'merge':
             pass  # aa-mergeprof

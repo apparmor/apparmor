@@ -63,7 +63,7 @@ class ReadLog:
         self.filename = filename
         self.profile_dir = profile_dir
         self.active_profiles = active_profiles
-        self.hashlog = {'PERMITTING': {}, 'REJECTING': {}}  # structure inside {}: {'profilename': init_hashlog(aamode, profilename), 'profilename2': init_hashlog(...), ...}
+        self.hashlog = {'ALLOWED': {}, 'DENIED': {}}  # structure inside {}: {'profilename': init_hashlog(aamode, profilename), 'profilename2': init_hashlog(...), ...}
         self.debug_logger = DebugLogger(type(self).__name__)
         self.LOG = None
         self.logmark = ''
@@ -258,8 +258,8 @@ class ReadLog:
             mode_convertor = {0: 'UNKNOWN',
                               1: 'ERROR',
                               2: 'AUDIT',
-                              3: 'PERMITTING',
-                              4: 'REJECTING',
+                              3: 'ALLOWED',
+                              4: 'DENIED',
                               5: 'HINT',
                               6: 'STATUS'
                               }

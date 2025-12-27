@@ -150,7 +150,7 @@ class DbusTestParseFromLog(DbusTest):
             'operation': 'dbus_method_call',
             'resource': None,
             'info': None,
-            'aamode': 'REJECTING',
+            'aamode': 'DENIED',
             'time': 1375323372,
             'active_hat': None,
             'pid': 2833,

@@ -145,7 +145,7 @@ def is_special_profile_userns(ev, special_profiles):
 def get_event_special_type(ev, special_profiles):
     if is_special_profile_userns(ev, special_profiles):
         if ev['operation'] == 'userns_create':
-            if ev['aamode'] == 'REJECTING':
+            if ev['aamode'] == 'DENIED':
                 return 'userns_denied'
             else:
                 return 'userns_change_profile'

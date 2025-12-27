@@ -107,7 +107,7 @@ class PtraceTestParseFromLog(PtraceTest):
             'operation': 'ptrace',
             'resource': None,
             'info': None,
-            'aamode': 'REJECTING',
+            'aamode': 'DENIED',
             'time': 1409700683,
             'active_hat': None,
             'pid': 22465,
