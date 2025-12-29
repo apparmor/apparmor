@@ -49,6 +49,11 @@ option to display a summary on startup.
 set the DISPLAY environment variable to $DISPLAY
 (might be needed if sudo resets $DISPLAY)
 
+=item --xauthority XAUTHORITY
+
+set the XAUTHORITY environment variable (might be needed if sudo
+resets XAUTHORITY)
+
 =item -f FILE, --file=FILE
 
 search FILE for AppArmor messages
@@ -71,6 +76,43 @@ This has no effect when running under sudo.
 
 wait NUM seconds before displaying notifications (for use with -p)
 
+=item -m, --merge-notifications
+
+Merge notification for improved readability (with -p)
+
+=item -F, --foreground
+
+Do not fork to the background
+
+=item --prompt-filter operation
+
+Which operations should use a popup prompt window instead of a system
+notification.
+
+eg.
+  --prompt-filter="userns"
+
+=item --filter.TYPE FILTER
+
+Apply filters as to select which apparmor messages should be allowed
+through based on which messages match the filter parameters (see also
+custom notification filtering in CONFIGURATION). Filters use Python's
+regular expression syntax.
+
+Supported Filter TYPE:
+
+=over 4
+
+=item profile   - name of the profile
+=item mode      - mode eg, DENIED, ALLOWED, STATUS
+-item operation - operation being mediated eg. open
+-item name      - name of object, eg. file name /home/foo/bar
+-item denied    - permissons that were denied
+-item family    - socket family, eg. inet, inet6, netlink
+-item socket    - socket type. eg. stream, dgram, rdm
+
+=back
+
 =item -L, --local [{yes,no,auto}]
 
 add rules to a local profiles instead of the real profiles.
@@ -82,6 +124,10 @@ This simplify profiles' deployment by keeping local modifications self-contained
 =item -v, --verbose
 
 show messages with summaries.
+
+=item debug
+
+provide debug output
 
 =item -h, --help
 
@@ -125,6 +171,14 @@ System-wide configuration for B<aa-notify> is done via
   # OPTIONAL - custom notification filtering
   # Filters are used to reduce the output of information to only those entries that will match the filter. Filters use Python's regular expression syntax.
   filter.profile="^(foo|bar)$"	# Match the profile:		Only shows notifications for profiles "foo" or "bar"
+  filter.mode="^STATUS$"	# Match the mode:		Only show notifications for "STATUS" messages, where mode can be:
+	UNKNOWN		an unknown AppArmor mode
+	ERROR		an error other than a regular denial occured
+	ALLOWED		a permissions request which did not match a rule, was allowed due to complain mode.
+	DENIED		a permissions request was denied
+	HINT		additional context information
+	STATUS		some policy or enforcement change has occured
+	KILLED		a permission request was denied and the process that attempted the access was killed.
   filter.operation="^open$"	# Match the operation:		Only shows notifications for "open" operation
   filter.name="^(?!/usr/lib/)"	# Match the name:		Excludes notifications for names starting by "/usr/lib/"
   filter.denied="^r$"		# Match the denied_mask:	Only shows notifications where "r", and only "r", was denied

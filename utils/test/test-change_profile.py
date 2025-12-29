@@ -120,7 +120,7 @@ class ChangeProfileTestParseFromLog(ChangeProfileTest):
             'operation': 'change_profile',
             'resource': None,
             'info': None,
-            'aamode': 'REJECTING',
+            'aamode': 'DENIED',
             'time': 1428699242,
             'active_hat': None,
             'pid': 3459,

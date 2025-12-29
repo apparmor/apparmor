@@ -159,7 +159,7 @@ class NetworkTestParseFromLog(NetworkTest):
             'operation': 'create',
             'resource': None,
             'info': None,
-            'aamode': 'REJECTING',
+            'aamode': 'DENIED',
             'accesses': None,
             'addr': None,
             'peer_addr': None,

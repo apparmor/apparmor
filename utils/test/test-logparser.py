@@ -30,7 +30,7 @@ class TestParseEvent(AATest):
         parsed_event = self.parser.parse_event(event)
         self.assertEqual(parsed_event['name'], '/home/www/foo.bar.in/httpdocs/apparmor/images/test/image 1.jpg')
         self.assertEqual(parsed_event['profile'], '/usr/sbin/httpd2-prefork//vhost_foo')
-        self.assertEqual(parsed_event['aamode'], 'PERMITTING')
+        self.assertEqual(parsed_event['aamode'], 'ALLOWED')
         self.assertEqual(parsed_event['request_mask'], 'wc')
 
         self.assertIsNotNone(ReadLog.RE_LOG_ALL.search(event))
@@ -40,7 +40,7 @@ class TestParseEvent(AATest):
         parsed_event = self.parser.parse_event(event)
         self.assertEqual(parsed_event['name'], '/home/foo/.bash_history')
         self.assertEqual(parsed_event['profile'], 'foo bar')
-        self.assertEqual(parsed_event['aamode'], 'PERMITTING')
+        self.assertEqual(parsed_event['aamode'], 'ALLOWED')
         self.assertEqual(parsed_event['request_mask'], 'rw')
 
         self.assertIsNotNone(ReadLog.RE_LOG_ALL.search(event))
@@ -51,7 +51,7 @@ class TestParseEvent(AATest):
         parsed_event = self.parser.parse_event(event)
         self.assertEqual(parsed_event['name'], '/dev/tty')
         self.assertEqual(parsed_event['profile'], '/home/cb/linuxtag/apparmor/scripts/hello')
-        self.assertEqual(parsed_event['aamode'], 'PERMITTING')
+        self.assertEqual(parsed_event['aamode'], 'ALLOWED')
         self.assertEqual(parsed_event['request_mask'], 'rw')
 
         self.assertIsNotNone(ReadLog.RE_LOG_ALL.search(event))
@@ -62,7 +62,7 @@ class TestParseEvent(AATest):
         parsed_event = self.parser.parse_event(event)
         self.assertEqual(parsed_event['name'], '/usr/bin/')
         self.assertEqual(parsed_event['profile'], '/home/simi/bin/aa-test')
-        self.assertEqual(parsed_event['aamode'], 'PERMITTING')
+        self.assertEqual(parsed_event['aamode'], 'ALLOWED')
         self.assertEqual(parsed_event['request_mask'], 'r')
 
         self.assertIsNotNone(ReadLog.RE_LOG_ALL.search(event))

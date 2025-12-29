@@ -133,7 +133,7 @@ class CapabilityTest(AATest):
             'operation': 'capable',
             'resource': None,
             'info': None,
-            'aamode': 'PERMITTING',
+            'aamode': 'ALLOWED',
             'time': 1415403814,
             'active_hat': None,
             'pid': 15454,

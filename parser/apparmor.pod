@@ -194,7 +194,7 @@ reported to audit will be of the form:
 
 If the userland auditd is not running, the kernel will send audit events
 to klogd; klogd will send the messages to syslog, which will log the
-messages with the KERN facility. Thus, REJECTING and PERMITTING messages
+messages with the KERN facility. Thus, DENIED and ALLOWED messages
 may go to either F</var/log/audit/audit.log> or F</var/log/messages>,
 depending upon local configuration.
 

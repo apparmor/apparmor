@@ -118,7 +118,7 @@ class PivotRootTestParseFromLog(PivotRootTest):
             'operation': 'pivotroot',
             'resource': None,
             'info': None,
-            'aamode': 'REJECTING',
+            'aamode': 'DENIED',
             'time': 1409700678,
             'active_hat': None,
             'pid': 21162,

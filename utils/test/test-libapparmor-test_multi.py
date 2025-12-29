@@ -135,9 +135,9 @@ class TestLibapparmorTestMulti(AATest):
 
         exresult['aamode'] = exresult['event_type'].replace('AA_RECORD_', '')
         if exresult['aamode'] == 'ALLOWED':
-            exresult['aamode'] = 'PERMITTING'
+            exresult['aamode'] = 'ALLOWED'
         if exresult['aamode'] == 'DENIED':
-            exresult['aamode'] = 'REJECTING'
+            exresult['aamode'] = 'DENIED'
 
         if exresult['event_type'] == 'AA_RECORD_INVALID':  # or exresult.get('error_code', 0) != 0:  # XXX should events with errors be ignored?
             exresult = None
@@ -211,7 +211,7 @@ def logfile_to_profile(logfile):
     if aamode in ('AUDIT', 'STATUS', 'HINT'):  # ignore some event types  # XXX maybe we shouldn't ignore AUDIT events?
         return None, aamode
 
-    if aamode not in ('PERMITTING', 'REJECTING'):
+    if aamode not in ('ALLOWED', 'DENIED'):
         raise Exception('Unexpected aamode {}'.format(parsed_event['aamode']))
 
     # cleanup apparmor.aa storage

@@ -170,9 +170,10 @@ class AANotifyTest(AANotifyBase):
 '''usage: aa-notify [-h] [-p] [--display DISPLAY] [--xauthority XAUTHORITY]
                  [-f FILE] [-l] [-s NUM] [-v] [-u USER] [-w NUM] [-m] [-F]
                  [-L [{yes,no,auto}]] [--prompt-filter PF] [--debug]
-                 [--filter.profile PROFILE] [--filter.operation OPERATION]
-                 [--filter.name NAME] [--filter.denied DENIED]
-                 [--filter.family FAMILY] [--filter.socket SOCKET]
+                 [--filter.profile PROFILE] [--filter.mode MODE]
+                 [--filter.operation OPERATION] [--filter.name NAME]
+                 [--filter.denied DENIED] [--filter.family FAMILY]
+                 [--filter.socket SOCKET]
 
 Display AppArmor notifications or messages for DENIED entries.
 '''  # noqa: E128
@@ -208,6 +209,7 @@ Filtering options:
 
   --filter.profile PROFILE
                         regular expression to match the profile
+  --filter.mode MODE    regular expression to match the mode
   --filter.operation OPERATION
                         regular expression to match the operation
   --filter.name NAME    regular expression to match the name
@@ -599,6 +601,71 @@ class AANotifyDeniedFilterTest(AANotifyBase):
         login_params = ['-f', self.test_logfile_last_login, '-l']
 
         for test in denied_tests:
+            params = test[0]
+            expected = test[1]
+
+            with self.subTest(params=params, expected=expected):
+                expected_return_code = expected[0]
+                expected_output_has = expected[1]
+
+                return_code, output = cmd_pipe_stderr(aanotify_bin + login_params + params)
+                if 'ERROR: Could not find last login' in output:
+                    self.skipTest('Could not find last login')
+                result = 'Got return code {}, expected {}\n'.format(return_code, expected_return_code)
+                self.assertEqual(expected_return_code, return_code, result + output)
+                result = 'Got output "{}", expected "{}"\n'.format(output, expected_output_has)
+                self.assertIn(expected_output_has, output, result + output)
+
+
+class AANotifyModeFilterTest(AANotifyBase):
+
+    def test_mode_regex_since_100_days(self):
+        mode_tests = (
+            (['--filter.mode', 'UNKNOWN'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.mode', 'ERROR'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.mode', 'AUDIT'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.mode', 'ALLOWED'], (0, 'AppArmor denials: 20 (since')),
+            (['--filter.mode', 'DENIED'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.mode', 'HINT'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.mode', 'STATUS'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.mode', 'KILLED'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.mode', '^(ST).*'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.mode', '.*ED'], (0, 'AppArmor denials: 20 (since')),
+            (['--filter.mode', '(DENIED|STATUS)'], (0, 'AppArmor denials: 0 (since')),
+        )
+        days_params = ['-f', self.test_logfile_current, '-s', '100']
+
+        for test in mode_tests:
+            params = test[0]
+            expected = test[1]
+
+            with self.subTest(params=params, expected=expected):
+                expected_return_code = expected[0]
+                expected_output_has = expected[1]
+
+                return_code, output = cmd_pipe_stderr(aanotify_bin + days_params + params)
+                result = 'Got return code {}, expected {}\n'.format(return_code, expected_return_code)
+                self.assertEqual(expected_return_code, return_code, result + output)
+                result = 'Got output "{}", expected "{}"\n'.format(output, expected_output_has)
+                self.assertIn(expected_output_has, output, result + output)
+
+    def test_mode_regex_since_login(self):
+        mode_tests = (
+            (['--filter.mode', 'UNKNOWN'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.mode', 'ERROR'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.mode', 'AUDIT'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.mode', 'ALLOWED'], (0, 'AppArmor denials: 10 (since')),
+            (['--filter.mode', 'DENIED'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.mode', 'HINT'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.mode', 'STATUS'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.mode', 'KILLED'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.mode', '^(ST).*'], (0, 'AppArmor denials: 0 (since')),
+            (['--filter.mode', '.*ED'], (0, 'AppArmor denials: 10 (since')),
+            (['--filter.mode', '(DENIED|STATUS)'], (0, 'AppArmor denials: 0 (since')),
+        )
+        login_params = ['-f', self.test_logfile_last_login, '-l']
+
+        for test in mode_tests:
             params = test[0]
             expected = test[1]
 

@@ -112,7 +112,7 @@ class SignalTestParseFromLog(SignalTest):
             'operation': 'signal',
             'resource': None,
             'info': None,
-            'aamode': 'REJECTING',
+            'aamode': 'DENIED',
             'time': 1409438250,
             'active_hat': None,
             'pid': 2531,

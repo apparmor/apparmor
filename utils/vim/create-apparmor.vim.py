@@ -143,7 +143,7 @@ def create_file_rule(highlighting, permissions, comment, denyrule=0):
 
 filerule = ''
 filerule = filerule + create_file_rule('sdEntryWriteExec ', r'(l|r|w|a|m|k|[iuUpPcC]x)+@@TRANSITION@@', 'write + exec/mmap - danger! (known bug: accepts aw to keep things simple)')
-filerule = filerule + create_file_rule('sdEntryUX',  r'(r|m|k|ux|pux)+@@TRANSITION@@',  'ux(mr) - unconstrained entry, flag the line red. also includes pux which is unconstrained if no profile exists')
+filerule = filerule + create_file_rule('sdEntryUX',  r'(r|m|k|ux|pux)+@@TRANSITION@@',  'ux(mr) - unconfined entry, flag the line red. also includes pux which is unconfined if no profile exists')
 filerule = filerule + create_file_rule('sdEntryUXe', r'(r|m|k|Ux|PUx)+@@TRANSITION@@',  'Ux(mr) and PUx(mr) - like ux + clean environment')
 filerule = filerule + create_file_rule('sdEntryPX',  r'(r|m|k|px|cx|pix|cix)+@@TRANSITION@@',  'px/cx/pix/cix(mrk) - standard exec entry, flag the line blue')
 filerule = filerule + create_file_rule('sdEntryPXe', r'(r|m|k|Px|Cx|Pix|Cix)+@@TRANSITION@@', 'Px/Cx/Pix/Cix(mrk) - like px/cx + clean environment')

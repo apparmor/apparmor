@@ -55,7 +55,7 @@ from apparmor.common import DebugLogger, open_file_read
 from apparmor.fail import enable_aa_exception_handler
 from apparmor.notify import get_last_login_timestamp, get_event_special_type, set_userns_special_profile
 from apparmor.translations import init_translation
-from apparmor.logparser import ReadLog
+from apparmor.logparser import ReadLog, mode_convert
 from apparmor.gui import UsernsGUI, ErrorGUI, ShowMoreGUI, ShowMoreGUIAggregated, set_interface_theme, ProfileRules
 from apparmor.rule.file import FileRule
 
@@ -123,6 +123,11 @@ def is_event_in_filter(event, filters):
         return False
     if filters['net_sock_type'] and event.net_sock_type and not filters['net_sock_type_re'].match(event.net_sock_type):
         return False
+
+    aamode = mode_convert(event.event)
+    if filters['mode'] and event.event and not filters['mode_re'].match(aamode):
+        return False
+
     return True
 
 
@@ -437,6 +442,8 @@ def compile_filter_regex(filters):
     """Compile each filter regex and add it to filters"""
     if filters['profile']:
         filters['profile_re'] = re.compile(filters['profile'])
+    if filters['mode']:
+        filters['mode_re'] = re.compile(filters['mode'])
     if filters['operation']:
         filters['operation_re'] = re.compile(filters['operation'])
     if filters['name']:
@@ -540,7 +547,7 @@ def get_more_info_about_event(rl, ev, special_profiles, profile_path, header='')
         if value:
             out += '\t{} = {}\n'.format(_(key), value)
 
-    if ev['aamode'] == 'REJECTING':
+    if ev['aamode'] == 'DENIED':
         out += _('\nThe profile that denied this operation is {}\n').format(ev['profile'])
     else:
         out += _('\nThe profile that triggered this alert is {}\n').format(ev['profile'])
@@ -861,6 +868,7 @@ def main():
                                                           'those entries that will match the filter. Filters use Python\'s regular '
                                                           'expression syntax.'))
     filter_group.add_argument('--filter.profile', metavar='PROFILE', help=_('regular expression to match the profile'))
+    filter_group.add_argument('--filter.mode', metavar='MODE', help=_('regular expression to match the mode'))
     filter_group.add_argument('--filter.operation', metavar='OPERATION', help=_('regular expression to match the operation'))
     filter_group.add_argument('--filter.name', metavar='NAME', help=_('regular expression to match the name'))
     filter_group.add_argument('--filter.denied', metavar='DENIED', help=_('regular expression to match the denied mask'))
@@ -981,6 +989,7 @@ def main():
 
     filters = {
         'profile': '',
+        'mode': '',
         'operation': '',
         'name': '',
         'denied_mask': '',
@@ -990,6 +999,8 @@ def main():
 
     if 'filter.profile' in config['']:
         filters['profile'] = config['']['filter.profile']
+    if 'filter.mode' in config['']:
+        filters['mode'] = config['']['filter.mode']
     if 'filter.operation' in config['']:
         filters['operation'] = config['']['filter.operation']
     if 'filter.name' in config['']:
@@ -1004,6 +1015,8 @@ def main():
     # command line filters override notify.conf
     if getattr(args, 'filter.profile'):
         filters['profile'] = getattr(args, 'filter.profile')
+    if getattr(args, 'filter.mode'):
+        filters['mode'] = getattr(args, 'filter.mode')
     if getattr(args, 'filter.operation'):
         filters['operation'] = getattr(args, 'filter.operation')
     if getattr(args, 'filter.name'):
