@@ -454,6 +454,22 @@ syntax_failure = (
     'network/network_ok_17.sd',
     'network/network_ok_45.sd',
     'network/network_ok_46.sd',
+    # network interface
+    'network/skb/ok_iface_1.sd',
+    'network/skb/ok_iface_2.sd',
+    'network/skb/ok_iface_3.sd',
+    'network/skb/ok_iface_4.sd',
+    'network/skb/ok_iface_5.sd',
+    'network/skb/ok_iface_6.sd',
+    'network/skb/ok_iface_7.sd',
+    'network/skb/ok_iface_8.sd',
+    'network/skb/ok_iface_9.sd',
+    'network/skb/ok_iface_10.sd',
+    'network/skb/ok_iface_11.sd',
+    'network/skb/ok_label_1.sd',
+    'network/skb/ok_label_peer_1.sd',
+    'network/skb/ok_label_peer_2.sd',
+    'network/skb/ok_setlabel_peer_1.sd',
 )
 
 

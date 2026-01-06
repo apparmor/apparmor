@@ -215,10 +215,10 @@ B<TYPE> = ( 'stream' | 'dgram' | 'seqpacket' |  'rdm' | 'raw' | 'packet' )
 
 B<PROTOCOL> = ( 'tcp' | 'udp' | 'icmp' )
 
-B<NETWORK LOCAL EXPR> = ( I<NETWORK IP COND> | I<NETWORK PORT COND> )*
+B<NETWORK LOCAL EXPR> = ( I<NETWORK IP COND> | I<NETWORK PORT COND> | I<INTERFACE COND> | I<LABEL_COND> | I<LABEL ASSIGN> )*
   Each cond can appear at most once.
 
-B<NETWORK PEER EXPR> = 'peer' '=' '(' ( I<NETWORK IP COND> | I<NETWORK PORT COND> )+ ')'
+B<NETWORK PEER EXPR> = 'peer' '=' '(' ( I<NETWORK IP COND> | I<NETWORK PORT COND> )+ | I<LABEL COND> | I<LABEL ASSIGN> ')'
   Each cond can appear at most once.
 
 B<NETWORK IP COND> = 'ip' '=' ( 'none' | I<NETWORK IPV4> | I<NETWORK IPV6> )
@@ -230,6 +230,12 @@ B<NETWORK IPV4> = IPv4, represented by four 8-bit decimal numbers separated by '
 B<NETWORK IPV6> = IPv6, represented by eight groups of four hexadecimal numbers separated by ':'. Shortened representation of contiguous zeros is allowed by using '::'
 
 B<NETWORK PORT> = 16-bit number ranging from 0 to 65535
+
+B<INTERFACE COND> = 'interface' '=' '(' '"' I<AARE> '"' | I<AARE> ')'
+
+B<LABEL COND> = 'label' '=' '(' '"' I<AARE> '"' | I<AARE> ')'
+
+B<LABEL ASSIGN> = 'label' ':=' I<LABEL NAME>
 
 B<MOUNT RULE> = ( I<MOUNT> | I<REMOUNT> | I<UMOUNT> )
 
@@ -253,7 +259,7 @@ B<MOUNT FLAGS> = ( 'ro' | 'rw' | 'nosuid' | 'suid' | 'nodev' | 'dev' | 'noexec' 
 
 B<MOUNT EXPRESSION> = ( I<ALPHANUMERIC> | I<AARE> ) ...
 
-B<MQUEUE_RULE> = [ I<QUALIFIERS> ] 'mqueue' [ I<MQUEUE ACCESS PERMISSIONS> ] [ I<MQUEUE TYPE> ] [ I<MQUEUE LABEL> ] [ I<MQUEUE NAME> ]
+B<MQUEUE_RULE> = [ I<QUALIFIERS> ] 'mqueue' [ I<MQUEUE ACCESS PERMISSIONS> ] [ I<MQUEUE TYPE> ] [ I<LABEL_COND> ] [ I<MQUEUE NAME> ]
 
 B<MQUEUE ACCESS PERMISSIONS> = I<MQUEUE ACCESS> | I<MQUEUE ACCESS LIST>
 
@@ -263,19 +269,15 @@ B<MQUEUE ACCESS> = ( 'r' | 'w' | 'rw' | 'read' | 'write' | 'create' | 'open' | '
 
 B<MQUEUE TYPE> = 'type' '=' ( 'posix' | 'sysv' )
 
-B<MQUEUE LABEL> = 'label' '=' '(' '"' I<AARE> '"' | I<AARE> ')'
-
 B<MQUEUE NAME> = I<AARE>
 
 B<USERNS RULE> = [ I<QUALIFIERS> ] 'userns' [ I<USERNS ACCESS PERMISSIONS> ]
 
 B<USERNS ACCESS PERMISSIONS> = ( 'create' )
 
-B<IO_URING RULE> = [ I<QUALIFIERS> ] 'io_uring' [ I<IO_URING ACCESS PERMISSIONS> [ I<IO_URING LABEL> ]
+B<IO_URING RULE> = [ I<QUALIFIERS> ] 'io_uring' [ I<IO_URING ACCESS PERMISSIONS> [ I<LABEL COND> ]
 
 B<IO_URING ACCESS PERMISSIONS> = ( 'sqpoll' | 'override_creds' )
-
-B<IO_URING LABEL> = 'label' '=' '(' '"' I<AARE> '"' | I<AARE> ')'
 
 B<PIVOT ROOT RULE> = [ I<QUALIFIERS> ] pivot_root [ oldroot=I<OLD PUT FILEGLOB> ] [ I<NEW ROOT FILEGLOB> ] [ '-E<gt>' I<PROFILE NAME> ]
 
@@ -331,11 +333,9 @@ B<DBUS INTERFACE> = 'interface' '=' '(' '"' I<AARE> '"' | I<AARE> ')'
 
 B<DBUS MEMBER> = 'member' '=' '(' '"' I<AARE> '"' | I<AARE> ')'
 
-B<DBUS PEER> = 'peer' '=' '(' [ I<DBUS NAME> ] [ I<DBUS LABEL> ] ')'
+B<DBUS PEER> = 'peer' '=' '(' [ I<DBUS NAME> ] [ I<LABEL COND> ] ')'
 
 B<DBUS NAME> = 'name' '=' '(' '"' I<AARE> '"' | I<AARE> ')'
-
-B<DBUS LABEL> = 'label' '=' '(' '"' I<AARE> '"' | I<AARE> ')'
 
 B<DBUS ACCESS LIST> = Comma separated list of I<DBUS ACCESS>
 
@@ -358,15 +358,13 @@ B<TYPE COND> = 'type' '='  ( I<AARE> | '(' ( '"' I<AARE> '"' | I<AARE> )+ ')' )
 
 B<PROTO COND> = 'protocol' '='  ( I<AARE> | '(' ( '"' I<AARE> '"' | I<AARE> )+ ')' )
 
-B<UNIX LOCAL EXPR> = ( I<UNIX ADDRESS COND> | I<UNIX LABEL COND> | I<UNIX ATTR COND> | I<UNIX OPT COND> )*
+B<UNIX LOCAL EXPR> = ( I<UNIX ADDRESS COND> | I<LABEL COND> | I<UNIX ATTR COND> | I<UNIX OPT COND> )*
   Each cond can appear at most once.
 
 B<UNIX PEER EXPR> = 'peer' '=' ( I<UNIX ADDRESS COND> | I<UNIX LABEL COND> )+
   Each cond can appear at most once.
 
 B<UNIX ADDRESS COND> 'addr' '=' ( I<AARE> | '(' '"' I<AARE> '"' | I<AARE> ')' )
-
-B<UNIX LABEL COND> 'label' '=' ( I<AARE> | '(' '"' I<AARE> '"' | I<AARE> ')' )
 
 B<UNIX ATTR COND> 'attr' '=' ( I<AARE> | '(' '"' I<AARE> '"' | I<AARE> ')' )
 
@@ -1203,6 +1201,460 @@ addresses, ports, and port ranges.
  network ip=127.0.0.1 port=8080 peer=(ip=10.139.15.23 port=8081),
  network ip=127.0.0.1 port=8080-8084,
 
+=head4 Network Interface Restrictions
+
+If kernel support is enabled, it is possible to restrict network
+access based on the interface that communication can be sent or received
+on by specifying the I<interface=> conditional.
+eg.
+
+  network inet interface=eth0 port=8080,
+
+The interface conditional is limited to mediating the acceptance of
+connections, and the sending, and receiving of data. If a rule does
+not specify the interface conditional, it does not restrict the
+interface that can be used.
+
+The sending side of the interface conditional makes use of packet
+labeling. Currently this is limited to the use of the SecMark. The
+use of the SecMark has several complications and limitations, which
+are discussed in the Limitations, and SecMark sections.
+
+The receiving task can also mediate the interface that a packet
+arrives on. Packet labeling is not needed for inbound interface
+mediation. This means that interface mediation of in bound
+connections, and messages has fewer limitations than outbound
+mediation.
+
+=head5 Limitations of the Interface conditional
+
+There are several restrictions around interface mediation. For the
+interface conditional to function AppArmor must be compiled with
+support for SecMarks, NetFilter, and the kernel AppArmor module must
+also support the mediation. If any of these conditions are not met
+then the network interface rule will be downgraded, or ignored. The
+rule downgrade can be turned into a compile time error using Werror.
+
+It is possible for the above limitations to be met and for AppArmor to
+still not enforce outbound interface mediation. The SecMark interface
+supports only a single LSM, if another LSM claims the interface before
+AppArmor during boot, AppArmor will not be able to enforce the
+outbound interface conditional.
+
+=head6 Socket Address Family Restrictions
+
+The interface conditional is limited to the inet, and inet6 address
+families, and currently only uses the SecMark label, this means the
+packet label is limited to use on host and is not carried across
+the network.
+
+=head6 Profile Flags and Rule Prefix Moodifier Limitations
+
+=over 8
+
+=item B<audit>: The audit profile flag may not trigger unless the profile
+contains rules assigning the profile label, or matching an interface.
+The audit prefix on a rule with the interface conditional does not
+have this limitation.
+
+=item B<complain>: The complain profile flag may not trigger unless the
+profile contains rules assigning the profile label, or matching the
+interface.  The complain prefix on a rule with the interface
+conditional does not have this limitation.
+
+=item B<prompt>: The interface conditional is incompatible with the prompt rule
+prefix, and the prompt flag will not trigger for interface failures.
+
+=item B<kill>: The interface conditional is incompatible with the kill rule
+prefix, and profile flag for inbound packets.
+
+=item B<halt>: The interface conditional is incompatible with the halt rule
+prefix, and profile flag for inbound packets.
+
+=back
+
+=head6 Interaction with Firewalls
+
+The outbound interface conditional interacts with and potentially
+conflicts with explicit firewall packet labeling that uses the
+SecMark. This is because the interface conditional uses the label on
+the outbound packet to mediate which interface the packet is allowed
+to be sent to.
+
+Explicitly setting the label via a firewall rule can change the label
+on the packet and potentially cause the interface conditional to not
+be applied, or even cause the wrong interface mediation to be
+applied.
+
+Where possible, when multiple labels are specified, AppArmor will assign
+a label stack to the packet ensuring the interface conditional is
+applied, and if it can't do that it will raise a policy compilation
+error.
+
+See the SecMark section for information on how the interface
+restrictions interact with NetFilter and firewall rules.
+
+=head6 Additional Information for Firewalls
+
+The interface mediation may be done via SecMark packet labeling in the
+NetFilter B<LOCAL_OUTPUT> hook. If it is done via SecMark, any other
+firewall rule run before the AppArmor hook in the B<LOCAL_OUTPUT>
+hook may result in interface mediation not working correctly.
+
+Interface mediation is done in the B<LOCAL_OUTPUT> netfilter
+hook, and is subject to any changes a previous hook may have done to
+packet routing information. That is to say it is possible that some
+firewall rule type applications could interfere with AppArmor
+interface mediation.
+
+
+=head4 Label Match Conditional
+
+The label match conditional allows specifying the label that a received
+packet is allowed to have, or in the case of socket based operations
+the label that the socket has. The label match is performed by matching
+the specified label pattern against the SecMark (or any other future
+supported type of label) on the packet, or in the case of socket
+operations the label on the socket.
+
+The local label match conditional is the conditional used for socket
+label matching.
+
+    network label=foo,
+
+The peer label match conditional is the conditional used when matching
+in coming network packet labels.
+
+    network receive peer=(label=foo),
+    network inet peer=(label=httpd),
+    network ip=127.0.0.1 peer=(label=httpd),
+
+The label on a socket is set by the confinement of the task that
+opened the socket, and is potentially extended if the socket is passed
+to other tasks with different confinement.
+
+The label on a packet (currently just the SecMark) can be set by an
+AppArmor rule (interface or explicit assignment), or by system
+firewalls like iptables. For the purposes of network packet label
+matching if a packet does not have a label (SecMark) it will be
+associated with the special label of I<unlabeled>.
+
+=head5 Notes on label matching
+
+AppArmor will only do packet label matching when profiles have
+explicit rules supporting it. Otherwise AppArmor will short circuit
+label match mediation, reducing the overhead.
+
+For packet label matching, the socket label is used as a proxy for the
+receiving task. Generally this does not affect mediation however, if a
+socket is shared between tasks with different confinement, what is
+allowed will be the intersection of what is allowed by all profiles in
+the socket label.
+
+This is because AppArmor does not control which task will receive the
+packet, and so it can only allow what is allowed by all tasks that
+could potentially receive the packet.
+
+Similarly, unless the interface match conditional is used or an
+explicit label assignment rule is used, AppArmor does not set the label
+on packets to avoid any overhead when it is not necessary.
+
+
+=head4 Specifying Socket and Packet Labeling
+
+AppArmor by default will label sockets with the creating tasks
+confinement. This labeling may be extended to a label stack when the
+socket is shared between tasks of different confinement.
+
+AppArmor by default does not label network packets, as that can have
+performance implications, and it is not always needed. Instead AppArmor
+tries to be smart about packet labeling on applying and matching labels
+when needed to support the specified rules.
+
+=head5 Implicit packet labeling
+
+Some rules will result in a packet being given the label of the
+sending task. Eg. the interface conditional will implicitly label
+outgoing packets with the tasks confinement (note: in some cases the
+sockets label may be used as a proxy).
+
+Implicitly labeling packets works if you are only considering AppArmor
+network rules. However if the admin would like to also be able to
+control packets based on AppAmor labeling at the firewall then
+implicit labeling controls are not sufficient, and explicit labeling
+must be used.
+
+=head5 Explicit labeling
+
+AppArmor allows specifying an explit label for both the socket and
+the packet, using the assignment conditional.
+
+=head6 explicit socket labeling
+
+For the socket it the local assignment conditional is used.
+
+    network label:=@{profile_name},
+
+In this case the use of @{profile_name} is equivalent to the implicit
+labeling that AppArmor already does.
+
+=head6 explicit packet labeling
+
+For packet labels the peer assignment condition is used.
+
+    network send inet peer=(label:=@{profile_name}),
+
+In this case the label set is the same label that implied labeling set
+except that it will be set on every network packet, not just the ones
+implied by the interface conditional.
+
+Explicit labeling can interact with and conflict with implied
+labeling so current AppArmor only supports setting the explicit label
+to the same label that implied labeling would provide, thus avoiding
+the conflict.
+
+There are plans to extend explicit labeling to allow specifying
+any label but that is not available yet.
+
+=head5 kernel socket labeling
+
+Packets sent by the kernel may either have the type of I<kernel_t> or
+I<unlabeled> dependent on whether AppArmor is configured to label
+kernel packets or not.
+
+If labeling of kernel packets is enabled, AppArmor will label all
+kernel packets. This can have a small impact on network performance so,
+for those systems that need it, kernel socket labeling can be disabled.
+
+=head4 SecMark, NetFilter, and Firewalls
+
+When AppArmor profiles are attached to processes the network rules can
+be thought of as an application level firewall, handling network
+traffic in the context of the application. System level firewalling is
+generally left to existing firewalls that admins are already familiar
+with.
+
+However the AppArmor application firewall can and will interact with
+the system firewall, and it is important to understand how and where
+this interaction can occur.
+
+In Linux, firewalls are built on top of the kernel's NetFilter
+subsystem which provides five different hook points to manage the flow
+of packets in the system: PRE_ROUTING, LOCAL_IN, FORWARD, LOCAL_OUT,
+and POST_ROUTING. In addition it provides some fields for the
+firewall, network, and security subsystems to store data on the packet
+as it traverses through the system.
+
+   +-------------------------Loop Back<------------------------+
+   |                                                           |
+   v                                                           ^
+  Dev -->PRE_ROUTING--->[ROUTE]--->FWD-------->POST_ROTUING--> Dev
+         |               |         |      ^       |
+         Conntrack       |       Mangle   |       Mangle
+         Mangle          |       Filter   |       NAT (Src)
+         NAT (Dst)       |                |       Conntrack
+         (QDisc)         |             [ROUTE]    AppArmor Interface
+                         |                |       AppArmor Label Match
+                         V                |
+        Conntrack----LOCAL_IN         LOCAL OUT---AppArmor SecMark
+        Mangle           |                ^       Conntrack
+        AppArmor SecMark |                |       Mangle
+                         |                |       NAT (Dst)
+                         v                |       Filter
+               apparmor_sock_rcv_skb      |
+             apparmor_inet_conn_request   |
+                         |                |
+                         |                |
+                         v                ^
+                      Process          Process
+
+AppArmor uses SecMark, and ConnSecMark, to pass state information
+with the packet as it is passed through the system. In addition it
+uses several of the hook points to make mediation decisions.
+
+
+The interface conditional does not allow explicitly setting the
+SecMark. Instead it is set based on the confining label of the
+sending task. More specifically, in a stacking situation it's set based
+on the subset of profiles in the label with matching interface
+conditionals. It may be possible to set the SecMark explicitly in the
+future but it is not supported at this time.
+
+AppArmor does not currently support explicitly specifying a SecMark
+match conditional (label=) match at this time either. Though that
+ability will be made available in a future patch.
+
+However firewalls are free to match the SecMark if AppArmor sets it.
+
+AppArmor's SecMark support has several restrictions, and limitations.
+AppArmor must be built with SecMark support enabled, and it shares the
+SecMark with all other LSMs on the system, as such AppArmor must be
+able to claim the SecMark interface on boot. This means AppArmor must
+be in the B<LSM=> security module list before any other LSM that may
+try to claim the interface.
+
+AppArmor netfilter hooks are executed with a SELINUX_FISRT priority,
+so they will be executed before most firewall rules. However it
+is possible to create hooks filters that will compete with and
+may fire before the AppArmor code.
+
+AppArmor will set the secmark to the subject label in the B<LOCAL_OUTPUT>
+hook. It will filter interfaces based on the secmark in the B<POST_ROUTING>
+and security_sock_rcv_skb hook (roughly that same as LOCAL_INPUT for
+firewalls.
+
+=head3 Medidation of the unix family
+
+See B<Unix socket rules> for both socket and fs based unix socket
+mediation.
+
+=head2 Unix socket rules
+
+AppArmor supports fine grained mediation of unix domain abstract and
+anonymous sockets. Unix domain sockets with file system paths are
+mediated via file access rules.
+
+Abstract unix domain sockets is a nonportable Linux extension of unix
+domain sockets, see unix(7) for more information.
+
+=head3 Unix socket address paths
+
+The sun_path component (aka the socket address) of a unix domain socket is
+specified by the
+
+  addr=
+
+conditional. If an address conditional is not specified as part of
+a rule then the rule matches both abstract and anonymous sockets.
+
+In AppArmor the address of an abstract unix domain socket begins with
+the I<@> character, similar to how they are reported (as paths) by
+netstat -x. The address then follows and may contain pattern matching
+and any characters including the null character. In AppArmor null
+characters must be specified by using an escape sequence I<\000> or
+I<\x00>. The pattern matching is the same as is used by file path matching
+so * will not match I</> even though it has no special meaning with
+in an abstract socket name. Eg.
+
+  unix addr=@*,
+
+Autobound unix domain sockets have a unix sun_path assigned to them
+by the kernel, as such specifying a policy based address is not possible.
+The autobinding of sockets can be controlled by specifying the special
+I<auto> keyword. Eg.
+
+  unix addr=auto,
+
+To indicate that the rule only applies to auto binding of unix domain
+sockets. It is important to note this only applies to the I<bind>
+permission as once the socket is bound to an address it is
+indistinguishable from a socket that have an addr bound with a
+specified name. When the I<auto> keyword is used with other permissions
+or as part of a peer addr it will be replaced with a pattern that
+can match an autobound socket. Eg. For some kernels
+
+  unix rw addr=auto,
+
+is transformed to
+
+  unix rw addr=@[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9],
+
+It is important to note, this pattern may match abstract sockets that
+were not autobound but have an addr that fits what is generated by
+the kernel when autobinding a socket.
+
+Anonymous unix domain sockets have no sun_path associated with the socket
+address, however it can be specified with the special I<none> keyword to
+indicate the rule only applies to anonymous unix domain sockets. Eg.
+
+  unix addr=none,
+
+If the address component of a rule is not specified then the rule applies
+to autobind, abstract and anonymous sockets.
+
+=head3 Unix socket permissions
+
+Unix domain socket rules are accumulated so that the granted unix
+socket permissions are the union of all the listed unix rule permissions.
+
+Unix domain socket rules are broad and general and become more restrictive
+as further information is specified. Policy may be specified down to
+the socket address (aka sun_path) and label level. The content of the
+communication is not examined.
+
+Unix socket rule permissions are implied when a rule does not explicitly
+state an access list. By default if a rule does not have an access list
+all permissions that are compatible with the specified set of local
+and peer conditionals are implied.
+
+The create, bind, listen, shutdown, getattr, setattr, getopt, and setopt
+permissions are local socket permissions. They are only applied to the local
+socket and can't be specified in rules that have a peer component. The accept
+permission applies to the combination of a local and peer socket. The connect,
+send, and receive permissions are peer socket permissions.
+
+Only the peer socket permissions will be applied to rules that don't specify
+permissions and contain a peer component.
+
+=head3 Example Unix domain socket rules:
+
+  # Allow all permissions to unix sockets
+  unix,
+
+  # Explicitly allow all unix permissions
+  unix (create, listen, accept, connect, send, receive, getattr, setattr, setopt, getopt),
+
+  # Explicitly deny unix socket access
+  deny unix,
+
+  # Allow create and use of abstract and anonymous sockets for profile_name
+  unix peer=(label=@{profile_name}),
+
+  # Allow receiving via unix sockets from unconfined
+  unix (receive) peer=(label=unconfined),
+
+  # Allow getattr and shutdown on anonymous sockets
+  unix (getattr, shutdown) addr=none,
+
+  # Allow SOCK_STREAM connect, receive and send on an abstract socket @bar
+  # with peer running under profile '/foo'
+  unix (connect, receive, send) type=stream peer=(label=/foo,addr="@bar"),
+
+  # Allow accepting connections from and receiving from peer running under
+  # profile '/bar' on abstract socket '@foo'
+  unix (accept, receive) addr=@foo peer=(label=/bar),
+
+=head3 Abstract unix domain sockets autobind
+
+Abstract unix domain sockets can autobind to an address. The autobind
+address is a unique 5 digit string of decimal numbers, eg. @00001. There
+is nothing that prevents a task from manually binding to addresses with a
+similar pattern so it is impossible to reliably identify autobind addresses
+from a regular address.
+
+=head3 Interaction of network rules and fine grained unix domain socket rules
+
+The coarse grained networking rules can be used to control unix domain
+sockets as well. When fine grained unix domain socket mediation is available
+the coarse grained network rule is mapped into the equivalent unix socket
+rule.
+
+E.G.
+
+    network unix,  =>  unix,
+
+    network unix stream,   =>  unix stream,
+
+Fine grained mediation rules however can not be losslessly converted back
+to the coarse grained network rule; e.g.
+
+   unix bind addr=@example,
+
+Has no exact match under coarse grained network rules, the closest match is
+the much wider permission rule of
+
+   network unix,
+
 =head2 Mount Rules
 
 AppArmor supports mount mediation and allows specifying filesystem types and
@@ -1703,153 +2155,6 @@ Example AppArmor DBus rules:
 
     # Allow and audit all eavesdropping
     audit dbus eavesdrop,
-
-=head2 Unix socket rules
-
-AppArmor supports fine grained mediation of unix domain abstract and
-anonymous sockets. Unix domain sockets with file system paths are
-mediated via file access rules.
-
-Abstract unix domain sockets is a nonportable Linux extension of unix
-domain sockets, see unix(7) for more information.
-
-=head3 Unix socket address paths
-
-The sun_path component (aka the socket address) of a unix domain socket is
-specified by the
-
-  addr=
-
-conditional. If an address conditional is not specified as part of
-a rule then the rule matches both abstract and anonymous sockets.
-
-In AppArmor the address of an abstract unix domain socket begins with
-the I<@> character, similar to how they are reported (as paths) by
-netstat -x. The address then follows and may contain pattern matching
-and any characters including the null character. In AppArmor null
-characters must be specified by using an escape sequence I<\000> or
-I<\x00>. The pattern matching is the same as is used by file path matching
-so * will not match I</> even though it has no special meaning with
-in an abstract socket name. Eg.
-
-  unix addr=@*,
-
-Autobound unix domain sockets have a unix sun_path assigned to them
-by the kernel, as such specifying a policy based address is not possible.
-The autobinding of sockets can be controlled by specifying the special
-I<auto> keyword. Eg.
-
-  unix addr=auto,
-
-To indicate that the rule only applies to auto binding of unix domain
-sockets. It is important to note this only applies to the I<bind>
-permission as once the socket is bound to an address it is
-indistinguishable from a socket that have an addr bound with a
-specified name. When the I<auto> keyword is used with other permissions
-or as part of a peer addr it will be replaced with a pattern that
-can match an autobound socket. Eg. For some kernels
-
-  unix rw addr=auto,
-
-is transformed to
-
-  unix rw addr=@[a-f0-9][a-f0-9][a-f0-9][a-f0-9][a-f0-9],
-
-It is important to note, this pattern may match abstract sockets that
-were not autobound but have an addr that fits what is generated by
-the kernel when autobinding a socket.
-
-Anonymous unix domain sockets have no sun_path associated with the socket
-address, however it can be specified with the special I<none> keyword to
-indicate the rule only applies to anonymous unix domain sockets. Eg.
-
-  unix addr=none,
-
-If the address component of a rule is not specified then the rule applies
-to autobind, abstract and anonymous sockets.
-
-=head3 Unix socket permissions
-
-Unix domain socket rules are accumulated so that the granted unix
-socket permissions are the union of all the listed unix rule permissions.
-
-Unix domain socket rules are broad and general and become more restrictive
-as further information is specified. Policy may be specified down to
-the socket address (aka sun_path) and label level. The content of the
-communication is not examined.
-
-Unix socket rule permissions are implied when a rule does not explicitly
-state an access list. By default if a rule does not have an access list
-all permissions that are compatible with the specified set of local
-and peer conditionals are implied.
-
-The create, bind, listen, shutdown, getattr, setattr, getopt, and setopt
-permissions are local socket permissions. They are only applied to the local
-socket and can't be specified in rules that have a peer component. The accept
-permission applies to the combination of a local and peer socket. The connect,
-send, and receive permissions are peer socket permissions.
-
-Only the peer socket permissions will be applied to rules that don't specify
-permissions and contain a peer component.
-
-=head3 Example Unix domain socket rules:
-
-  # Allow all permissions to unix sockets
-  unix,
-
-  # Explicitly allow all unix permissions
-  unix (create, listen, accept, connect, send, receive, getattr, setattr, setopt, getopt),
-
-  # Explicitly deny unix socket access
-  deny unix,
-
-  # Allow create and use of abstract and anonymous sockets for profile_name
-  unix peer=(label=@{profile_name}),
-
-  # Allow receiving via unix sockets from unconfined
-  unix (receive) peer=(label=unconfined),
-
-  # Allow getattr and shutdown on anonymous sockets
-  unix (getattr, shutdown) addr=none,
-
-  # Allow SOCK_STREAM connect, receive and send on an abstract socket @bar
-  # with peer running under profile '/foo'
-  unix (connect, receive, send) type=stream peer=(label=/foo,addr="@bar"),
-
-  # Allow accepting connections from and receiving from peer running under
-  # profile '/bar' on abstract socket '@foo'
-  unix (accept, receive) addr=@foo peer=(label=/bar),
-
-=head3 Abstract unix domain sockets autobind
-
-Abstract unix domain sockets can autobind to an address. The autobind
-address is a unique 5 digit string of decimal numbers, eg. @00001. There
-is nothing that prevents a task from manually binding to addresses with a
-similar pattern so it is impossible to reliably identify autobind addresses
-from a regular address.
-
-=head3 Interaction of network rules and fine grained unix domain socket rules
-
-The coarse grained networking rules can be used to control unix domain
-sockets as well. When fine grained unix domain socket mediation is available
-the coarse grained network rule is mapped into the equivalent unix socket
-rule.
-
-E.G.
-
-    network unix,  =>  unix,
-
-    network unix stream,   =>  unix stream,
-
-Fine grained mediation rules however can not be losslessly converted back
-to the coarse grained network rule; e.g.
-
-   unix bind addr=@example,
-
-Has no exact match under coarse grained network rules, the closest match is
-the much wider permission rule of
-
-   network unix,
 
 =head2 change_profile rules
 

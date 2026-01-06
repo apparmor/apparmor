@@ -1,0 +1,10 @@
+#
+#=DESCRIPTION simple network set label going to peer
+#=EXRESULT PASS
+
+profile a_profile {
+  # The only sending label supported in the first iteration is the profile name
+  # internally it is represented as the send label permission without the
+  # assignment field being set.
+  network send  peer=(label:=@{profile_name}),
+}

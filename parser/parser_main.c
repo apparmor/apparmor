@@ -1030,6 +1030,12 @@ void set_supported_features()
 	features_supports_networkv9 = features_intersect(kernel_features,
 							 policy_features,
 							 "network_v9");
+	features_supports_networkv9_skb = features_intersect(kernel_features,
+							     policy_features,
+							     "network_v9_skb");
+	features_supports_ifacev9_skb = features_intersect(kernel_features,
+							   policy_features,
+							   "network_v9_skb/iface");
 	features_supports_inetv8 = features_intersect(kernel_features,
 						      policy_features,
 						      "network_v8/af_inet");
