@@ -1,0 +1,13 @@
+#
+#=DESCRIPTION simple network peer label on skb out match, this does nothing should we fail?
+#=EXRESULT PASS
+
+# this does nothing, can not match on peer label when sending, as packet is unlabeled
+# could detect and fail, or silently pass.
+# Note:
+#    network peer=(label=foo),
+#  would pass because of the receive case
+#
+profile a_profile {
+  network send peer=(label=foo),
+}

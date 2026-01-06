@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION simple network label match on socket
+#=EXRESULT PASS
+
+profile a_profile {
+  network label=foo,
+}
