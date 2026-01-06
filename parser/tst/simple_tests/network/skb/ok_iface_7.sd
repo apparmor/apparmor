@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION simple network iface test
+#=EXRESULT PASS
+
+profile a_profile {
+  network send ip=127.0.0.1 port=21 interface="local*",
+}
