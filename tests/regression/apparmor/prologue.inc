@@ -395,7 +395,7 @@ checktestfg()
 	if [ -n "${_known}" ] ; then
 		echo "x${_pfmode}: ${_testdesc}"
 	elif [ -n "$VERBOSE" ]; then
-		echo "ok: ${_testdesc}"
+		echo "ok (${_pfmode}): ${_testdesc}"
 	fi
 }
 
