@@ -104,13 +104,19 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 	default_base.push_back(make_pair(dfa.nonmatching, 0));
 	num.insert(make_pair(dfa.nonmatching, num.size()));
 
+	/* minimum size is 2 */
 	accept.resize(max(dfa.states.size(), (size_t) 2));
-	// Either for a1/a2 encoding or for a2 owner index.
-	// It's probably not needed for xmatch though. Is this a missing flag somewhere?
-	accept2.resize(max(dfa.states.size(), (size_t) 2));
+	if (!permindex || dfa.filedfa)
+		/* currently only using accept2 for owner cond in the
+		 * file dfa
+		 */
+		accept2.resize(max(dfa.states.size(), (size_t) 2));
 	if (permindex) {
 		accept[0] = dfa.nonmatching->idx;
 		accept[1] = dfa.start->idx;
+		/* accept2 owner flag doesn't matter for nonmatching and
+		 * start state
+		 */
 	} else {
 		uint32_t accept3;
 		dfa.nonmatching->map_perms_to_accept(accept[0],
@@ -139,7 +145,9 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 				insert_state(free_list, *i, dfa);
 				if (permindex) {
 					accept[num.size()] = (*i)->idx;
-					accept2[num.size()] |= 1; // TODO: Define this flag.
+					/* set owner conditional */
+					if (dfa.filedfa)
+						accept2[num.size()] = 1; // TODO: Define this flag
 				} else {
 					(*i)->map_perms_to_accept(accept[num.size()],
 								  accept2[num.size()],
@@ -163,7 +171,8 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 				insert_state(free_list, i->second, dfa);
 				if (permindex) {
 					accept[num.size()] = i->second->idx;
-					accept[num.size()] |= 1; // TODO: Define this flag.
+					if (dfa.filedfa)
+						accept2[num.size()] = 1; // TODO: Define this flag.
 				} else {
 					i->second->map_perms_to_accept(accept[num.size()],
 								       accept2[num.size()],
