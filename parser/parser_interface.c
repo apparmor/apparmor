@@ -341,7 +341,7 @@ void sd_serialize_perm(std::ostringstream &buf, aa_perms &perms)
 	sd_write_uint32(buf, perms.label);
 }
 
-void sd_serialize_permstable(std::ostringstream &buf, vector <aa_perms> &perms_table)
+void sd_serialize_permstable(std::ostringstream &buf, vector <aa_perms> &perms_table, bool filedfa)
 {
 	sd_write_struct(buf, "perms");
 	sd_write_name(buf, "version");
@@ -352,20 +352,20 @@ void sd_serialize_permstable(std::ostringstream &buf, vector <aa_perms> &perms_t
 	}
 	sd_write_arrayend(buf);
 	sd_write_structend(buf);
-	// FIXME: This should be emitted only when both accept2 and perms are in use.
-	if (perms_table.size() > 0) {
+	/* currently only the file dfa makes use of owner conditional accept */
+	if (filedfa && perms_table.size() > 0) {
 		sd_write_name(buf, "permsv");
 		sd_write_uint32(buf, 3);
 	}
 }
 
 void sd_serialize_dfa(std::ostringstream &buf, void *dfa, size_t size,
-	vector <aa_perms> &perms_table)
+		      vector <aa_perms> &perms_table, bool filedfa)
 {
 	if (dfa) {
 		if (kernel_supports_permstable32 && perms_table.size() > 0) {
 			//fprintf(stderr, "writing perms table %d\n", size);
-			sd_serialize_permstable(buf, perms_table);
+			sd_serialize_permstable(buf, perms_table, filedfa);
 		} else {
 			//fprintf(stderr, "skipping permtable32 %d, size %d\n", kernel_supports_permstable32, perms_table.size());
 		}
@@ -468,7 +468,7 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 	/* only emit this if current kernel at least supports "create" */
 	if (perms_create) {
 		if (profile->xmatch) {
-			sd_serialize_dfa(buf, profile->xmatch, profile->xmatch_size, profile->xmatch_perms_table);
+		  sd_serialize_dfa(buf, profile->xmatch, profile->xmatch_size, profile->xmatch_perms_table, false);
 			sd_write_uint32(buf, profile->xmatch_len);
 		}
 	}
@@ -549,7 +549,7 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 	if (profile->policy.dfa) {
 		sd_write_struct(buf, "policydb");
 		sd_serialize_dfa(buf, profile->policy.dfa, profile->policy.size,
-				 profile->policy.perms_table);
+				 profile->policy.perms_table, false);
 		if (kernel_supports_permstable32) {
 			sd_serialize_xtable(buf, profile->exec_table);
 
@@ -558,7 +558,7 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 	}
 
 	sd_serialize_dfa(buf, profile->dfa.dfa, profile->dfa.size,
-			 profile->dfa.perms_table);
+			 profile->dfa.perms_table, true);
 	if (profile->dfa.dfa) {
 		// fprintf(stderr, "profile %s: dfa xtable\n", profile->name);
 		sd_serialize_xtable(buf, profile->exec_table);
