@@ -35,10 +35,10 @@ profile proftpd /usr/sbin/proftpd {
   owner /etc/proftpd/** rw,
 
   # Process info
-  owner /run/proftpd.delay rwk,
-  owner /run/proftpd.pid rwk,
-  owner /run/proftpd.scoreboard rwk,
-  owner /run/proftpd.scoreboard.lck rwk,
+  /run/proftpd.delay rwk,
+  /run/proftpd.pid rwk,
+  /run/proftpd.scoreboard rwk,
+  /run/proftpd.scoreboard.lck rwk,
   owner /run/proftpd/* rw,
   owner /run/test.sock w,
   owner /var/log/xferlog w,
