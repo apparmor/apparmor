@@ -23,10 +23,13 @@ execute: |
 
     # Create test file to retrieve via FTP
     echo "This is a test file" > /home/ftpuser/test.txt
+    chown ftpuser /home/ftpuser/test.txt
 
     # Create file in directory
     mkdir -p /home/ftpuser/test-dir
     echo "This is a file in a directory" > /home/ftpuser/test-dir/nested-file.txt
+    chown ftpuser /home/ftpuser/test-dir
+    chown ftpuser /home/ftpuser/test-dir/nested-file.txt
 
     # Download file from FTP server
     ftp -n 127.0.0.1 <<EOF

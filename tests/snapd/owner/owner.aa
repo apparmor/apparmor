@@ -1,0 +1,8 @@
+abi <abi/5.0>,
+
+profile "test-owner" flags=(audit) {
+  allow file / r,
+
+  audit allow owner file /foo rw,
+  audit allow file /foo r,
+}
