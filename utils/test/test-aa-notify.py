@@ -17,10 +17,10 @@ import sys
 import time
 import unittest
 from tempfile import NamedTemporaryFile
-from datetime import datetime
 
 import apparmor.aa as aa
 from apparmor.common import cmd_pipe_stderr
+from apparmor.notify import get_last_login_timestamp
 from common_test import AATest, setup_aa, setup_all_loops
 
 # The location of the aa-notify utility can be overridden by setting
@@ -54,7 +54,7 @@ Feb  4 13:40:38 XPS-13-9370 kernel: [128552.835421] audit: type=1400 audit({epoc
 Feb  4 13:40:38 XPS-13-9370 kernel: [128552.835696] audit: type=1400 audit({epoch}:120): apparmor="ALLOWED" operation="open" profile="libreoffice-soffice//null-/bin/uname" name="/usr/lib/locale/locale-archive" pid=4097 comm="uname" requested_mask="r" denied_mask="r" fsuid=1001 ouid=0
 Feb  4 13:40:38 XPS-13-9370 kernel: [128552.875891] audit: type=1400 audit({epoch}:121): apparmor="ALLOWED" operation="exec" profile="libreoffice-soffice" name="/usr/bin/file" pid=4111 comm="soffice.bin" requested_mask="x" denied_mask="x" fsuid=1001 ouid=0 target="libreoffice-soffice//null-/usr/bin/file"
 Feb  4 13:40:38 XPS-13-9370 kernel: [128552.880347] audit: type=1400 audit({epoch}:122): apparmor="ALLOWED" operation="file_mmap" profile="libreoffice-soffice//null-/usr/bin/file" name="/usr/bin/file" pid=4111 comm="file" requested_mask="rm" denied_mask="rm" fsuid=1001 ouid=0
-'''.format(epoch=round(_time, 3) - 60 * 60 * 24 * 999)  # noqa: E128
+'''.format(epoch="{:.3f}".format(_time - 60 * 60 * 24 * 999))  # noqa: E128
 
         test_logfile_contents_30_days_old = \
 '''Feb  4 13:40:38 XPS-13-9370 kernel: [128552.834382] audit: type=1400 audit({epoch}:113): apparmor="ALLOWED" operation="exec" profile="libreoffice-soffice" name="/bin/uname" pid=4097 comm="sh" requested_mask="x" denied_mask="x" fsuid=1001 ouid=0 target="libreoffice-soffice//null-/bin/uname"
@@ -67,7 +67,7 @@ Feb  4 13:40:38 XPS-13-9370 kernel: [128552.835421] audit: type=1400 audit({epoc
 Feb  4 13:40:38 XPS-13-9370 kernel: [128552.835696] audit: type=1400 audit({epoch}:120): apparmor="ALLOWED" operation="open" profile="libreoffice-soffice//null-/bin/uname" name="/usr/lib/locale/locale-archive" pid=4097 comm="uname" requested_mask="r" denied_mask="r" fsuid=1001 ouid=0
 Feb  4 13:40:38 XPS-13-9370 kernel: [128552.875891] audit: type=1400 audit({epoch}:121): apparmor="ALLOWED" operation="exec" profile="libreoffice-soffice" name="/usr/bin/file" pid=4111 comm="soffice.bin" requested_mask="x" denied_mask="x" fsuid=1001 ouid=0 target="libreoffice-soffice//null-/usr/bin/file"
 Feb  4 13:40:38 XPS-13-9370 kernel: [128552.880347] audit: type=1400 audit({epoch}:122): apparmor="ALLOWED" operation="file_mmap" profile="libreoffice-soffice//null-/usr/bin/file" name="/usr/bin/file" pid=4111 comm="file" requested_mask="rm" denied_mask="rm" fsuid=1001 ouid=0
-'''.format(epoch=round(_time, 3) - 60 * 60 * 24 * 30)  # noqa: E128
+'''.format(epoch="{:.3f}".format(_time - 60 * 60 * 24 * 30))  # noqa: E128
 
         test_logfile_contents_unrelevant_entries = \
 '''Feb  1 19:35:44 XPS-13-9370 kernel: [99848.048761] audit: type=1400 audit(1549042544.968:72): apparmor="STATUS" operation="profile_load" profile="unconfined" name="/snap/core/6350/usr/lib/snapd/snap-confine" pid=12871 comm="apparmor_parser"
@@ -86,7 +86,7 @@ Feb  4 13:40:38 XPS-13-9370 kernel: [128552.835421] audit: type=1400 audit({epoc
 Feb  4 13:40:38 XPS-13-9370 kernel: [128552.835696] audit: type=1400 audit({epoch}:120): apparmor="ALLOWED" operation="open" profile="libreoffice-soffice//null-/bin/uname" name="/usr/lib/locale/locale-archive" pid=4097 comm="uname" requested_mask="r" denied_mask="r" fsuid=1001 ouid=0
 Feb  4 13:40:38 XPS-13-9370 kernel: [128552.875891] audit: type=1400 audit({epoch}:121): apparmor="ALLOWED" operation="exec" profile="libreoffice-soffice" name="/usr/bin/file" pid=4111 comm="soffice.bin" requested_mask="x" denied_mask="x" fsuid=1001 ouid=0 target="libreoffice-soffice//null-/usr/bin/file"
 Feb  4 13:40:38 XPS-13-9370 kernel: [128552.880347] audit: type=1400 audit({epoch}:122): apparmor="ALLOWED" operation="file_mmap" profile="libreoffice-soffice//null-/usr/bin/file" name="/usr/bin/file" pid=4111 comm="file" requested_mask="rm" denied_mask="rm" fsuid=1001 ouid=0
-'''.format(epoch=round(_time, 3))  # noqa: E128
+'''.format(epoch="{:.3f}".format(_time))  # noqa: E128
 
         return test_logfile_contents_999_days_old \
             + test_logfile_contents_30_days_old \
@@ -126,11 +126,11 @@ Feb  4 13:40:38 XPS-13-9370 kernel: [128552.880347] audit: type=1400 audit({epoc
             if output.startswith(username):
                 for col in range(3, 1, -1):
                     try:
-                        last_login = output.split()[col]
-                        last_login_epoch = datetime.fromisoformat(last_login).timestamp()
+                        last_login_epoch = get_last_login_timestamp(username)
                         # add 60 seconds to the epoch so that the time in the logs are AFTER login time
                         last_login_contents = cls.create_logfile_contents(last_login_epoch + 60)
                         file_last_login.write(last_login_contents)
+                        file_last_login.flush()
                         break
                     except (IndexError, ValueError):
                         continue
