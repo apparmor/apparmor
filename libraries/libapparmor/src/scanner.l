@@ -2,6 +2,40 @@
  * Copyright (c) 1999-2008 NOVELL (All rights reserved)
  * Copyright (c) 2010, Canonical, Ltd.
  *
+ * This file is dual licensed. It has been published under both the
+ * LGPL and GPL licensed included below.
+ *
+ * Historical context of the Licensing.
+ *
+ * This code was originally authored by
+ * Matt Barringer at Immunix. Novell bought Immunix and as part of the
+ * releasing of AppArmor merged libaalogparse (containing the files
+ * aalogparse.h, grammer.y, libaalogparse.c, parser.h, and Makefile.am)
+ * with libapparmor. libaalogparse was originally licensed under the
+ * GPL and libapparmor under the LGPL. As part of the releasing
+ * AppArmor to the broader community. Novell (the copyright holder)
+ * relicensed the libaalogparse files as LGPL. This included this
+ * file scanner.l.
+ *
+ * Unfortunately this file was published in different places under
+ * different licenses either GPL or LGPL. The GPL version of scanner.l was
+ * mistakenly pulled in to the new AppArmor repo and published as such
+ * but the file also existed and was published under the LGPL. Becuase
+ * this file has been published under both licenses and may have be
+ * in use one or the other license it will remain licensed under both.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of version 2.1 of the GNU Lesser General
+ * Public License published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of version 2 of the GNU General Public
  * License published by the Free Software Foundation.
