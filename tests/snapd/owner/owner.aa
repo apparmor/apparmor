@@ -1,4 +1,4 @@
-abi <abi/5.0>,
+abi <abi/4.0>,
 
 profile "test-owner" flags=(audit) {
   allow file / r,
