@@ -141,7 +141,21 @@ __parse_profiles_dir() {
 	return "$status"
 }
 
+check_userns() {
+	userns_restricted=$(sysctl -e -n kernel.apparmor_restrict_unprivileged_userns)
+	unconfined_userns=$([ -f /sys/kernel/security/apparmor/features/policy/unconfined_restrictions/userns ] && cat /sys/kernel/security/apparmor/features/policy/unconfined_restrictions/userns || echo 0)
+	if [ -n "$userns_restricted" ] && [ "$userns_restricted" -eq 1 ]; then
+		if [ "$unconfined_userns" = "0" ] || [ "$unconfined_userns" = "no" ]; then
+			# userns restrictions rely on unconfined userns to be supported
+			aa_action "disabling unprivileged userns restrictions since unconfined userns is not supported / enabled" \
+				  sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+		fi
+	fi
+}
+
 parse_profiles() {
+	check_userns
+
 	# get parser arg
 	case "$1" in
 		load)
