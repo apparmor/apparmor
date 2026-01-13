@@ -679,10 +679,19 @@ int DFA::apply_and_clear_deny(void)
 }
 
 
+struct deref_less_than_perms {
+       bool operator()(perms_t * const &lhs, perms_t * const &rhs)const
+		{
+			return *lhs < *rhs;
+		}
+};
+
+typedef map<perms_t *, Partition *, deref_less_than_perms> PermMap;
+
 /* minimize the number of dfa states */
 void DFA::minimize(optflags const &opts)
 {
-	map<perms_t, Partition *> perm_map;
+	PermMap perm_map;
 	list<Partition *> partitions;
 
 	/* Set up the initial partitions
@@ -691,11 +700,11 @@ void DFA::minimize(optflags const &opts)
 	int accept_count = 0;
 	int final_accept = 0;
 	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
-		map<perms_t, Partition *>::iterator p = perm_map.find((*i)->perms);
+		PermMap::iterator p = perm_map.find(&(*i)->perms);
 		if (p == perm_map.end()) {
 			Partition *part = new Partition();
 			part->push_back(*i);
-			perm_map.insert(make_pair((*i)->perms, part));
+			perm_map.insert(make_pair(&(*i)->perms, part));
 			partitions.push_back(part);
 			(*i)->partition = part;
 			if ((*i)->perms.is_accept())
