@@ -141,7 +141,7 @@ __parse_profiles_dir() {
 	return "$status"
 }
 
-check_userns() {
+check_and_set_userns() {
 	userns_restricted=$(sysctl -e -n kernel.apparmor_restrict_unprivileged_userns)
 	unconfined_userns=$([ -f /sys/kernel/security/apparmor/features/policy/unconfined_restrictions/userns ] && cat /sys/kernel/security/apparmor/features/policy/unconfined_restrictions/userns || echo 0)
 	if [ -n "$userns_restricted" ] && [ "$userns_restricted" -eq 1 ]; then
