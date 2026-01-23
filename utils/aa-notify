@@ -621,7 +621,7 @@ def main():
 
     Parse command line arguments and starts the requested operations.
     """
-    global _, debug_logger, config, args
+    global debug_logger, config, args
     global debug_docs_url, nobody_user, original_effective_user, timeformat
 
     debug_docs_url = "https://wiki.ubuntu.com/DebuggingApparmor"
