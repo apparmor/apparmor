@@ -144,6 +144,7 @@ public:
 
 class Chars {
 public:
+	// https://stackoverflow.com/questions/32869247/a-container-for-integer-intervals-such-as-rangeset-for-c
 	std::set<transchar> chars;
 
 	typedef std::set<transchar>::iterator iterator;
@@ -244,21 +245,21 @@ ostream &operator<<(ostream &os, Node &node);
 #define NODE_TYPE_EXACTMATCHFLAG	(1 << 19)
 #define NODE_TYPE_DENYMATCHFLAG		(1 << 20)
 #define NODE_TYPE_PROMPTMATCHFLAG	(1 << 21)
+#define NODE_TYPE_NULLABLE		(1 << 31)
 
 /* An abstract node in the syntax tree. */
 class Node {
 public:
-	Node(): nullable(false), type_flags(NODE_TYPE_NODE), label(0)
+	Node(): type_flags(NODE_TYPE_NODE), label(0)
 	{
 		child[0] = child[1] = 0;
 	}
-	Node(Node *left): nullable(false), type_flags(NODE_TYPE_NODE), label(0)
+	Node(Node *left): type_flags(NODE_TYPE_NODE), label(0)
 	{
 		child[0] = left;
 		child[1] = 0;
 	}
-	Node(Node *left, Node *right): nullable(false),
-		type_flags(NODE_TYPE_NODE), label(0)
+	Node(Node *left, Node *right): type_flags(NODE_TYPE_NODE), label(0)
 	{
 		child[0] = left;
 		child[1] = right;
@@ -337,7 +338,6 @@ public:
 	bool is_type(unsigned type) { return type_flags & type; }
 
 	unsigned int label;	/* unique number for debug etc */
-	bool nullable;
 	/**
 	 * We indirectly release Nodes through a virtual function because
 	 * accept and Eps Nodes are shared, and must be treated specially.
@@ -385,8 +385,7 @@ class EpsNode: public LeafNode {
 public:
 	EpsNode(): LeafNode()
 	{
-		type_flags |= NODE_TYPE_EPS;
-		nullable = true;
+		type_flags |= (NODE_TYPE_EPS | NODE_TYPE_NULLABLE);
 		label = 0;
 	}
 	void release(void) override
@@ -647,8 +646,7 @@ class StarNode: public OneChildNode {
 public:
 	StarNode(Node *left): OneChildNode(left)
 	{
-		type_flags |= NODE_TYPE_STAR;
-		nullable = true;
+		type_flags |= (NODE_TYPE_STAR | NODE_TYPE_NULLABLE);
 	}
 	void compute_firstpos() override { firstpos = child[0]->firstpos; }
 	void compute_lastpos() override { lastpos = child[0]->lastpos; }
@@ -680,8 +678,7 @@ class OptionalNode: public OneChildNode {
 public:
 	OptionalNode(Node *left): OneChildNode(left)
 	{
-		type_flags |= NODE_TYPE_OPTIONAL;
-		nullable = true;
+		type_flags |= (NODE_TYPE_OPTIONAL | NODE_TYPE_NULLABLE);
 	}
 	void compute_firstpos() override { firstpos = child[0]->firstpos; }
 	void compute_lastpos() override { lastpos = child[0]->lastpos; }
@@ -706,7 +703,12 @@ public:
 	{
 		type_flags |= NODE_TYPE_PLUS;
 	}
-	void compute_nullable() override { nullable = child[0]->nullable; }
+	void compute_nullable() override {
+		// The nullable bit is only ever set so no need for else branch
+		if (child[0]->type_flags & NODE_TYPE_NULLABLE) {
+			type_flags |= NODE_TYPE_NULLABLE;
+		}
+	}
 	void compute_firstpos() override { firstpos = child[0]->firstpos; }
 	void compute_lastpos() override { lastpos = child[0]->lastpos; }
 	void compute_followpos() override
@@ -739,18 +741,28 @@ public:
 	}
 	void compute_nullable() override
 	{
-		nullable = child[0]->nullable && child[1]->nullable;
+		/*
+		 * To check that both childs are nullable, we can bitwise-AND
+		 * both of the type_flags together and then check if the
+		 * NODE_TYPE_NULLABLE bit is set on the result.
+		 *
+		 * The nullable bit is only ever set so no need for else branch
+		 */
+		if (child[0]->type_flags & child[1]->type_flags
+				& NODE_TYPE_NULLABLE) {
+			type_flags |= NODE_TYPE_NULLABLE;
+		}
 	}
 	void compute_firstpos() override
 	{
-		if (child[0]->nullable)
+		if (child[0]->type_flags & NODE_TYPE_NULLABLE)
 			firstpos = child[0]->firstpos + child[1]->firstpos;
 		else
 			firstpos = child[0]->firstpos;
 	}
 	void compute_lastpos() override
 	{
-		if (child[1]->nullable)
+		if (child[1]->type_flags & NODE_TYPE_NULLABLE)
 			lastpos = child[0]->lastpos + child[1]->lastpos;
 		else
 			lastpos = child[1]->lastpos;
@@ -805,7 +817,17 @@ public:
 	}
 	void compute_nullable() override
 	{
-		nullable = child[0]->nullable || child[1]->nullable;
+		/*
+		 * To check that either child is nullable, we can bitwise-OR
+		 * both of the type_flags together and then check if the
+		 * NODE_TYPE_NULLABLE bit is set on the result.
+		 *
+		 * The nullable bit is only ever set so no need for else branch
+		 */
+		if ((child[0]->type_flags | child[1]->type_flags)
+				& NODE_TYPE_NULLABLE) {
+			type_flags |= NODE_TYPE_NULLABLE;
+		}
 	}
 	void compute_lastpos() override
 	{
