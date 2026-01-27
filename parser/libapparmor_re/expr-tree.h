@@ -421,7 +421,6 @@ public:
 	void compute_lastpos() override { lastpos.insert(this); }
 	virtual void follow(Cases &cases) = 0;
 	virtual int is_accept(void) = 0;
-	virtual int is_postprocess(void) = 0;
 };
 
 /* common base class for all the different classes that contain
@@ -431,7 +430,6 @@ class CNode: public ImportantNode {
 public:
 	CNode(): ImportantNode() { type_flags |= NODE_TYPE_C; }
 	int is_accept(void) override { return false; }
-	int is_postprocess(void) override { return false; }
 };
 
 /* Match one specific character (/c/). */
@@ -902,7 +900,6 @@ class AcceptNode: public SharedNode {
 public:
 	AcceptNode() { type_flags |= NODE_TYPE_ACCEPT; }
 	int is_accept(void) override { return true; }
-	int is_postprocess(void) override { return false; }
 };
 
 class MatchFlag: public AcceptNode {
