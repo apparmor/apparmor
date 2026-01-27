@@ -325,7 +325,6 @@ public:
 	/* return false if no work done */
 	virtual int normalize_eps(int dir __attribute__((unused))) { return 0; }
 
-	bool nullable;
 	NodeSet firstpos, lastpos, followpos;
 	/* child 0 is left, child 1 is right */
 	Node *child[2];
@@ -338,6 +337,7 @@ public:
 	bool is_type(unsigned type) { return type_flags & type; }
 
 	unsigned int label;	/* unique number for debug etc */
+	bool nullable;
 	/**
 	 * We indirectly release Nodes through a virtual function because
 	 * accept and Eps Nodes are shared, and must be treated specially.
