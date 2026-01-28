@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION Missing + before identities
+#=EXRESULT FAIL
+#
+profile p identities=(foo) {
+  file,
+}

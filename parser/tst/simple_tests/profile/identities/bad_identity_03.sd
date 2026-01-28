@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION invalid identity
+#=EXRESULT FAIL
+#
+profile p + identities=(\invalid\) {
+  file,
+}

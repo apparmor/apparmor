@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION identities with spaces
+#=EXRESULT PASS
+#
+profile p + identities=(  foo  ,  bar  ) {
+  file,
+}

@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION Invalid identity due to spaces
+#=EXRESULT FAIL
+#
+profile p + identities=("a a" "b") {
+  file,
+}

@@ -1,0 +1,8 @@
+#
+#=DESCRIPTION Identity using both + and identity syntax
+#=EXRESULT PASS
+#
+
+profile test + identities=(foo)+ identities=("/bar") {
+    file,
+}
