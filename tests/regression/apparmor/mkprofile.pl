@@ -21,6 +21,7 @@ my %output_rules;
 my $hat = "__no_hat";
 my %flags;
 my %xattrs;
+my %identities;
 my $path = '';
 
 GetOptions(
@@ -538,6 +539,9 @@ sub gen_from_args() {
       gen_mqueue($rule, $qualifier);
     } elsif ($rule =~ /^io_uring:/) {
       gen_io_uring($rule, $qualifier);
+    } elsif ($rule =~ /^identities=\((.+)\)$/) {
+      # Store identities for profile header
+      $identities{$hat} = $1;
     } else {
       gen_file($rule, $qualifier);
     }
@@ -570,6 +574,9 @@ sub gen_from_args() {
     print STDOUT ") ";
   }
   emit_flags('__no_hat');
+  if (exists $identities{'__no_hat'}) {
+    print STDOUT " + identities=($identities{'__no_hat'}) ";
+  }
   print STDOUT "{\n";
   foreach my $outrule (@{$output_rules{'__no_hat'}}) {
     print STDOUT $outrule;

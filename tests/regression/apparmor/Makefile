@@ -190,6 +190,8 @@ SRC=access.c \
     userns.c \
     userns_setns.c \
     xattrs.c \
+    signal_identity_victim.c \
+    signal_identity_killer.c \
     true.c \
     false.c
 
@@ -352,6 +354,7 @@ TESTS=aa_exec \
       userns\
       xattrs\
       longpath \
+      signal_identity \
       nfs
 
 # Only do overlayfs_fuse test if we have the required fuse-overlayfs binary
