@@ -119,6 +119,18 @@ endif
 # docs: should we have some here?
 docs:
 
+.PHONY: bench-parser-cli
+bench-parser-cli: test-dependencies
+	@echo "*** Benchmarking profile compilation against apparmor_parser"
+	hyperfine --export-json timings.json -N -w 5 -L profile steam,lsusb,fusermount3,Xorg,transmission "${PARSER} --config-file=../parser/tst/parser.conf -QK -b ${PROFILES_SOURCE} ${PROFILES_SOURCE}/{profile}"
+
+.PHONY: bench-parser-outputsize
+bench-parser-outputsize: test-dependencies
+	$(Q)for profile in steam lsusb fusermount3 Xorg transmission; do \
+		echo -n "Size of profile $${profile}: " ; \
+		${PARSER} --config-file=../parser/tst/parser.conf -QK -S -b ${PROFILES_SOURCE} ${PROFILES_SOURCE}/$${profile} | wc -c ; \
+	done
+
 .PHONY: check
 check: check-parser check-logprof check-abstractions.d check-tunables.d check-local
 
