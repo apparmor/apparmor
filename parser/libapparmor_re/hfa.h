@@ -123,6 +123,15 @@ public:
 		return false;
 	}
 
+	void map_perms_to_accept(perm32_t &accept1, perm32_t &accept2,
+				 perm32_t &accept3) const
+	{
+		accept1 = allow;
+		accept2 = PACK_AUDIT_CTL(audit, quiet);
+		accept3 = prompt;
+	}
+
+
 	bool operator<(perms_t const &rhs)const
 	{
 		if (allow != rhs.allow)
@@ -166,12 +175,18 @@ struct deref_less_than_perms {
 
 // a dedup cache for permissions
 class perms_t_Cache: public CacheStats {
-public:
 	std::set<perms_t *, deref_less_than_perms> cache;
+public:
 
 	typedef std::set<perms_t *>::iterator iterator;
 	iterator begin() { return cache.begin(); }
 	iterator end() { return cache.end(); }
+
+	typedef std::set<perms_t *>::const_iterator const_iterator;
+	iterator cbegin() { return cache.cbegin(); }
+	iterator cend() { return cache.cend(); }
+
+	iterator find(perms_t * const &val) { return cache.find(val); }
 
 	perms_t_Cache(void): cache() { };
 	~perms_t_Cache() { clear(); };
@@ -330,14 +345,6 @@ public:
 		return res;
 	}
 
-	void map_perms_to_accept(perm32_t &accept1, perm32_t &accept2,
-				 perm32_t &accept3)
-	{
-		accept1 = perms->allow;
-		accept2 = PACK_AUDIT_CTL(perms->audit, perms->quiet);
-		accept3 = perms->prompt;
-	}
-
 	int label;
 	int flags;
 	int idx;
@@ -389,6 +396,7 @@ public:
 };
 
 typedef std::map<const State *, size_t> Renumber_Map;
+typedef std::map<perms_t * const, size_t, deref_less_than_perms> idxmap_t;
 
 /* Transitions in the DFA. */
 class DFA {
@@ -446,8 +454,9 @@ public:
 	std::map<transchar, transchar> equivalence_classes(optflags const &flags);
 	void apply_equivalence_classes(std::map<transchar, transchar> &eq);
 
-	void compute_perms_table_ent(State *state, size_t pos,
-				     std::vector <aa_perms> &perms_table);
+	void compute_perms_table_ent(perms_t * const perms, size_t pos,
+				     std::vector <aa_perms> &perms_table,
+				     idxmap_t &idxmap);
 	void compute_perms_table(std::vector <aa_perms> &perms_table);
 
 	unsigned int diffcount;

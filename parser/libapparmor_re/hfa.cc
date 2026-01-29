@@ -1392,40 +1392,57 @@ void DFA::apply_equivalence_classes(map<transchar, transchar> &eq)
 	}
 }
 
-void DFA::compute_perms_table_ent(State *state, size_t pos,
-				  vector <aa_perms> &perms_table)
+void DFA::compute_perms_table_ent(perms_t * const perms, size_t pos,
+				  std::vector <aa_perms> &perms_table,
+				  idxmap_t &idxmap)
 {
 	uint32_t accept1, accept2, accept3;
 
 	// until front end doesn't map the way it does
-	state->map_perms_to_accept(accept1, accept2, accept3);
+	perms->map_perms_to_accept(accept1, accept2, accept3);
+	idxmap.insert(make_pair(perms, pos));
 	if (filedfa) {
-		state->idx = pos * 2;
-		perms_table[pos*2] = compute_fperms_user(accept1, accept2, accept3);
-		perms_table[pos*2 + 1] = compute_fperms_other(accept1, accept2, accept3);
+		perms_table[pos] = compute_fperms_user(accept1, accept2, accept3);
+		perms_table[pos + 1] = compute_fperms_other(accept1, accept2, accept3);
 	} else {
-		state->idx = pos;
 		perms_table[pos] = compute_perms_entry(accept1, accept2, accept3);
 	}
 }
 
 void DFA::compute_perms_table(vector <aa_perms> &perms_table)
 {
+	idxmap_t idxmap;
+
 	size_t mult = filedfa ? 2 : 1;
-	size_t pos = 2;
+	size_t pos = filedfa ? 2 : 1;
 
 	assert(states.size() >= 2);
-	perms_table.resize(states.size() * mult);
+
+	perms_table.resize(uniq_perms.size()*mult);
+	compute_perms_table_ent(nonmatching->perms, 0, perms_table, idxmap);
+	nonmatching->idx = 0;
+	start->idx = 0;
+
+	for (perms_t_Cache::const_iterator i = uniq_perms.cbegin(); i != uniq_perms.cend(); i++) {
+		if (*i == nonmatching->perms)
+			continue;
+		compute_perms_table_ent(*i, pos, perms_table, idxmap);
+		pos += mult;
+	}
 
 	// nonmatching and start need to be 0 and 1 so handle outside of loop
-	compute_perms_table_ent(nonmatching, 0, perms_table);
-	compute_perms_table_ent(start, 1, perms_table);
-
 	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
 		if (*i == nonmatching || *i == start)
 			continue;
-		compute_perms_table_ent(*i, pos, perms_table);
-		pos++;
+		idxmap_t::iterator j = idxmap.find((*i)->perms);
+		if (j == idxmap.end()) {
+			perms_t_Cache::iterator k = uniq_perms.find((*i)->perms);
+			if (k == uniq_perms.end())
+				throw std::runtime_error("permission not in permission table map");
+			else
+				throw std::runtime_error("permission not in idx table map");
+		}
+		(*i)->idx = j->second;
 	}
 }
 
