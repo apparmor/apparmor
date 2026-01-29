@@ -120,14 +120,14 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 		 */
 	} else {
 		uint32_t accept3;
-		dfa.nonmatching->map_perms_to_accept(accept[0],
-						     accept2[0],
-						     accept3,
-						     prompt);
-		dfa.start->map_perms_to_accept(accept[1],
-					       accept2[1],
-					       accept3,
-					       prompt);
+		dfa.nonmatching->perms->map_perms_to_accept(accept[0],
+							    accept2[0],
+							    accept3,
+							    prompt);
+		dfa.start->perms->map_perms_to_accept(accept[1],
+						      accept2[1],
+						      accept3,
+						      prompt);
 	}
 	next_check.resize(max(optimal, (size_t) dfa.max_range));
 	free_list.resize(next_check.size());
@@ -152,7 +152,7 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 					if (dfa.filedfa)
 						accept2[num.size()] = 1; // TODO: Define this flag
 				} else {
-					(*i)->map_perms_to_accept(accept[num.size()],
+					(*i)->perms->map_perms_to_accept(accept[num.size()],
 								  accept2[num.size()],
 								  accept3,
 								  prompt);
@@ -178,7 +178,7 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 					if (dfa.filedfa)
 						accept2[num.size()] = 1; // TODO: Define this flag.
 				} else {
-					i->second->map_perms_to_accept(accept[num.size()],
+					i->second->perms->map_perms_to_accept(accept[num.size()],
 								       accept2[num.size()],
 								       accept3,
 								       prompt);
