@@ -155,14 +155,16 @@ public:
 
 	bool operator<(perms_t const &rhs)const
 	{
-		if (allow < rhs.allow)
+		if (allow != rhs.allow)
 			return allow < rhs.allow;
-		if (deny < rhs.deny)
+		if (deny != rhs.deny)
 			return deny < rhs.deny;
-		if (prompt < rhs.prompt)
+		if (prompt != rhs.prompt)
 			return prompt < rhs.prompt;
-		if (audit < rhs.audit)
+		if (audit != rhs.audit)
 			return audit < rhs.audit;
+		if (audit != rhs.audit)
+			return audit > rhs.audit;
 		return quiet < rhs.quiet;
 	}
 
