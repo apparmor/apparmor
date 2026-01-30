@@ -664,7 +664,7 @@ void DFA::minimize(optflags const &opts)
 	int final_accept = 0;
 	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
 		size_t hash = 0;
-		uint64_t permtype = ((uint64_t) (PACK_AUDIT_CTL((*i)->perms.audit, (*i)->perms.quiet & (*i)->perms.deny)) << 32) | (uint64_t) (*i)->perms.allow;
+		uint64_t permtype = ((uint64_t) (PACK_AUDIT_CTL((*i)->perms.audit, (*i)->perms.quiet)) << 32) | (uint64_t) (*i)->perms.allow;
 		pair<uint64_t, size_t> group = make_pair(permtype, hash);
 		map<pair<uint64_t, size_t>, Partition *>::iterator p = perm_map.find(group);
 		if (p == perm_map.end()) {
