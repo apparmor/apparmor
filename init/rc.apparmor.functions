@@ -154,7 +154,7 @@ check_and_set_userns() {
 }
 
 parse_profiles() {
-	check_userns
+	check_and_set_userns
 
 	# get parser arg
 	case "$1" in
