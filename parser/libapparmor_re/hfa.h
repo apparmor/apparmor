@@ -50,7 +50,8 @@ ostream &operator<<(ostream &os, State &state);
 
 class perms_t {
 public:
-	perms_t(void): allow(0), deny(0), prompt(0), audit(0), quiet(0), exact(0) { };
+	perms_t(void): allow(0), deny(0), prompt(0), audit(0), quiet(0) { };
+	perms_t(optflags const &opts, NodeVec *match, bool filedfa);
 
 	bool is_accept(void) { return (allow | deny | prompt | audit | quiet); }
 
@@ -67,7 +68,7 @@ public:
 	}
 
 	void clear(void) {
-		allow = deny = prompt = audit = quiet = exact = 0;
+		allow = deny = prompt = audit = quiet = 0;
 	}
 
 	void clear_bits(perm32_t bits)
@@ -77,7 +78,6 @@ public:
 		prompt &= ~bits;
 		audit &= ~bits;
 		quiet &= ~bits;
-		exact &= ~bits;
 	}
 
 	void add(perms_t &rhs, bool filedfa)
@@ -85,58 +85,28 @@ public:
 		deny |= rhs.deny;
 
 		if (filedfa && !is_merged_x_consistent(allow & ALL_USER_EXEC,
-					    rhs.allow & ALL_USER_EXEC)) {
-			if ((exact & AA_USER_EXEC_TYPE) &&
-			    !(rhs.exact & AA_USER_EXEC_TYPE)) {
-				/* do nothing */
-			} else if ((rhs.exact & AA_USER_EXEC_TYPE) &&
-				   !(exact & AA_USER_EXEC_TYPE)) {
-				allow = (allow & ~AA_USER_EXEC_TYPE) |
-					(rhs.allow & AA_USER_EXEC_TYPE);
-			} else
-				throw 1;
-		} else if (filedfa)
-			allow |= rhs.allow & AA_USER_EXEC_TYPE;
+					    rhs.allow & ALL_USER_EXEC))
+			// different x modifier in same partition
+			throw 1;
 
 		if (filedfa && !is_merged_x_consistent(allow & ALL_OTHER_EXEC,
-					    rhs.allow & ALL_OTHER_EXEC)) {
-			if ((exact & AA_OTHER_EXEC_TYPE) &&
-			    !(rhs.exact & AA_OTHER_EXEC_TYPE)) {
-				/* do nothing */
-			} else if ((rhs.exact & AA_OTHER_EXEC_TYPE) &&
-				   !(exact & AA_OTHER_EXEC_TYPE)) {
-				allow = (allow & ~AA_OTHER_EXEC_TYPE) |
-					(rhs.allow & AA_OTHER_EXEC_TYPE);
-			} else
-				throw 1;
-		} else if (filedfa)
-			allow |= rhs.allow & AA_OTHER_EXEC_TYPE;
+					    rhs.allow & ALL_OTHER_EXEC))
+			// different x modifier in same partition
+			throw 1;
 
-		if (filedfa)
-			allow = (allow | (rhs.allow & ~ALL_AA_EXEC_TYPE));
-		else
-			allow |= rhs.allow;
+		allow |= rhs.allow;
 		prompt |= rhs.prompt;
 		audit |= rhs.audit;
-		quiet = (quiet | rhs.quiet);
+		quiet |= rhs.quiet;
 
-		/*
-		if (exec & AA_USER_EXEC_TYPE &&
-		    (exec & AA_USER_EXEC_TYPE) != (allow & AA_USER_EXEC_TYPE))
-			throw 1;
-		if (exec & AA_OTHER_EXEC_TYPE &&
-		    (exec & AA_OTHER_EXEC_TYPE) != (allow & AA_OTHER_EXEC_TYPE))
-			throw 1;
-		*/
 	}
 
 
 	/* returns true if perm is no longer accept */
-	int apply_and_clear_deny(void)
+	bool apply_and_clear_deny(void)
 	{
 		if (deny) {
 			allow &= ~deny;
-			exact &= ~deny;
 			prompt &= ~deny;
 			/* don't change audit or quiet based on clearing
 			 * deny at this stage. This was made unique in
@@ -150,27 +120,115 @@ public:
 			deny = 0;
 			return !is_accept();
 		}
-		return 0;
+		return false;
 	}
+
+	void map_perms_to_accept(perm32_t &accept1, perm32_t &accept2,
+				 perm32_t &accept3) const
+	{
+		accept1 = allow;
+		accept2 = PACK_AUDIT_CTL(audit, quiet);
+		accept3 = prompt;
+	}
+
 
 	bool operator<(perms_t const &rhs)const
 	{
-		if (allow < rhs.allow)
+		if (allow != rhs.allow)
 			return allow < rhs.allow;
-		if (deny < rhs.deny)
+		if (deny != rhs.deny)
 			return deny < rhs.deny;
-		if (prompt < rhs.prompt)
+		if (prompt != rhs.prompt)
 			return prompt < rhs.prompt;
-		if (audit < rhs.audit)
+		if (audit != rhs.audit)
 			return audit < rhs.audit;
+		if (audit != rhs.audit)
+			return audit > rhs.audit;
 		return quiet < rhs.quiet;
 	}
 
-	perm32_t allow, deny, prompt, audit, quiet, exact;
+	bool operator==(perms_t const &rhs)const
+	{
+		if (allow != rhs.allow)
+			return false;
+		if (deny != rhs.deny)
+			return false;
+		if (prompt != rhs.prompt)
+			return false;
+		if (audit != rhs.audit)
+			return false;
+		return quiet == rhs.quiet;
+	}
+	bool operator!=(perms_t const &rhs)const
+	{
+		return !(*this == rhs);
+	}
+	perm32_t allow, deny, prompt, audit, quiet;
 };
 
-int accept_perms(optflags const &opts, NodeVec *state, perms_t &perms,
-		 bool filedfa);
+struct deref_less_than_perms {
+	bool operator()(perms_t * const &lhs, perms_t * const &rhs)const
+		{
+			return *lhs < *rhs;
+		}
+};
+
+// a dedup cache for permissions
+class perms_t_Cache: public CacheStats {
+	std::set<perms_t *, deref_less_than_perms> cache;
+public:
+
+	typedef std::set<perms_t *>::iterator iterator;
+	iterator begin() { return cache.begin(); }
+	iterator end() { return cache.end(); }
+
+	typedef std::set<perms_t *>::const_iterator const_iterator;
+	iterator cbegin() { return cache.cbegin(); }
+	iterator cend() { return cache.cend(); }
+
+	iterator find(perms_t * const &val) { return cache.find(val); }
+
+	perms_t_Cache(void): cache() { };
+	~perms_t_Cache() { clear(); };
+
+	virtual unsigned long size(void) const { return cache.size(); }
+
+	void clear()
+	{
+		for (iterator i = cache.begin();
+		     i != cache.end(); i++) {
+			delete *i;
+		}
+		cache.clear();
+		CacheStats::clear();
+	}
+
+	// will delete perms if not inserted into cache
+	perms_t *insert(perms_t *perms)
+	{
+		if (!perms)
+			return NULL;
+		std::pair<iterator,bool> uniq;
+		uniq = cache.insert(perms);
+		if (uniq.second == false) {
+			delete perms;
+			dup++;
+		}
+		return (*uniq.first);
+	}
+
+	perms_t *insert(const perms_t &perms)
+	{
+		perms_t *tmp = new perms_t(perms);
+		return insert(tmp);
+	}
+
+	perms_t *insert(optflags const &opts, NodeVec *match, bool filedfa)
+	{
+		perms_t *tmp = new perms_t(opts, match, filedfa);
+		return insert(tmp);
+	}
+};
 
 /*
  * ProtoState - NodeSet and ancillery information used to create a state
@@ -234,11 +292,11 @@ struct DiffDag {
  */
 class State {
 public:
-	State(optflags const &opts, int l, ProtoState &n, State *other,
-	      bool filedfa):
-		label(l), flags(0), idx(0), perms(), trans()
+	State(perms_t_Cache &cache, optflags const &opts, int l, ProtoState &n,
+	      State *other, bool filedfa):
+		label(l), flags(0), idx(0), trans()
 	{
-		int error;
+		perms = cache.insert(opts, n.anodes, filedfa);
 
 		if (other)
 			otherwise = other;
@@ -246,13 +304,6 @@ public:
 			otherwise = this;
 
 		proto = n;
-
-		/* Compute permissions associated with the State. */
-		error = accept_perms(opts, n.anodes, perms, filedfa);
-		if (error) {
-			//cerr << "Failing on accept perms " << error << "\n";
-			throw error;
-		}
 	};
 
 	State *next(transchar c) {
@@ -285,19 +336,19 @@ public:
 	int make_relative(State *rel, int upper_bound);
 	void flatten_relative(State *, int upper_bound);
 
-	int apply_and_clear_deny(void) { return perms.apply_and_clear_deny(); }
-	void map_perms_to_accept(perm32_t &accept1, perm32_t &accept2,
-				 perm32_t &accept3)
+	bool apply_and_clear_deny(perms_t_Cache &cache)
 	{
-		accept1 = perms.allow;
-		accept2 = PACK_AUDIT_CTL(perms.audit, perms.quiet);
-		accept3 = perms.prompt;
+		perms_t *tmp = new perms_t(*perms);
+
+		bool res = tmp->apply_and_clear_deny();
+		perms = cache.insert(tmp);
+		return res;
 	}
 
 	int label;
 	int flags;
 	int idx;
-	perms_t perms;
+	perms_t *perms;
 	StateTrans trans;
 	State *otherwise;
 
@@ -345,6 +396,7 @@ public:
 };
 
 typedef std::map<const State *, size_t> Renumber_Map;
+typedef std::map<perms_t * const, size_t, deref_less_than_perms> idxmap_t;
 
 /* Transitions in the DFA. */
 class DFA {
@@ -402,8 +454,9 @@ public:
 	std::map<transchar, transchar> equivalence_classes(optflags const &flags);
 	void apply_equivalence_classes(std::map<transchar, transchar> &eq);
 
-	void compute_perms_table_ent(State *state, size_t pos,
-				     std::vector <aa_perms> &perms_table);
+	void compute_perms_table_ent(perms_t * const perms, size_t pos,
+				     std::vector <aa_perms> &perms_table,
+				     idxmap_t &idxmap);
 	void compute_perms_table(std::vector <aa_perms> &perms_table);
 
 	unsigned int diffcount;
@@ -412,6 +465,7 @@ public:
 	int ord_range;
 	int upper_bound;
 	Node *root;
+	perms_t_Cache uniq_perms;
 	State *nonmatching, *start;
 	Partition states;
 	bool filedfa;
