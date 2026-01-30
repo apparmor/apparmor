@@ -134,6 +134,8 @@ public:
 
 	bool operator<(perms_t const &rhs)const
 	{
+		if (this == &rhs)
+			return false;
 		if (allow != rhs.allow)
 			return allow < rhs.allow;
 		if (deny != rhs.deny)
@@ -149,6 +151,8 @@ public:
 
 	bool operator==(perms_t const &rhs)const
 	{
+		if (this == &rhs)
+			return true;
 		if (allow != rhs.allow)
 			return false;
 		if (deny != rhs.deny)
