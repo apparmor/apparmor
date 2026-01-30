@@ -703,11 +703,10 @@ static int detailed_processes(FILE *outf, filters_t *filters, bool json,
 				} else {
 					fprintf(outf, "%s\"%s\": [{\"profile\": \"%s\", \"pid\": \"%s\", \"status\": \"%s\"}",
 					       // first element will be a unique executable
-					       j == 0 && !need_finish ? "" : "], ",
+					       !need_finish ? "" : "], ",
 					       filtered[j].exe, filtered[j].profile, filtered[j].pid, filtered[j].mode);
+					need_finish = 1;
 				}
-
-				need_finish = 1;
 			}
 
 		}
