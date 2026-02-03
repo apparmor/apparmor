@@ -252,6 +252,7 @@ COLON		:
 AMPERSAND	&
 END_OF_RULE	[,]
 RANGE		-
+PLUS		\+
 MODE_CHARS 	([RrWwaLlMmkXx])|(([Pp]|[Cc])[Xx])|(([Pp]|[Cc])?([IiUu])[Xx])
 MODES		{MODE_CHARS}+
 WS		[[:blank:]]
@@ -260,6 +261,7 @@ NUMBER		[[:digit:]]+
 ID_FIRST_CHARS	[^ \t\r\n"!,#]
 ID_FIRST	{ID_CHARS}|(,{ID_CHARS}|\\[ ]|\\\t|\\\"|\\!|\\,|\\#)
 ID_CHARS	[^ \t\r\n"!,]
+IDENTITY_CHAR	[^ \t\r\n"!,{}\\=]
 ID 		{ID_CHARS}|(,{ID_CHARS}|\\[ ]|\\\t|\\\"|\\!|\\,)
 IDS		{ID_FIRST}{ID}*
 INC_ID 		[^ \t\r\n"!,<>]|(,[^ \t\r\n"!,<>]|\\[ ]|\\\t|\\\"|\\!|\\,)
@@ -321,6 +323,7 @@ IN_OP		in
 %x SUB_ID
 %x SUB_ID_WS
 %x SUB_VALUE
+%x IDENTITY_VALUE
 %x EXTCOND_MODE
 %x EXTCONDLIST_MODE
 %x NETWORK_MODE
@@ -358,7 +361,7 @@ IN_OP		in
 	}
 %}
 
-<INITIAL,SUB_ID_WS,INCLUDE,INCLUDE_EXISTS,LIST_VAL_MODE,EXTCOND_MODE,LIST_COND_VAL,LIST_COND_PAREN_VAL,LIST_COND_MODE,EXTCONDLIST_MODE,ASSIGN_MODE,NETWORK_MODE,CHANGE_PROFILE_MODE,RLIMIT_MODE,MOUNT_MODE,DBUS_MODE,SIGNAL_MODE,PTRACE_MODE,UNIX_MODE,ABI_MODE,USERNS_MODE,MQUEUE_MODE,IOURING_MODE,INTEGER_MODE,EXPR_MODE,ASSIGN_EXPR_MODE,ASSIGN_EXPR_START>{
+<INITIAL,SUB_ID_WS,IDENTITY_VALUE,INCLUDE,INCLUDE_EXISTS,LIST_VAL_MODE,EXTCOND_MODE,LIST_COND_VAL,LIST_COND_PAREN_VAL,LIST_COND_MODE,EXTCONDLIST_MODE,ASSIGN_MODE,NETWORK_MODE,CHANGE_PROFILE_MODE,RLIMIT_MODE,MOUNT_MODE,DBUS_MODE,SIGNAL_MODE,PTRACE_MODE,UNIX_MODE,ABI_MODE,USERNS_MODE,MQUEUE_MODE,IOURING_MODE,INTEGER_MODE,EXPR_MODE,ASSIGN_EXPR_MODE,ASSIGN_EXPR_START>{
 	{WS}+	{  DUMP_PREPROCESS; /* Ignoring whitespace */ }
 }
 
@@ -394,6 +397,17 @@ IN_OP		in
 		yyterminate();
 }
 
+<INITIAL,MOUNT_MODE,DBUS_MODE,SIGNAL_MODE,PTRACE_MODE,UNIX_MODE,MQUEUE_MODE,NETWORK_MODE,IDENTITY_VALUE>{
+	identities/{WS}*= {
+		yylval.id = processid(yytext, yyleng);
+		if (YY_START == IDENTITY_VALUE) {
+			BEGIN_AND_RETURN(EXTCOND_MODE, TOK_IDENTITIES);
+		} else {
+			PUSH_AND_RETURN(EXTCOND_MODE, TOK_IDENTITIES);
+		}
+	}
+}
+
 <INITIAL,MOUNT_MODE,DBUS_MODE,SIGNAL_MODE,PTRACE_MODE,UNIX_MODE,MQUEUE_MODE,NETWORK_MODE>{
 	(peer|xattrs)/{WS}*={WS}*\(	{
 		/* we match to the = in the lexer so that we can switch scanner
@@ -407,6 +421,10 @@ IN_OP		in
 		/* has to be before {VARIABLE_NAME} matches below */
 		PUSH_AND_RETURN(INTEGER_MODE, TOK_PRIORITY);
 
+	}
+	flags/{WS}*= {
+		/* flags is a keyword so we don't process it as an id */
+		PUSH_AND_RETURN(EXTCOND_MODE, TOK_FLAGS);
 	}
 	{VARIABLE_NAME}/{WS}*=	{
 		/* we match to the = in the lexer so that we can switch scanner
@@ -439,6 +457,13 @@ IN_OP		in
 	({IDS}|{QUOTED_ID}) {
 		/* Go into separate state to match generic VALUE strings */
 		yylval.id =  processid(yytext, yyleng);
+		POP_AND_RETURN(TOK_VALUE);
+	}
+}
+
+<IDENTITY_VALUE>{
+	({IDENTITY_CHAR}+|{QUOTED_ID}) {
+		yylval.id = processid(yytext, yyleng);
 		POP_AND_RETURN(TOK_VALUE);
 	}
 }
@@ -777,6 +802,8 @@ all/({WS}|[^[:alnum:]_]) {
 {ARROW}		{ PUSH_AND_RETURN(SUB_ID_WS, TOK_ARROW); }
 
 {EQUALS}	{ PUSH_AND_RETURN(ASSIGN_MODE, TOK_EQUALS); }
+
+{PLUS}		{ PUSH_AND_RETURN(IDENTITY_VALUE, TOK_PLUS); }
 
 {ADD_ASSIGN}	{ PUSH_AND_RETURN(ASSIGN_MODE, TOK_ADD_ASSIGN); }
 

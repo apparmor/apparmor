@@ -189,6 +189,9 @@ static void abi_features(char *filename, bool search);
 /* debug flag values */
 %token TOK_FLAGS
 
+%token TOK_IDENTITIES
+%token TOK_PLUS
+
 %code requires {
 	#include "parser.h"
 	#include "profile.h"
@@ -227,6 +230,7 @@ static void abi_features(char *filename, bool search);
 	prefix_rule_t *prefix_entry;
 
 	flagvals flags;
+	struct value_list *identities;
 	perm32_t fperms;
 	uint64_t cap;
 	unsigned int allowed_protocol;
@@ -272,6 +276,10 @@ static void abi_features(char *filename, bool search);
 %type <flags>	flags
 %type <flags>	flagvals
 %type <flags>	flagval
+%type <identities>	identities
+%type <identities>	identitiesvals
+%type <identities>	identitiesval
+%type <identities>	identity_item
 %type <cap>	caps
 %type <cap>	capability
 %type <user_entry> change_profile
@@ -290,7 +298,6 @@ static void abi_features(char *filename, bool search);
 %type <audit>	opt_audit_flag
 %type <owner> opt_owner_flag
 %type <integer> opt_profile_flag
-%type <boolean> opt_flags
 %type <rule_mode> opt_rule_mode
 %type <id>	opt_id
 %type <prefix>  opt_prefix
@@ -378,7 +385,7 @@ opt_id: { /* nothing */ $$ = NULL; }
 opt_id_or_var: { /* nothing */ $$ = NULL; }
 	| id_or_var { $$ = $1; }
 
-profile_base: TOK_ID opt_id_or_var opt_cond_list flags TOK_OPEN
+profile_base: TOK_ID opt_id_or_var opt_cond_list identities flags TOK_OPEN
 	{
 		/* mid rule action
 		 * save current cache, restore at end of block
@@ -388,7 +395,7 @@ profile_base: TOK_ID opt_id_or_var opt_cond_list flags TOK_OPEN
 	}
     rules TOK_CLOSE
 	{
-		Profile *prof = $7;
+		Profile *prof = $8;
 		bool self_stack = false;
 
 		if (!prof) {
@@ -429,7 +436,8 @@ profile_base: TOK_ID opt_id_or_var opt_cond_list flags TOK_OPEN
 			$3.name = NULL;
 			prof->xattrs = $3;
 		}
-		prof->flags = $4;
+		prof->identities = $4;
+		prof->flags = $5;
 		if (force_complain && kernel_abi_version == 5)
 			/* newer abis encode force complain as part of the
 			 * header
@@ -441,7 +449,7 @@ profile_base: TOK_ID opt_id_or_var opt_cond_list flags TOK_OPEN
 
 		/* restore previous blocks include cache */
 		delete g_includecache;
-		g_includecache = $<includecache>6;
+		g_includecache = $<includecache>7;
 		$$ = prof;
 
 	};
@@ -586,18 +594,14 @@ flags:	{ /* nothing */
 		$$ = fv;
 	};
 
-opt_flags: { /* nothing */ $$ = false; }
-	| TOK_CONDID TOK_EQUALS
+flags:	TOK_FLAGS TOK_EQUALS TOK_OPENPAREN flagvals TOK_CLOSEPAREN
 	{
-		if (strcmp($1, "flags") != 0)
-			yyerror("expected flags= got %s=", $1);
-		free($1);
-		$$ = true;
-	}
+		$$ = $4;
+	};
 
-flags:	opt_flags TOK_OPENPAREN flagvals TOK_CLOSEPAREN
+flags:	TOK_OPENPAREN flagvals TOK_CLOSEPAREN
 	{
-		$$ = $3;
+		$$ = $2;
 	};
 
 flagvals:	flagvals flagval
@@ -619,6 +623,47 @@ flagval:	TOK_VALUE
 		fv.init($1);
 		free($1);
 		$$ = fv;
+	};
+
+identities:	{ /* nothing */
+		$$ = NULL;
+	};
+
+identities:	identities TOK_PLUS identity_item
+	{
+		$$ = $1;
+		if (!$$) {
+			$$ = $3;
+		} else {
+			list_append($$, $3);
+		}
+	};
+
+identity_item:	TOK_IDENTITIES TOK_EQUALS TOK_OPENPAREN identitiesvals TOK_CLOSEPAREN
+	{
+		$$ = $4;
+	};
+
+identitiesvals:	identitiesvals identitiesval
+	{
+		list_append($1, $2);
+		$$ = $1;
+	};
+
+identitiesvals:	identitiesval
+	{
+		$$ = $1;
+	};
+
+identitiesval:	TOK_VALUE
+	{
+		if ( $1[0] != '/' && strchr($1, ' ')) {
+			yyerror(_("Space character not allowed in identities: '%s'"), $1);
+			free($1);
+			$$ = NULL;
+		} else {
+			$$ = new_value_list($1);
+		}
 	};
 
 opt_subset_flag: { /* nothing */ $$ = false; }

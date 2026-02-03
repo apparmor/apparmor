@@ -98,6 +98,8 @@ Profile::~Profile()
 		free(name);
 	if (attachment)
 		free(attachment);
+	if (identities)
+		free_value_list(identities);
 	if (ns)
 		free(ns);
 	for (int i = (AA_EXEC_LOCAL >> 10) + 1; i < AA_EXEC_COUNT; i++)
