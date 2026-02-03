@@ -588,11 +588,11 @@ ostream &mnt_rule::dump(ostream &os)
 
 	if (dev_type) {
 		os << " type=";
-		print_value_list(dev_type);
+		print_value_list(dev_type, os);
 	}
 	if (opts) {
 		os << " options=";
-		print_value_list(opts);
+		print_value_list(opts, os);
 	}
 	if (device)
 		os << " " << device;
