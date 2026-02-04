@@ -1,5 +1,4 @@
 from setuptools import setup, Extension
-import string
 
 setup(name          = 'LibAppArmor',
       version       = '@VERSION@'.replace('~', '-'),
