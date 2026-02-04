@@ -44,6 +44,12 @@ endif
 .PHONY: __libapparmor __parser
 __libapparmor:
 ifndef USE_SYSTEM
+	@if [ ! -d $(PYTHON_DIST_BUILD_PATH) ]; then \
+		echo "error: $(PYTHON_DIST_BUILD_PATH) does not exist. Pick one of these possible solutions:" 1>&2; \
+		echo "  1) Build against the in-tree libapparmor by building it first and then trying again. See the top-level README for help." 1>&2; \
+		echo "  2) Build against the system libapparmor by adding USE_SYSTEM=1 to your make command." 1>&2; \
+		exit 1; \
+	fi
 	@if [ ! -f $(LIBAPPARMOR_PATH)libapparmor.so ]; then \
 		echo "error: $(LIBAPPARMOR_PATH)libapparmor.so is missing. Pick one of these possible solutions:" 1>&2; \
 		echo "  1) Build against the in-tree libapparmor by building it first and then trying again. See the top-level README for help." 1>&2; \
