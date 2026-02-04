@@ -73,7 +73,7 @@ Filtering options:
             for patch in patches:
                 expected_output_2 = expected_output_2.replace(patch[0], patch[1])
 
-        return_code, output = cmd([aashowusage_bin, '--help'])
+        return_code, output = cmd(aashowusage_bin + ['--help'])
         result = 'Got return code {}, expected {}\n'.format(return_code, expected_return_code)
         self.assertEqual(expected_return_code, return_code, result + output)
 
@@ -82,7 +82,7 @@ Filtering options:
 
     def test_show_unconfined_profiles(self):
         expected_return_code = 0
-        return_code, output = cmd([aashowusage_bin, '--filter.flags=unconfined', '-d', aa.profile_dir])
+        return_code, output = cmd(aashowusage_bin + ['--filter.flags=unconfined', '-d', aa.profile_dir])
         result = 'Got return code {}, expected {}\n'.format(return_code, expected_return_code)
         self.assertEqual(expected_return_code, return_code, result + output)
 
@@ -116,12 +116,14 @@ setup_all_loops(__name__)
 # The location of the aa-show-usage utility can be overridden by setting
 # the APPARMOR_SHOW_USAGE or USE_SYSTEM environment variable;
 # this is useful for running these tests in an installed environment
-aashowusage_bin = "../aa-show-usage"
+aashowusage_bin = ["../aa-show-usage"]
 
 if __name__ == '__main__':
     if 'APPARMOR_SHOW_USAGE' in os.environ:
-        aashowusage_bin = os.environ['APPARMOR_SHOW_USAGE']
+        aashowusage_bin = [os.environ['APPARMOR_SHOW_USAGE']]
     elif 'USE_SYSTEM' in os.environ:
-        aashowusage_bin = 'aa-show-usage'
+        aashowusage_bin = ['aa-show-usage']
+    else:
+        aashowusage_bin = [sys.executable] + aashowusage_bin
 
     unittest.main(verbosity=1)
