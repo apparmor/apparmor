@@ -21,7 +21,7 @@ COMMONDIR=../../common/
 include $(COMMONDIR)/Make.rules
 
 # files that don't have 100% test coverage
-INCOMPLETE_COVERAGE=libraries/libapparmor/swig/python/.*/LibAppArmor/LibAppArmor.py|utils/aa-logprof|utils/apparmor/aa.py|utils/apparmor/common.py|utils/apparmor/config.py|utils/apparmor/easyprof.py|utils/apparmor/fail.py|utils/apparmor/logparser.py|utils/apparmor/ui.py|minitools_test.py
+INCOMPLETE_COVERAGE=libraries/libapparmor/swig/python/.*/LibAppArmor.py|utils/aa-logprof|utils/apparmor/aa.py|utils/apparmor/common.py|utils/apparmor/config.py|utils/apparmor/easyprof.py|utils/apparmor/fail.py|utils/apparmor/logparser.py|utils/apparmor/ui.py|minitools_test.py
 
 
 ifdef USE_SYSTEM
@@ -44,6 +44,12 @@ endif
 .PHONY: __libapparmor __parser
 __libapparmor:
 ifndef USE_SYSTEM
+	@if [ ! -d $(PYTHON_DIST_BUILD_PATH) ]; then \
+		echo "error: $(PYTHON_DIST_BUILD_PATH) does not exist. Pick one of these possible solutions:" 1>&2; \
+		echo "  1) Build against the in-tree libapparmor by building it first and then trying again. See the top-level README for help." 1>&2; \
+		echo "  2) Build against the system libapparmor by adding USE_SYSTEM=1 to your make command." 1>&2; \
+		exit 1; \
+	fi
 	@if [ ! -f $(LIBAPPARMOR_PATH)libapparmor.so ]; then \
 		echo "error: $(LIBAPPARMOR_PATH)libapparmor.so is missing. Pick one of these possible solutions:" 1>&2; \
 		echo "  1) Build against the in-tree libapparmor by building it first and then trying again. See the top-level README for help." 1>&2; \
