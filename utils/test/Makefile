@@ -21,7 +21,7 @@ COMMONDIR=../../common/
 include $(COMMONDIR)/Make.rules
 
 # files that don't have 100% test coverage
-INCOMPLETE_COVERAGE=libraries/libapparmor/swig/python/.*/LibAppArmor/LibAppArmor.py|utils/aa-logprof|utils/apparmor/aa.py|utils/apparmor/common.py|utils/apparmor/config.py|utils/apparmor/easyprof.py|utils/apparmor/fail.py|utils/apparmor/logparser.py|utils/apparmor/ui.py|minitools_test.py
+INCOMPLETE_COVERAGE=libraries/libapparmor/swig/python/.*/LibAppArmor.py|utils/aa-logprof|utils/apparmor/aa.py|utils/apparmor/common.py|utils/apparmor/config.py|utils/apparmor/easyprof.py|utils/apparmor/fail.py|utils/apparmor/logparser.py|utils/apparmor/ui.py|minitools_test.py
 
 
 ifdef USE_SYSTEM
