@@ -579,6 +579,7 @@ static int detailed_profiles(FILE *outf, filters_t *filters, bool json,
 			     struct profile *profiles, size_t nprofiles) {
 	int ret;
 	size_t i;
+	int is_first = 1;
 
 	if (json) {
 		fprintf(outf, "\"profiles\": {");
@@ -616,7 +617,8 @@ static int detailed_profiles(FILE *outf, filters_t *filters, bool json,
 		for (j = 0; j < nfiltered; j++) {
 			if (json) {
 				fprintf(outf, "%s\"%s\": \"%s\"",
-				       i == 0 && j == 0 ? "" : ", ", filtered[j].name, profile_statuses[i]);
+				       is_first ? "" : ", ", filtered[j].name, profile_statuses[i]);
+				is_first = 0;
 			} else {
 				dfprintf(outf, "   %s\n", filtered[j].name);
 			}
