@@ -183,8 +183,8 @@ bool aare_rules::append_rule(const char *rule, bool oob, bool with_perm,
 		delete tree;
 		return true;
 	}
-	PermExprMap::iterator it;
-	for (it = expr_map.begin(); it != expr_map.end(); it++) {
+	PermExprMap::const_iterator it;
+	for (it = expr_map.cbegin(); it != expr_map.cend(); it++) {
 		if (with_perm)
 			expr_map[it->first] = new CatNode(it->second, new AltNode(it->first, tree));
 		else
@@ -205,8 +205,8 @@ CHFA *aare_rules::create_chfa(int *min_match_len,
 {
 	/* finish constructing the expr tree from the different permission
 	 * set nodes */
-	PermExprMap::iterator i = expr_map.begin();
-	if (i != expr_map.end()) {
+	PermExprMap::const_iterator i = expr_map.cbegin();
+	if (i != expr_map.cend()) {
 		if (opts.control & CONTROL_DFA_TREE_SIMPLE) {
 			Node *tmp = simplify_tree(i->second, opts);
 			root = new CatNode(tmp, i->first);

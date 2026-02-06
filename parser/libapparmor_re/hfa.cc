@@ -168,7 +168,7 @@ int State::diff_weight(State *rel, int max_range, int upper_bound)
 	}
 
 	unsigned int count = 0;
-	for (StateTrans::iterator i = rel->trans.begin(); i != rel->trans.end();
+	for (StateTrans::const_iterator i = rel->trans.cbegin(); i != rel->trans.cend();
  i++) {
 		StateTrans::iterator j = trans.find(i->first);
 		if (j != trans.end()) {
@@ -194,7 +194,7 @@ int State::diff_weight(State *rel, int max_range, int upper_bound)
 	/* cover transitions in @this but not in @rel */
 	unsigned int this_count = 0;
 	if (count < trans.size()) {
-		for (StateTrans::iterator i = trans.begin(); i != trans.end(); i++) {
+		for (StateTrans::const_iterator i = trans.cbegin(); i != trans.cend(); i++) {
 			StateTrans::iterator j = rel->trans.find(i->first);
 			if (j == rel->trans.end()) {
 				this_count++;
@@ -646,10 +646,10 @@ bool DFA::same_mappings(State *s1, State *s2)
 	if (s1->otherwise->partition != s2->otherwise->partition)
 		return false;
 
-	StateTrans::iterator j1;
-	StateTrans::iterator j2;
-	for (j1 = s1->trans.begin(), j2 = s2->trans.begin();
-	     j1 != s1->trans.end() && j2 != s2->trans.end();
+	StateTrans::const_iterator j1;
+	StateTrans::const_iterator j2;
+	for (j1 = s1->trans.cbegin(), j2 = s2->trans.cbegin();
+	     j1 != s1->trans.cend() && j2 != s2->trans.cend();
 	     /*inc inline*/) {
 		if (j1->first < j2->first) {
 			if (j1->second->partition != s2->otherwise->partition)
@@ -691,7 +691,7 @@ int DFA::apply_and_clear_deny(void)
 ostream &DFA::dump_partition(ostream &os, Partition &p)
 {
 	/* first entry is the representative state */
-	for (Partition::iterator i = p.begin(); i != p.end(); i++) {
+	for (Partition::const_iterator i = p.cbegin(); i != p.cend(); i++) {
 		os << **i;
 		if (i == p.begin())
 			os << " : ";
@@ -710,8 +710,8 @@ ostream &DFA::dump_partitions(ostream &os, const char *description,
 	size_t j = 0;
 
 	os << "Dumping Minimization partition mapping: " << description << "\n";
-	for (list<Partition *>::iterator p = partitions.begin();
-	     p != partitions.end(); p++) {
+	for (list<Partition *>::const_iterator p = partitions.cbegin();
+	     p != partitions.cend(); p++) {
 		os << "  [" << j++ << "] ";
 		os << (*(*p)->begin())->perms << ": ";
 		(void) dump_partition(os, **p);
@@ -950,7 +950,7 @@ static int diff_partition(State *state, Partition &part, int max_range, int uppe
 	int weight = 0;
 	*candidate = NULL;
 
-	for (Partition::iterator i = part.begin(); i != part.end(); i++) {
+	for (Partition::const_iterator i = part.cbegin(); i != part.cend(); i++) {
 		if (*i == state)
 			continue;
 
@@ -1140,7 +1140,7 @@ void DFA::dump_diff_encode(ostream &os)
 	map<State *, Partition> rel;
 	Partition base, chain;
 
-	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
+	for (Partition::const_iterator i = states.cbegin(); i != states.cend(); i++) {
 		if ((*i)->flags & DiffEncodeFlag)
 			rel[(*i)->otherwise].push_back(*i);
 		else
@@ -1148,7 +1148,7 @@ void DFA::dump_diff_encode(ostream &os)
 	}
 
 	unsigned int count = 0, total = 0, max = 0;
-	for (Partition::iterator i = base.begin(); i != base.end(); i++)
+	for (Partition::const_iterator i = base.cbegin(); i != base.cend(); i++)
 		dump_diff_chain(os, rel, chain, *i, count, total, max);
 
 	os << base.size() << " non-differentially encoded states\n";
@@ -1162,7 +1162,7 @@ void DFA::dump_diff_encode(ostream &os)
  */
 void DFA::dump(ostream &os, Renumber_Map *renum)
 {
-	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
+	for (Partition::const_iterator i = states.cbegin(); i != states.cend(); i++) {
 		if (*i == start || (*i)->perms->is_accept()) {
 			os << make_pair(*i, renum);
 			if (*i == start) {
@@ -1176,12 +1176,12 @@ void DFA::dump(ostream &os, Renumber_Map *renum)
 	}
 	os << "\n";
 
-	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
+	for (Partition::const_iterator i = states.cbegin(); i != states.cend(); i++) {
 		Chars excluded;
 		bool first = true;
 
-		for (StateTrans::iterator j = (*i)->trans.begin();
-		     j != (*i)->trans.end(); j++) {
+		for (StateTrans::const_iterator j = (*i)->trans.cbegin();
+		     j != (*i)->trans.cend(); j++) {
 			if (j->second == nonmatching) {
 				excluded.insert(j->first);
 			} else {
@@ -1236,7 +1236,7 @@ void DFA::dump_dot_graph(ostream & os)
 {
 	os << "digraph \"dfa\" {" << "\n";
 
-	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
+	for (Partition::const_iterator i = states.cbegin(); i != states.cend(); i++) {
 		if (*i == nonmatching)
 			continue;
 
@@ -1251,10 +1251,10 @@ void DFA::dump_dot_graph(ostream & os)
 		}
 		os << "\t]" << "\n";
 	}
-	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
+	for (Partition::const_iterator i = states.cbegin(); i != states.cend(); i++) {
 		Chars excluded;
 
-		for (StateTrans::iterator j = (*i)->trans.begin(); j != (*i)->trans.end(); j++) {
+		for (StateTrans::const_iterator j = (*i)->trans.cbegin(); j != (*i)->trans.cend(); j++) {
 			if (j->second == nonmatching)
 				excluded.insert(j->first);
 			else {
@@ -1356,7 +1356,7 @@ void dump_equivalence_classes(ostream &os, map<transchar, transchar> &eq)
 {
 	map<transchar, Chars> rev;
 
-	for (map<transchar, transchar>::iterator i = eq.begin(); i != eq.end(); i++) {
+	for (map<transchar, transchar>::const_iterator i = eq.cbegin(); i != eq.cend(); i++) {
 		Chars &chars = rev.insert(make_pair(i->second, Chars())).first->second;
 		chars.insert(i->first);
 	}

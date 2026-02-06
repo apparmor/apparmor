@@ -69,7 +69,7 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 		max_eq = 255;
 	else {
 		max_eq = 0;
-		for (map<transchar, transchar>::iterator i = eq.begin();
+		for (map<transchar, transchar>::const_iterator i = eq.cbegin();
 		     i != eq.end(); i++) {
 			if (i->second > max_eq)
 				max_eq = i->second;
@@ -83,7 +83,7 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 	multimap<size_t, State *> order;
 	vector<pair<size_t, size_t> > free_list;
 
-	for (Partition::iterator i = dfa.states.begin(); i != dfa.states.end(); i++) {
+	for (Partition::const_iterator i = dfa.states.cbegin(); i != dfa.states.cend(); i++) {
 		if (*i == dfa.start || *i == dfa.nonmatching)
 			continue;
 		optimal += (*i)->trans.size();
@@ -91,8 +91,8 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 			size_t range = 0;
 			if ((*i)->trans.size())
 				range =
-				    (*i)->trans.rbegin()->first.c -
-				    (*i)->trans.begin()->first.c;
+				    (*i)->trans.crbegin()->first.c -
+				    (*i)->trans.cbegin()->first.c;
 			size_t ord = ((dfa.max_range - (*i)->trans.size()) << dfa.ord_range) | (dfa.max_range - range);
 			/* reverse sort by entry count, most entries first */
 			order.insert(make_pair(ord, *i));
@@ -139,7 +139,7 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 	int count = 2;
 
 	if (!(opts.control & CONTROL_DFA_TRANS_HIGH)) {
-		for (Partition::iterator i = dfa.states.begin(); i != dfa.states.end(); i++) {
+		for (Partition::const_iterator i = dfa.states.cbegin(); i != dfa.states.cend(); i++) {
 			if (*i != dfa.nonmatching && *i != dfa.start) {
 				uint32_t accept3;
 				insert_state(free_list, *i, dfa);
@@ -163,7 +163,7 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 			}
 		}
 	} else {
-		for (multimap<size_t, State *>::iterator i = order.begin();
+		for (multimap<size_t, State *>::const_iterator i = order.cbegin();
 		     i != order.end(); i++) {
 			if (i->second != dfa.nonmatching &&
 			    i->second != dfa.start) {
@@ -206,11 +206,11 @@ bool CHFA::fits_in(vector<pair<size_t, size_t> > &free_list
 			      __attribute__ ((unused)), size_t pos,
 			      StateTrans &trans)
 {
-	ssize_t c, base = pos - trans.begin()->first.c;
+	ssize_t c, base = pos - trans.cbegin()->first.c;
 
 	if (base < 0)
 		return false;
-	for (StateTrans::iterator i = trans.begin(); i != trans.end(); i++) {
+	for (StateTrans::const_iterator i = trans.cbegin(); i != trans.cend(); i++) {
 		c = base + i->first.c;
 		/* if it overflows the next_check array it fits in as we will
 		 * resize */
@@ -242,7 +242,7 @@ void CHFA::insert_state(vector<pair<size_t, size_t> > &free_list,
 	if (trans.empty())
 		goto do_insert;
 
-	c = trans.begin()->first.c;
+	c = trans.cbegin()->first.c;
 repeat:
 	resize = 0;
 	/* get the first free entry that won't underflow */
@@ -278,7 +278,7 @@ repeat:
 	}
 
 	base = x - c;
-	for (StateTrans::iterator j = trans.begin(); j != trans.end(); j++) {
+	for (StateTrans::const_iterator j = trans.cbegin(); j != trans.cend(); j++) {
 		next_check[base + j->first.c] = make_pair(j->second, from);
 		size_t prev = free_list[base + j->first.c].first;
 		size_t next = free_list[base + j->first.c].second;
@@ -313,7 +313,7 @@ do_insert:
 void CHFA::dump(ostream &os)
 {
 	map<size_t, const State *> st;
-	for (map<const State *, size_t>::iterator i = num.begin(); i != num.end(); i++) {
+	for (map<const State *, size_t>::const_iterator i = num.cbegin(); i != num.cend(); i++) {
 		st.insert(make_pair(i->second, i->first));
 	}
 
@@ -441,21 +441,21 @@ void flex_table_serialize(CHFA &chfa, ostream &os,
 	vector<uint8_t> equiv_vec;
 	if (chfa.eq.size()) {
 		equiv_vec.resize(256);
-		for (map<transchar, transchar>::iterator i = chfa.eq.begin(); i != chfa.eq.end(); i++) {
+		for (map<transchar, transchar>::const_iterator i = chfa.eq.cbegin(); i != chfa.eq.cend(); i++) {
 			equiv_vec[i->first.c] = i->second.c;
 		}
 	}
 
 	vector<STATE_TYPE> default_vec;
 	vector<trans_t> base_vec;
-	for (DefaultBase::iterator i = chfa.default_base.begin(); i != chfa.default_base.end(); i++) {
+	for (DefaultBase::const_iterator i = chfa.default_base.cbegin(); i != chfa.default_base.cend(); i++) {
 		default_vec.push_back(chfa.num[i->first]);
 		base_vec.push_back(i->second);
 	}
 
 	vector<STATE_TYPE> next_vec;
 	vector<STATE_TYPE> check_vec;
-	for (NextCheck::iterator i = chfa.next_check.begin(); i != chfa.next_check.end(); i++) {
+	for (NextCheck::const_iterator i = chfa.next_check.cbegin(); i != chfa.next_check.cend(); i++) {
 		next_vec.push_back(chfa.num[i->first]);
 		check_vec.push_back(chfa.num[i->second]);
 	}
@@ -468,37 +468,38 @@ void flex_table_serialize(CHFA &chfa, ostream &os,
 	th.th_flags = htons(chfa.chfaflags);
 	th.th_hsize = htonl(hsize);
 	th.th_ssize = htonl(hsize +
-			    flex_table_size(chfa.accept.begin(),
-					    chfa.accept.end()) +
+			    flex_table_size(chfa.accept.cbegin(),
+					    chfa.accept.cend()) +
 			    (chfa.accept2.size() ?
-			     flex_table_size(chfa.accept2.begin(),
-					     chfa.accept2.end()) : 0) +
+			     flex_table_size(chfa.accept2.cbegin(),
+					     chfa.accept2.cend()) : 0) +
 			    (chfa.eq.size() ?
-			     flex_table_size(equiv_vec.begin(),
-					     equiv_vec.end()) : 0) +
-			    flex_table_size(base_vec.begin(),
-					    base_vec.end()) +
-			    flex_table_size(default_vec.begin(),
-					    default_vec.end()) +
-			    flex_table_size(next_vec.begin(), next_vec.end()) +
-			    flex_table_size(check_vec.begin(),
-					    check_vec.end()));
+			     flex_table_size(equiv_vec.cbegin(),
+					     equiv_vec.cend()) : 0) +
+			    flex_table_size(base_vec.cbegin(),
+					    base_vec.cend()) +
+			    flex_table_size(default_vec.cbegin(),
+					    default_vec.cend()) +
+			    flex_table_size(next_vec.cbegin(),
+					    next_vec.cend()) +
+			    flex_table_size(check_vec.cbegin(),
+					    check_vec.cend()));
 	os.write((char *)&th, sizeof(th));
 	os.write(th_version, sizeof(th_version));
 	os << fill64(sizeof(th) + sizeof(th_version));
 
-	write_flex_table(os, YYTD_ID_ACCEPT, chfa.accept.begin(),
-			 chfa.accept.end());
+	write_flex_table(os, YYTD_ID_ACCEPT, chfa.accept.cbegin(),
+			 chfa.accept.cend());
 	if (chfa.accept2.size())
-		write_flex_table(os, YYTD_ID_ACCEPT2, chfa.accept2.begin(),
-				 chfa.accept2.end());
+		write_flex_table(os, YYTD_ID_ACCEPT2, chfa.accept2.cbegin(),
+				 chfa.accept2.cend());
 	if (chfa.eq.size())
-		write_flex_table(os, YYTD_ID_EC, equiv_vec.begin(),
-				 equiv_vec.end());
-	write_flex_table(os, YYTD_ID_BASE, base_vec.begin(), base_vec.end());
-	write_flex_table(os, YYTD_ID_DEF, default_vec.begin(), default_vec.end());
-	write_flex_table(os, YYTD_ID_NXT, next_vec.begin(), next_vec.end());
-	write_flex_table(os, YYTD_ID_CHK, check_vec.begin(), check_vec.end());
+		write_flex_table(os, YYTD_ID_EC, equiv_vec.cbegin(),
+				 equiv_vec.cend());
+	write_flex_table(os, YYTD_ID_BASE, base_vec.cbegin(), base_vec.cend());
+	write_flex_table(os, YYTD_ID_DEF, default_vec.cbegin(), default_vec.cend());
+	write_flex_table(os, YYTD_ID_NXT, next_vec.cbegin(), next_vec.cend());
+	write_flex_table(os, YYTD_ID_CHK, check_vec.cbegin(), check_vec.cend());
 }
 
 void CHFA::flex_table(ostream &os, optflags const &opts) {
