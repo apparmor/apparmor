@@ -1441,6 +1441,7 @@ $ equality.sh -e \"/t { priority=1 /* Px -> b, /f Px, }\" \"/t {  /* Px, }\""
 POSITIONAL_ARGS=()
 
 while [[ $# -gt 0 ]]; do
+#    echo "Arg: $1"
     case $1 in
 	-h|--help)
 	  usage
@@ -1494,19 +1495,19 @@ while [[ $# -gt 0 ]]; do
 	    exit 1
 	    ;;
 	*)
-	    POSITIONAL_ARGS+=("$1") # save positional arg
-	    shift # past argument
+	    break
 	    ;;
     esac
 done
 
-set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
 
 if [ $# -eq 0 -o -z "$testtype" ] ; then
 	run_tests "$@"
 	exit $?
 fi
 
+known="$1"
+shift
 for profile in "$@" ; do
 	verify_binary "$testtype" "$description" "$known" "$profile"
 done
