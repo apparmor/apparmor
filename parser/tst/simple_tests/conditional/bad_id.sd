@@ -1,0 +1,10 @@
+#=DESCRIPTION conditional with truish
+#=EXRESULT FAIL
+
+$FOO=true
+
+/bin/true {
+  if truish {
+      /bin/true rix,
+  }
+}

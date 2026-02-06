@@ -1,0 +1,6 @@
+#=DESCRIPTION Simple boolean overriding assignment
+#=EXRESULT PASS
+
+$VAR := False
+
+${BOOL} := false

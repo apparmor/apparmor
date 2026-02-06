@@ -72,7 +72,7 @@ B<PROFILE FILE> = ( [ I<PREAMBLE> ] [ I<PROFILE> ] )*
 B<PREAMBLE> = ( I<COMMENT> | I<VARIABLE ASSIGNMENT> | I<ALIAS RULE> | I<INCLUDE> | I<ABI> )*
   Variable assignment and alias rules must come before the profile.
 
-B<VARIABLE ASSIGNMENT> = ( I<VARIABLE> | I<BOOL_VAR> ) ('=' | '+=') (space separated values)
+B<VARIABLE ASSIGNMENT> = ( I<VARIABLE> | I<BOOL_VAR> ) ('=' | '+=' | '?=' | ':=' ) (space separated values)
 
 B<VARIABLE> = '@{' I<ALPHA> [ ( I<ALPHANUMERIC> | '_' ) ... ] '}'
 
@@ -1979,6 +1979,24 @@ the profile attaches to an executable. If the kernel supports it as a
 kernel variable, it will be set to the specific path that matches the
 executable at run time. If the kernel does not support kernel variables
 it will have the same value as B<@{attach_path}>.
+
+=head3 Assignment of variables
+
+AppArmor provides 3 different assignment operators for variables.
+
+= does a straight assignment of the right hand side to the
+  variable. The variable must not be declared before or an error will
+  occur. If there is a chance that the variable could be declared
+  before the +=, :=, or ?= assignment operators can be used instead.
+
++= will add new set values to a previously declared variable
+
+?= will assign the right hand side to the variable only if the variable
+   was not previously declared.
+
+:= does a straight assignment of the right hand side to the
+   variable. If the variable has already been declared before the
+   assignment the rhs will override the preexisting variable value(s).
 
 =head3 Notes on variable expansion and the / character
 

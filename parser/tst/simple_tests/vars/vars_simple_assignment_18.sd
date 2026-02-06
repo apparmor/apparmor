@@ -1,0 +1,5 @@
+#=DESCRIPTION conditional assignment of predefined set variable assignment
+#=EXRESULT PASS
+
+@{FOO}=foo
+@{FOO}?=bar

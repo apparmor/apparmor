@@ -330,6 +330,32 @@ unknown_line = (
     'bare_include_tests/ok_84.sd',
     'bare_include_tests/ok_85.sd',
     'bare_include_tests/ok_86.sd',
+
+
+    # new conditional and overriding assignment operators
+    "conditional/ok_false_1.sd",
+    "conditional/ok_false_2.sd",
+    "conditional/ok_false_3.sd",
+    "conditional/ok_false_4.sd",
+    "conditional/ok_false_5.sd",
+    "conditional/ok_true_1.sd",
+    "conditional/ok_true_2.sd",
+    "conditional/ok_true_3.sd",
+    "conditional/ok_true_4.sd",
+    "conditional/ok_true_5.sd",
+    "vars/vars_simple_assignment_15.sd",
+    "vars/vars_simple_assignment_16.sd",
+    "vars/vars_simple_assignment_17.sd",
+    "vars/vars_simple_assignment_18.sd",
+    "vars/vars_simple_assignment_19.sd",
+    "vars/vars_simple_assignment_20.sd",
+    "vars/vars_simple_assignment_combination_1.sd",
+    "vars/boolean/boolean_over_1.sd",
+    "vars/boolean/boolean_over_2.sd",
+    "vars/boolean/boolean_cond_1.sd",
+    "vars/boolean/boolean_cond_2.sd",
+    "vars/boolean/boolean_cond_3.sd",
+    "vars/boolean/boolean_cond_4.sd",
 )
 
 # testcases with various unexpected failures

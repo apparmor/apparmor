@@ -1,0 +1,4 @@
+#=DESCRIPTION simple overriding set variable assignment
+#=EXRESULT PASS
+
+@{FOO} :=bar

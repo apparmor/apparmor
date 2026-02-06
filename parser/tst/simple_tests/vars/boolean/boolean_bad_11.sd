@@ -1,0 +1,5 @@
+#=DESCRIPTION overrding assign creates boolean to = then fails on
+#=EXRESULT FAIL
+
+$VAR := true
+$VAR = false

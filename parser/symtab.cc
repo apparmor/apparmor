@@ -103,11 +103,6 @@ variable *symtab::delete_var(const char *var_name)
 	if (!var) {
 		return var;
 	}
-	if (var->type != sd_set) {
-		PERROR("ASSERT: delete_set_var: deleting %s but is a boolean variable\n",
-		       var_name);
-		exit(1);
-	}
 	variable *save = new variable(*var);
 	my_symtab.erase(var->var_name);
 	return save;

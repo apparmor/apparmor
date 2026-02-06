@@ -1,0 +1,6 @@
+#=DESCRIPTION Simple boolean conditional assignment no space
+#=EXRESULT PASS
+
+$VAR?=False
+
+${BOOL}?=false

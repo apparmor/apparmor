@@ -1231,6 +1231,110 @@ test_parser_variables()
 	verify_binary_equality "@{exec_path} w/attachment w/pat expands correcly - add globbing" \
 				"profile a /t/* { @{exec_path}/** r, }" \
 				"profile a /t/* { /t/*/** r, }"
+
+	# test conditional assignment
+	verify_binary_equality "@{foo} ?=  creates var" \
+			       "@{foo} ?= /bar
+			       profile a /t/* { @{foo} rw, }" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_equality "@{foo} ?=  doesnt update existing var" \
+			       "@{foo} = /bar
+			        @{foo} ?= /foo
+				profile a /t/* { @{foo} rw, }" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_inequality "@{foo} ?=  doesnt update existing var" \
+			       "@{foo} = /does/not/match
+			        @{foo} ?= /bar
+				profile a /t/* { @{foo} rw, }" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_equality "@{foo} ?= can be added to bar += " \
+			       "@{foo} ?= /foo
+			        @{foo} += /bar
+				profile a /t/* { @{foo} rw, }" \
+			       "profile a /t/* { /{foo,bar} rw, }"
+
+	# test true/false in expr
+	verify_binary_equality "profile a /t/* {
+			       	       if true { /bar rw, } }" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_inequality "profile a /t/* {
+			       	       if false { /bar rw, } }" \
+			       "profile a /t/* { /bar rw, }"
+
+	# test var being assigned value of an expression
+	verify_binary_equality "var assigned expr not false" \
+			       "\${foo} = not false
+			       profile a /t/* { if \$foo { /bar rw, }}" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_inequality "var assigned expr not true" \
+			       "\$foo = not true
+			       profile a /t/* { if \$foo { /bar rw, }}" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_inequality "var assigned expr true and false" \
+			       "\$foo = true and false
+			       profile a /t/* { if \${foo} { /bar rw, }}" \
+			       "profile a /t/* { /bar rw, }"
+
+	# test overriding assignment
+	verify_binary_equality "@{foo} := creates var" \
+			       "@{foo} := /bar
+			       profile a /t/* { @{foo} rw, }" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_equality "@{foo} :=  overrides existing var" \
+			       "@{foo} = /foo
+			        @{foo} := /bar
+				profile a /t/* { @{foo} rw, }" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_inequality "@{foo} := negative overrides existing var" \
+			       "@{foo} = /bar
+			        @{foo} := /does /not /match
+				profile a /t/* { @{foo} rw, }" \
+			       "profile a /t/* { /bar rw, }"
+
+	# test overriding boolean assignment
+	verify_binary_equality "\${foo} := creates bool var" \
+			       "\${foo} := true
+			        profile a /t/* { if \$foo { /bar rw, }}" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_equality "\${foo} :=  overrides existing bool var" \
+			       "\${foo} = false
+			        \${foo} := true
+				profile a /t/* { if \$foo { /bar rw, }}" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_inequality "${foo} := negative overrides existing bool var" \
+			       "\${foo} = true
+			        \${foo} := false
+				profile a /t/* { if \$foo { /bar rw, }}" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_equality "@{foo} :=  can be added to" \
+			       "@{foo} := /foo
+			        @{foo} += /bar
+				profile a /t/* { @{foo} rw, }" \
+			       "profile a /t/* { /{foo,bar} rw, }"
+
+	verify_binary_inequality "@{foo} := negative can be added to" \
+			       "@{foo} := /bar
+			        @{foo} += /does /not /match
+				profile a /t/* { @{foo} rw, }" \
+			       "profile a /t/* { /bar rw, }"
+
+	verify_binary_equality "@{foo} := defines var before ?= " \
+			       "@{foo} := /foo
+			        @{foo} ?= /bar
+				profile a /t/* { @{foo} rw, }" \
+			       "profile a /t/* { /foo rw, }"
+
 }
 
 run_tests()
@@ -1441,6 +1545,7 @@ $ equality.sh -e \"/t { priority=1 /* Px -> b, /f Px, }\" \"/t {  /* Px, }\""
 POSITIONAL_ARGS=()
 
 while [[ $# -gt 0 ]]; do
+#    echo "Arg: $1"
     case $1 in
 	-h|--help)
 	  usage
@@ -1494,19 +1599,19 @@ while [[ $# -gt 0 ]]; do
 	    exit 1
 	    ;;
 	*)
-	    POSITIONAL_ARGS+=("$1") # save positional arg
-	    shift # past argument
+	    break
 	    ;;
     esac
 done
 
-set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
 
 if [ $# -eq 0 -o -z "$testtype" ] ; then
 	run_tests "$@"
 	exit $?
 fi
 
+known="$1"
+shift
 for profile in "$@" ; do
 	verify_binary "$testtype" "$description" "$known" "$profile"
 done

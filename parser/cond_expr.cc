@@ -29,7 +29,14 @@ cond_expr::cond_expr(bool result):
 
 cond_expr::cond_expr(const char *var, cond_op op)
 {
-	if (op == BOOLEAN_OP) {
+	if (op == BOOLEAN_VALUE) {
+		int boolean = str_to_boolean(var);
+		if (boolean == -1) {
+			yyerror("Invalid boolean : '%s' is not true or false",
+				var);
+		}
+		result = boolean;
+	} else if (op == BOOLEAN_OP) {
 		variable *ref = symtab::get_boolean_var(var);
 		if (!ref) {
 			yyerror(_("Unset boolean variable %s used in if-expression"), var);

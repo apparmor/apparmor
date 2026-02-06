@@ -86,6 +86,8 @@ static void abi_features(char *filename, bool search);
 %token TOK_EQUALS
 %token TOK_ARROW
 %token TOK_ADD_ASSIGN
+%token TOK_COND_ASSIGN
+%token TOK_OVERRIDE_ASSIGN
 %token TOK_LE
 %token TOK_SET_VAR
 %token TOK_BOOL_VAR
@@ -326,6 +328,7 @@ static void abi_features(char *filename, bool search);
 %type <fperms>	opt_io_uring_perm
 %type <io_uring_entry>	io_uring_rule
 %type <all_entry>	all_rule
+%type <integer>	assign_op
 %%
 
 
@@ -502,45 +505,57 @@ alias: TOK_ALIAS TOK_ID TOK_ARROW TOK_ID TOK_END_OF_RULE
 		free($4);
 	};
 
-varassign:	TOK_SET_VAR TOK_EQUALS valuelist
+assign_op: TOK_EQUALS { $$ = TOK_EQUALS; }
+	| TOK_ADD_ASSIGN { $$ = TOK_ADD_ASSIGN; }
+	| TOK_COND_ASSIGN { $$ = TOK_COND_ASSIGN; }
+	| TOK_OVERRIDE_ASSIGN { $$ = TOK_OVERRIDE_ASSIGN; }
+
+varassign:	TOK_SET_VAR assign_op valuelist
 	{
 		int err;
-		err = symtab::add_var($1, $3);
-		if (err) {
-			yyerror("variable %s was previously declared", $1);
-			/* FIXME: it'd be handy to report the previous location */
+		if ($2 == TOK_ADD_ASSIGN) {
+			err = symtab::add_set_value($1, $3);
+			if (err) {
+				yyerror(_("variable %s was not previously declared, but is being assigned additional values"), $1);
+			}
+		} else if ($2 == TOK_OVERRIDE_ASSIGN) {
+			autofree char *var_name = variable::process_var($1);
+			if (!var_name)
+				yyerror(_("invalid variable name '%s'"), $1);
+			variable *old = symtab::delete_var(var_name);
+			delete old;
+			err = symtab::add_var($1, $3);
+		} else { /* TOK_EQUALS | TOK_COND_ASSIGN */
+			err = symtab::add_var($1, $3);
+			if ($2 == TOK_EQUALS && err) {
+				yyerror(_("variable %s was previously declared"), $1);
+				/* FIXME: it'd be handy to report the previous location */
+			}
 		}
-
 		free_value_list($3);
 		free($1);
 	}
 
-varassign:	TOK_SET_VAR TOK_ADD_ASSIGN valuelist
-	{
-		int err;
-		err = symtab::add_set_value($1, $3);
-		if (err) {
-			yyerror("variable %s was not previously declared, but is being assigned additional values", $1);
-		}
-		free_value_list($3);
-		free($1);
-	}
-
-varassign:	TOK_BOOL_VAR TOK_EQUALS TOK_VALUE
+varassign:	TOK_BOOL_VAR assign_op expr
 	{
 		int boolean, err;
-		boolean = str_to_boolean($3);
-		if (boolean == -1) {
-			yyerror("Invalid boolean assignment for (%s): %s is not true or false",
-				$1, $3);
+		if ($2 == TOK_ADD_ASSIGN)
+			yyerror(_("Invalid assignment += not allowed with boolean variables"));
+		boolean = $3->eval();
+		if ($2 == TOK_OVERRIDE_ASSIGN) {
+			autofree char *var_name = variable::process_var($1);
+			if (!var_name)
+				yyerror(_("invalid variable name '%s'"), $1);
+			variable *old = symtab::delete_var(var_name);
+			delete old;
 		}
 		err = symtab::add_var($1, boolean);
-		if (err) {
-			yyerror("variable %s was previously declared", $1);
+		if ($2 == TOK_EQUALS && err) {
+			yyerror(_("variable %s was previously declared"), $1);
 			/* FIXME: it'd be handy to report the previous location */
 		}
 		free($1);
-		free($3);
+		delete($3);
 	}
 
 valuelist:	TOK_VALUE
@@ -1079,6 +1094,14 @@ factor:	id_or_var TOK_LE id_or_var
 		$$ = conds;
 		free($1);
 		free($3);
+	}
+
+factor: id_or_var
+	{
+		cond_expr *conds = new cond_expr($1, BOOLEAN_VALUE);
+		PDEBUG("Matched: boolean expr %s value: %d\n", $1, conds->eval());
+		$$ = conds;
+		free($1);
 	}
 
 id_or_var: TOK_ID { $$ = $1; }

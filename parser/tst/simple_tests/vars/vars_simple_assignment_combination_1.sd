@@ -1,0 +1,10 @@
+#=DESCRIPTION  += can add to var created with ?=
+#=EXRESULT PASS
+
+@{BAZ} = bar
+@{FOO} ?= blah
+@{FOO} += @{BAZ}
+
+/bin/foo {
+  /@{FOO} r,
+}
