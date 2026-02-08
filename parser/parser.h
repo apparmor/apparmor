@@ -42,6 +42,7 @@
 #include "common_flags.h"
 
 #include <string>
+#include <zstd.h>
 
 #include <set>
 
@@ -83,6 +84,23 @@ extern int parser_token;
 		  WARN_UNEXPECTED | WARN_FORMAT | WARN_MISSING | \
 		  WARN_OVERRIDE | WARN_INCLUDE)
 
+typedef enum {
+	ZSTD_COMPRESS_NONE,
+	ZSTD_COMPRESS_POLICY,
+	ZSTD_COMPRESS_PRECOMPRESSED,
+	ZSTD_COMPRESS_GUESS,
+	ZSTD_COMPRESS_RECOMPRESS,
+} zstd_compress_t;
+
+// ZSTD_CLEVEL_DEFAULT value is a bit low, use a prechosen value for AppArmor
+// as the default
+#define ZSTD_DISABLED			0
+#define ZSTD_LEVEL_UNSPECIFIED		-1
+#define ZSTD_COMPRESS_DEFAULT_VALUE	10
+#define ZSTD_COMPRESS_FAST_VALUE	3
+#define ZSTD_COMPRESS_HIGH_VALUE	20
+#define ZSTD_COMPRESS_MIN_VALUE		ZSTD_minCLevel()
+#define ZSTD_COMPRESS_MAX_VALUE		ZSTD_maxCLevel()
 
 typedef enum pattern_t pattern_t;
 
@@ -316,6 +334,7 @@ extern int perms_create;
 extern int net_af_max_override;
 extern int kernel_load;
 extern int kernel_supports_setload;
+extern bool kernel_supports_zstd_load;
 extern int features_supports_network;
 extern int features_supports_networkv8;
 extern bool features_supports_networkv9;
@@ -394,6 +413,8 @@ extern int skip_mode_force;
 extern int abort_on_error;
 extern int skip_bad_cache_rebuild;
 extern int mru_skip_cache;
+extern zstd_compress_t zstd_compress_policy;
+extern int zstd_compress_level;
 
 /* provided by parser_lex.l (cannot be used in tst builds) */
 extern FILE *yyin;
@@ -485,6 +506,8 @@ extern int load_profile(int option, aa_kernel_interface *kernel_interface,
 extern void sd_serialize_profile(std::ostringstream &buf, Profile *prof,
 				int flatten);
 extern int sd_load_buffer(int option, char *buffer, int size);
+extern size_t compress_policy_zstd(const char* raw_data_str, size_t raw_data_size, char** compressed_buffer);
+extern size_t recompress_policy_zstd(const char *compressed_data, size_t compressed_size, char **recompressed_buffer);
 extern int cache_fd;
 
 

@@ -68,6 +68,43 @@ bool valid_cached_file_version(const char *cachename)
 	return true;
 }
 
+/**
+ * is_valid_precompressed_profile - Check the validity of a compressed profile
+ * @buffer: buffer containing the profile
+ * @buffer_size: size of @buffer
+ * @min_compr_level: minimum level compression of @buffer
+ *
+ * Returns: compression state on success (ZSTD_COMPRESS_PRECOMPRESSED or
+ *          ZSTD_COMPRESS_RECOMPRESS). On error, returns a negative value.
+ */
+zstd_compress_t is_valid_precompressed_profile(char *buffer, size_t buffer_size, uint8_t min_compr_level)
+{
+	const size_t need = sizeof(struct compr_user_header) + sizeof(uint32_t);
+	if (buffer_size < need)
+		return ZSTD_COMPRESS_NONE;
+
+	const struct compr_user_header *uh = (const struct compr_user_header *)buffer;
+	if (uh->version != COMPR_USER_HDR_VERSION)
+		return ZSTD_COMPRESS_NONE;
+
+	uint32_t magic_bytes;
+	memcpy(&magic_bytes, (const uint8_t *)buffer + sizeof(*uh), sizeof(magic_bytes));
+	magic_bytes = le32toh(magic_bytes);
+	if (magic_bytes == ZSTD_MAGICNUMBER) {
+		if (uh->compress_level >= min_compr_level)
+			return ZSTD_COMPRESS_PRECOMPRESSED;
+		if (!(parseopts.control & CONTROL_ZSTD_FLAGS_RECOMPRESS)) {
+			if (show_cache)
+				fprintf(stderr, _("Cache: Using a lower than expected compression level\n"));
+			return ZSTD_COMPRESS_PRECOMPRESSED;
+		}
+		if (show_cache)
+			fprintf(stderr, _("Cache: Recompressing cache to increase compression level\n"));
+		return ZSTD_COMPRESS_RECOMPRESS;
+	}
+	return ZSTD_COMPRESS_NONE;
+}
+
 
 void set_cache_tstamp(struct timespec t)
 {
@@ -105,6 +142,45 @@ char *cache_filename(aa_policy_cache *pc, int dir, const char *basename)
 	return cachename;
 }
 
+
+zstd_compress_t is_valid_precompressed_fd(const char *cachename)
+{
+	char buffer[sizeof(struct compr_user_header) + sizeof(uint32_t)];
+	autofclose FILE *f;
+	if (!(f = fopen(cachename, "r"))) {
+		PERROR(_("Error: Could not read cache file '%s', skipping...\n"), cachename);
+		return ZSTD_COMPRESS_NONE;
+	}
+	size_t sz = fread(buffer, 1, sizeof(buffer), f);
+
+	return is_valid_precompressed_profile(buffer, sz, zstd_compress_level);
+}
+
+zstd_compress_t valid_compressed_cache(const char *cachename)
+{
+	struct stat stat_bin;
+
+	if (!cachename)
+		return ZSTD_COMPRESS_NONE;
+
+	/* Load a binary cache if it exists and is newest */
+	if (!skip_read_cache) {
+		if (stat(cachename, &stat_bin) == 0 && stat_bin.st_size > 0) {
+			zstd_compress_t ret = is_valid_precompressed_fd(cachename);
+			if (ret != ZSTD_COMPRESS_NONE)
+				set_cache_tstamp(stat_bin.st_mtim);
+			else if (!cond_clear_cache)
+				return ZSTD_COMPRESS_NONE;
+			return ret;
+		}
+
+		if (!cond_clear_cache)
+			return ZSTD_COMPRESS_NONE;
+		pwarn(WARN_DEBUG_CACHE, _("%s: Invalid or missing cache file '%s' (%s)\n"), progname, cachename, strerror(errno));
+	}
+	return ZSTD_COMPRESS_NONE;
+}
+
 void valid_read_cache(const char *cachename)
 {
 	struct stat stat_bin;
@@ -136,13 +212,25 @@ int cache_hit(const char *cachename)
 	return false;
 }
 
-int setup_cache_tmp(const char **cachetmpname, const char *cachename)
+int setup_cache_tmp(const char **cachetmpname, char *cachename, int create_compressed)
 {
 	char *tmpname;
 	int cache_fd = -1;
+	char *end;
 
 	*cachetmpname = NULL;
 	if (write_cache) {
+		if (create_compressed) {
+			end = strrchr(cachename, '/');
+			*end = '\0';
+			if (mkdir(cachename, 0700))
+				if (errno != EEXIST) {
+					*end = '/';
+					perror("Cannot create compressed cache directory\n");
+					return -1;
+				}
+			*end = '/';
+		}
 		/* Otherwise, set up to save a cached copy */
 		if (asprintf(&tmpname, "%s-XXXXXX", cachename) < 0) {
 			perror("asprintf");

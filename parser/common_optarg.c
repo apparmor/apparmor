@@ -117,6 +117,8 @@ optflag_table_t dfaoptflag_table[] = {
 	  CONTROL_DFA_STATE32 },
 	{ 1, "flags-table", "use independent flags table",
 	  CONTROL_DFA_FLAGS_TABLE },
+	{ 1, "zstd-recompress", "Recompress if the compressed level is higher than the existing cache",
+	  CONTROL_ZSTD_FLAGS_RECOMPRESS },
 	{ 0, NULL, NULL, 0 },
 };
 

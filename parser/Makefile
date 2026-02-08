@@ -122,7 +122,7 @@ OBJECTS = $(patsubst %.cc, %.o, $(SRCS:.c=.o))
 AAREDIR= libapparmor_re
 AAREOBJECT = ${AAREDIR}/libapparmor_re.a
 AAREOBJECTS = $(AAREOBJECT)
-AARE_LDFLAGS = -L. $(LDFLAGS)
+AARE_LDFLAGS = -L. $(LDFLAGS) -lzstd
 ifdef WITH_STATIC_LINKING
   AARE_LDFLAGS += -static-libgcc -static-libstdc++
 endif

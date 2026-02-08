@@ -33,6 +33,8 @@
 #define CONTROL_RULE_MERGE		(1 << 10)
 #define CONTROL_DFA_STATE32		(1 << 11)
 #define CONTROL_DFA_FLAGS_TABLE		(1 << 12)
+#define CONTROL_ZSTD_FLAGS_RECOMPRESS	(1 << 13)
+
 
 
 #define DUMP_DFA_DIFF_PROGRESS		(1 << 0)

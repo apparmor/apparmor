@@ -142,7 +142,7 @@ static const char *config_file = "/etc/apparmor/parser.conf";
 #define ARG_PRINT_PROMPT_COMPAT		146
 
 /* Make sure to update BOTH the short and long_options */
-static const char *short_options = "ad::f:h::rRVvI:b:BCD:NSm:M:qQn:XKTWkL:O:po:j:";
+static const char *short_options = "ad::f:h::rRVvI:b:BCD:NSm:M:qQn:XKTWkL:O:po:j:c::P";
 struct option long_options[] = {
 	{"add", 		0, 0, 'a'},
 	{"binary",		0, 0, 'B'},
@@ -178,6 +178,7 @@ struct option long_options[] = {
 	{"Optimize",		1, 0, 'O'},
 	{"preprocess",		0, 0, 'p'},
 	{"jobs",		1, 0, 'j'},
+	{"zstd-compress-level",	2, 0, 'c'},
 	{"skip-bad-cache",	0, 0, ARG_SKIP_BAD_CACHE},/* no short option */
 	{"purge-cache",		0, 0, ARG_PURGE_CACHE},	/* no short option */
 	{"create-cache-dir",	0, 0, ARG_CREATE_CACHE_DIR},/* no short option */
@@ -252,6 +253,9 @@ static void display_usage(const char *command)
 	       "-O [n], --Optimize	Control dfa optimizations\n"
 	       "-h [cmd], --help[=cmd]  Display this text or info about cmd\n"
 	       "-j n, --jobs n		Set the number of compile threads\n"
+	       "-c[n], --zstd-compress-level[=n]    Compress profile at level n\n"
+	       "                                    n can be: none, default, fast, small, or 0-22\n"
+	       "                                    (0 disables compression, default: %d)\n"
 	       "--max-jobs n		Hard cap on --jobs. Default 8*cpus\n"
 	       "--abort-on-error	Abort processing of profiles on first error\n"
 	       "--skip-bad-cache-rebuild Do not try rebuilding the cache if it is rejected by the kernel\n"
@@ -259,7 +263,7 @@ static void display_usage(const char *command)
 	       "--print-config		Print config file location\n"
 	       "--warn n		Enable warnings (see --help=warn)\n"
 	       "--Werror [n]		Convert warnings to errors. If n is specified turn warn n into an error\n"
-	       ,command);
+	       ,command, ZSTD_COMPRESS_DEFAULT_VALUE);
 }
 
 optflag_table_t warnflag_table[] = {
@@ -440,6 +444,53 @@ static long str_to_size(const char *s)
 	else if (strcmp(s, "GB") == 0)
 		return 1024*1024*1024;
 	return -1;
+}
+
+bool str_to_int(const char *s, int *out) {
+	char *end = NULL;
+	long v;
+
+	errno = 0;
+	if (!s || !*s)
+		return false;
+
+	v = strtol(s, &end, 10);
+
+	if (end == s ||			// No digit parsed
+	    *end != '\0' ||		// Trailing junk
+	    errno == ERANGE ||		// Overflow for long
+	    v < INT_MIN || v > INT_MAX)	// Overflow for int
+		return false;
+
+	*out = (int)v;
+	return true;
+}
+
+void set_compression_level(optflags_t f) {
+	// Is the compression level explicitly set?
+	if (zstd_compress_level != ZSTD_LEVEL_UNSPECIFIED) {
+		goto check_kernel_support;
+	}
+
+	// Fallback to the global compression variable.
+	if ((zstd_compress_level != ZSTD_DISABLED) &&
+	    (f & CONTROL_DFA_TRANS_HIGH)) {
+		zstd_compress_level = ZSTD_COMPRESS_HIGH_VALUE;
+		goto check_kernel_support;
+	}
+
+	if (!kernel_supports_setload || !kernel_supports_zstd_load)
+		zstd_compress_level = ZSTD_COMPRESS_NONE;
+	else
+		zstd_compress_level = ZSTD_COMPRESS_DEFAULT_VALUE;
+
+	return;
+
+check_kernel_support:
+	if ((!kernel_supports_setload || !kernel_supports_zstd_load) && zstd_compress_level != 0) {
+		pwarn(WARN_DEBUG_CACHE, _("WARNING: Kernel does not support compressed policies. Defaulting to uncompressed\n"));
+		zstd_compress_level = ZSTD_COMPRESS_NONE;
+	}
 }
 
 #define	EARLY_ARG   1
@@ -697,6 +748,33 @@ static int process_arg(int c, char *optarg)
 		break;
 	case 'T':
 		skip_read_cache = 1;
+		break;
+	case 'c':
+		zstd_compress_policy = ZSTD_COMPRESS_POLICY;
+		if (!optarg) {
+			zstd_compress_level = ZSTD_COMPRESS_DEFAULT_VALUE;
+		} else if (strcmp(optarg, "none") == 0) {
+			zstd_compress_level = 0;
+		} else if (strcmp(optarg, "default") == 0) {
+			zstd_compress_level = ZSTD_COMPRESS_DEFAULT_VALUE;
+		} else if (strcmp(optarg, "fast") == 0) {
+			zstd_compress_level = ZSTD_COMPRESS_FAST_VALUE;
+		} else if (strcmp(optarg, "small") == 0) {
+			zstd_compress_level = ZSTD_COMPRESS_HIGH_VALUE;
+		} else {
+			if (!str_to_int(optarg, &zstd_compress_level)) {
+				PERROR(_("Invalid compression level '%s'. Use none, default, fast, small, or 0-22\n"), optarg);
+				exit(1);
+			}
+			if (zstd_compress_level < ZSTD_COMPRESS_MIN_VALUE) {
+				pwarn(WARN_OVERRIDE, "Compression level < %d. Using %d\n", ZSTD_COMPRESS_MIN_VALUE, ZSTD_COMPRESS_MIN_VALUE);
+				zstd_compress_level = ZSTD_COMPRESS_MIN_VALUE;
+			}
+			if (zstd_compress_level > ZSTD_COMPRESS_MAX_VALUE) {
+				pwarn(WARN_OVERRIDE, "Compression level > %d. Using %d\n", ZSTD_COMPRESS_MAX_VALUE, ZSTD_COMPRESS_MAX_VALUE);
+				zstd_compress_level = ZSTD_COMPRESS_MAX_VALUE;
+			}
+		}
 		break;
 	case ARG_SKIP_BAD_CACHE:
 		cond_clear_cache = 0;
@@ -1037,6 +1115,40 @@ static bool do_print_cache_dirs(aa_features *features, const char **cacheloc,
 	return true;
 }
 
+static char* read_policy_file(const char* path, size_t* file_size) {
+	FILE *file = path ? fopen(path, "rb") : stdin;
+	char *buffer = NULL, *tmp;
+	size_t size = 0, capacity = 0;
+
+	if (!file)
+		return NULL;
+
+	while (size == capacity) {
+		capacity = capacity ? capacity * 2 : 4096;
+		tmp = (char *) realloc(buffer, capacity);
+		if (!tmp) {
+			free(buffer);
+			buffer = NULL;
+			goto out;
+		}
+		buffer = tmp;
+
+		size += fread(buffer + size, 1, capacity - size, file);
+	}
+
+	if (ferror(file)) {
+		free(buffer);
+		buffer = NULL;
+	} else {
+		*file_size = size;
+	}
+
+out:
+	if (file != stdin)
+		fclose(file);
+	return buffer;
+}
+
 int process_binary(int option, aa_kernel_interface *kernel_interface,
 		   const char *profilename)
 {
@@ -1046,30 +1158,73 @@ int process_binary(int option, aa_kernel_interface *kernel_interface,
 	printed_name = profilename ? profilename : "stdin";
 
 	if (kernel_load) {
-		if (option == OPTION_ADD) {
-			retval = profilename ?
-				 aa_kernel_interface_load_policy_from_file(kernel_interface, AT_FDCWD, profilename) :
-				 aa_kernel_interface_load_policy_from_fd(kernel_interface, 0);
-			if (retval == -1) {
-				retval = errno;
-				PERROR(_("Error: Could not load profile %s: %s\n"),
-				       printed_name, strerror(retval));
-				return retval;
+		size_t buffer_size;
+		char *data_to_load = NULL;
+		autofree char *compressed_data = NULL;
+		autofree char* buffer = read_policy_file(profilename, &buffer_size);
+
+		if (!buffer || buffer_size <= sizeof(struct compr_user_header)) {
+			PERROR(_("Cannot read profile from file %s"), printed_name);
+			return -1;
+		}
+
+		if (zstd_compress_policy == ZSTD_COMPRESS_POLICY) {
+			zstd_compress_t state = is_valid_precompressed_profile(buffer, buffer_size, 0);
+			if (state == ZSTD_COMPRESS_NONE) {
+				size_t res = compress_policy_zstd(buffer, buffer_size, &compressed_data);
+				if (res == 0) {
+					pwarn(WARN_CACHE, _("Compression failed, falling back to uncompressed load\n"));
+					data_to_load = buffer;
+					/* buffer_size is already uncompressed size */
+				} else {
+					buffer_size = res;
+					data_to_load = compressed_data;
+				}
+			} else {
+				zstd_compress_policy = state;
 			}
-		} else if (option == OPTION_REPLACE) {
-			retval = profilename ?
-				 aa_kernel_interface_replace_policy_from_file(kernel_interface, AT_FDCWD, profilename) :
-				 aa_kernel_interface_replace_policy_from_fd(kernel_interface, 0);
-			if (retval == -1) {
-				retval = errno;
-				PERROR(_("Error: Could not replace profile %s: %s\n"),
-				       printed_name, strerror(retval));
-				return retval;
+		} else if (zstd_compress_policy == ZSTD_COMPRESS_GUESS) {
+			if (profilename)
+				zstd_compress_policy = valid_compressed_cache(profilename);
+			else
+				zstd_compress_policy = is_valid_precompressed_profile(buffer, buffer_size, zstd_compress_level);
+		}
+
+		if (zstd_compress_policy == ZSTD_COMPRESS_PRECOMPRESSED || zstd_compress_policy == ZSTD_COMPRESS_RECOMPRESS) {
+			/* Strip user header before loading or recompression */
+			char *payload = buffer + sizeof(struct compr_user_header);
+			size_t payload_size = buffer_size - sizeof(struct compr_user_header);
+			if (zstd_compress_policy == ZSTD_COMPRESS_RECOMPRESS) {
+				buffer_size = recompress_policy_zstd(payload, payload_size, &compressed_data);
+				if (buffer_size == 0) {
+					pwarn(WARN_CACHE, _("Recompression failed, falling back to original compressed data\n"));
+					data_to_load = payload;
+					buffer_size = payload_size;
+				} else {
+					data_to_load = compressed_data;
+				}
+			} else {
+				data_to_load = payload;
+				buffer_size = payload_size;
 			}
-		} else {
-			PERROR(_("Error: Invalid load option specified: %d\n"),
-			       option);
+		} else if (zstd_compress_policy != ZSTD_COMPRESS_POLICY) {
+			data_to_load = buffer;
+		}
+
+		if (option == OPTION_ADD)
+			retval = aa_kernel_interface_load_policy(kernel_interface, data_to_load, buffer_size);
+		else if (option == OPTION_REPLACE)
+			retval = aa_kernel_interface_replace_policy(kernel_interface, data_to_load, buffer_size);
+		else {
+			PERROR(_("Error: Invalid load option specified: %d\n"), option);
 			return EINVAL;
+		}
+		if (retval == -1) {
+			retval = errno;
+			PERROR(_("Could not %s profile %s : %s\n"),
+					option == OPTION_ADD ? "load":"replace",
+					printed_name, strerror(retval));
+			return retval;
 		}
 	}
 
@@ -1131,10 +1286,17 @@ int process_profile(int option, aa_kernel_interface *kernel_interface,
 {
 	int retval = 0;
 	autofree const char *cachename = NULL;
+	autofree char *compr_cachename = NULL;
 	autofree const char *writecachename = NULL;
+	autofree const char *compr_writecachename = NULL;
+
 	autofree const char *cachetmpname = NULL;
-	autoclose int cachetmp = -1;
+	autofree const char *compr_cachetmpname = NULL;
+
+	autoclose int cachetmp = -1, compr_cachetmp = -1;
 	const char *basename = NULL;
+	autofree char *compr_basename = NULL;
+	int tmp;
 
 	/* per-profile states */
 	force_complain = opt_force_complain;
@@ -1162,30 +1324,53 @@ int process_profile(int option, aa_kernel_interface *kernel_interface,
 			basename = profilename;
 
 		if (test_for_dir_mode(basename, "disable")) {
- 			if (!conf_quiet)
- 				PERROR("Skipping profile in %s/disable: %s\n", basedir, basename);
+			if (!conf_quiet)
+				PERROR("Skipping profile in %s/disable: %s\n", basedir, basename);
 			goto out;
 		}
 
 		if (test_for_dir_mode(basename, "force-complain")) {
 			PERROR("Warning: found %s in %s/force-complain, forcing complain mode\n", basename, basedir);
- 			force_complain = 1;
- 		}
+			force_complain = 1;
+		}
 
 		/* setup cachename and tstamp */
 		if (!force_complain && pc) {
 			cachename = aa_policy_cache_filename(pc, basename);
 			if (!cachename) {
-				autoclose int fd = aa_policy_cache_open(pc,
-								basename,
-								O_RDONLY);
+				autoclose int fd = aa_policy_cache_open(pc, basename, O_RDONLY);
 				if (fd != -1)
 					pwarn(WARN_CACHE, _("Could not get cachename for '%s'\n"), basename);
 			} else {
 				valid_read_cache(cachename);
 			}
-		}
+			if (zstd_compress_policy == ZSTD_COMPRESS_POLICY) {
+				if (asprintf(&compr_basename, "compressed/%s", basename) < 0) {
+					PERROR(_("Cannot allocate memory for compr_basename\n"));
+					exit(1);
+				}
 
+				compr_cachename = aa_policy_cache_filename(pc, compr_basename);
+				if (!compr_cachename) {
+					autoclose int fd = aa_policy_cache_open(pc, compr_basename, O_RDONLY);
+					if (fd != -1)
+						pwarn(WARN_CACHE, _("Could not get cachename for '%s'\n"), basename);
+				} else {
+					tmp = valid_compressed_cache(compr_cachename);
+					if (tmp == ZSTD_COMPRESS_NONE) {
+						zstd_compress_policy = ZSTD_COMPRESS_POLICY;
+						write_cache = 1;
+						compr_cachename = NULL;
+					} else if (tmp == ZSTD_COMPRESS_PRECOMPRESSED) {
+						zstd_compress_policy = ZSTD_COMPRESS_PRECOMPRESSED;
+					} else if (tmp == ZSTD_COMPRESS_RECOMPRESS) {
+						zstd_compress_policy = ZSTD_COMPRESS_POLICY;
+						write_cache = 1;
+						compr_cachename = NULL;
+					}
+				}
+			}
+		}
 	}
 
 	if (yyin) {
@@ -1208,11 +1393,10 @@ int process_profile(int option, aa_kernel_interface *kernel_interface,
 		skip_cache = 1;
 
 	if (cachename) {
-		/* Load a binary cache if it exists and is newest */
-		if (cache_hit(cachename)) {
+		if (cache_hit(compr_cachename ? compr_cachename : cachename)) {
 			retval = process_binary(option, kernel_interface,
-						cachename);
-			if (!retval || skip_bad_cache_rebuild)
+						compr_cachename ? compr_cachename : cachename);
+			if ((!retval && !(write_cache && !compr_cachename && (zstd_compress_policy == ZSTD_COMPRESS_POLICY))) || skip_bad_cache_rebuild)
 				goto out;
 		}
 	}
@@ -1234,10 +1418,10 @@ int process_profile(int option, aa_kernel_interface *kernel_interface,
 	}
 
 	retval = post_process_policy(debug);
-  	if (retval != 0) {
-  		PERROR(_("%s: Errors found in file. Aborting.\n"), progname);
+	if (retval != 0) {
+		PERROR(_("%s: Errors found in file. Aborting.\n"), progname);
 		goto out;
-  	}
+	}
 
 	if (dump_expanded_vars) {
 		symtab::dump(true);
@@ -1253,26 +1437,78 @@ int process_profile(int option, aa_kernel_interface *kernel_interface,
 	if (pc && write_cache && !force_complain) {
 		writecachename = cache_filename(pc, 0, basename);
 		if (!writecachename) {
-			pwarn(WARN_CACHE, "Cache write disabled: Cannot create cache file name '%s': %m\n", basename);
+			pwarn(WARN_CACHE, _("Cache write disabled: Cannot create cache file name '%s': %m\n"), basename);
 			write_cache = 0;
 		}
-		cachetmp = setup_cache_tmp(&cachetmpname, writecachename);
+		cachetmp = setup_cache_tmp(&cachetmpname, (char*) writecachename, false);
 		if (cachetmp == -1) {
-			pwarn(WARN_CACHE, "Cache write disabled: Cannot create setup tmp cache file '%s': %m\n", writecachename);
+			pwarn(WARN_CACHE, _("Cache write disabled: Cannot create setup tmp cache file '%s': %m\n"), writecachename);
 			write_cache = 0;
+		}
+		else if (zstd_compress_policy != ZSTD_COMPRESS_NONE) {
+			compr_writecachename = cache_filename(pc, 0, compr_basename);
+			if (!compr_writecachename)
+				pwarn(WARN_CACHE, _("Cache write disabled: Cannot create compressed cache file name '%s': %m\n"), basename);
+			compr_cachetmp = setup_cache_tmp(&compr_cachetmpname, (char*) compr_writecachename, true);
+
 		}
 	}
 	/* cache file generated by load_policy */
 	retval = load_policy(option, kernel_interface, cachetmp);
 	if (retval == 0 && write_cache) {
 		if (force_complain) {
-			pwarn(WARN_CACHE, "Caching disabled for: '%s' due to force complain\n", basename);
+			pwarn(WARN_CACHE, _("Caching disabled for: '%s' due to force complain\n"), basename);
 		} else if (cachetmp == -1) {
 			unlink(cachetmpname);
-			pwarn(WARN_CACHE, "Failed to create cache: %s\n",
-			       basename);
+			if (compr_cachetmpname)
+				unlink(compr_cachetmpname);
+			pwarn(WARN_CACHE, _("Failed to create cache: %s\n"), basename);
 		} else {
 			install_cache(cachetmpname, writecachename);
+			if (compr_cachetmp != -1) {
+				/* Compressed cache must be generated there instead of __sd_serialize_profile
+				 * because else we need to generate a single compressed file. That wouldn't be
+				 * the case for caches containing several subprofiles in __sd_serialize_profile.
+				 */
+				size_t uncompressed_size = 0, compressed_buffer_size = 0;
+				char* uncompressed_buffer = read_policy_file(writecachename, &uncompressed_size);
+				char* compressed_buffer = NULL;
+				size_t wsize;
+
+				if (!uncompressed_buffer) {
+					PERROR(_("Cannot read cache uncompressed_cache"));
+					goto out;
+				}
+				/* Build kernel stream tail once */
+				compressed_buffer_size = compress_policy_zstd(uncompressed_buffer, uncompressed_size, &compressed_buffer);
+				if (compressed_buffer_size == 0) {
+					pwarn(WARN_CACHE, _("Compression failed, skipping compressed cache\n"));
+				} else {
+					/* Write user header (8 bytes) + kernel stream */
+					struct compr_user_header uhdr = {
+						.version = COMPR_USER_HDR_VERSION,
+						.compress_level = (uint8_t)zstd_compress_level,
+						.padding = {0},
+					};
+
+					wsize = write(compr_cachetmp, &uhdr, sizeof(uhdr));
+					if (wsize < 0 || (size_t)wsize < sizeof(uhdr)) {
+						PERROR(_("%s: Unable to write user header to compressed cache\n"), progname);
+					} else {
+						wsize = write(compr_cachetmp, compressed_buffer , compressed_buffer_size);
+						if (wsize < 0) {
+							PERROR(_("%s: Error compressing policy\n"), progname);
+						} else if (wsize < compressed_buffer_size) {
+							PERROR(_("%s: Unable to write entire compressed profile entry to cache\n"), progname);
+						} else {
+							install_cache(cachetmpname, writecachename);
+							install_cache(compr_cachetmpname, compr_writecachename);
+						}
+					}
+				}
+				free(compressed_buffer);
+				free(uncompressed_buffer);
+			}
 		}
 	}
 out:
@@ -1553,6 +1789,7 @@ static int binary_dir_cb(int dirfd aa_unused, const char *name, struct stat *st,
 			handle_work_result(errno);
 			return -1;
 		}
+		zstd_compress_policy = ZSTD_COMPRESS_GUESS;
 		rc = work_spawn(process_binary(option,
 					       cb_data->kernel_interface,
 					       path),
@@ -1587,6 +1824,8 @@ static bool get_kernel_features(struct aa_features **features)
 						     "policy/flags_table");
 	kernel_supports_oob = aa_features_supports(*features,
 						   "policy/outofband");
+	kernel_supports_zstd_load = aa_features_supports(*features,
+							       "policy/compressed_load");
 
 	if (aa_features_supports(*features, "policy/versions/v7"))
 		kernel_abi_version = 7;
@@ -1664,6 +1903,12 @@ int main(int argc, char *argv[])
 		PERROR(_("Failed to add kernel capabilities to known capabilities set"));
 		return 1;
 	}
+
+	set_compression_level(parseopts.control);
+	if (zstd_compress_level == 0)
+		zstd_compress_policy = ZSTD_COMPRESS_NONE;
+	else
+		zstd_compress_policy = ZSTD_COMPRESS_POLICY;
 
 	if (!(UNPRIVILEGED_OPS) &&
 	    aa_kernel_interface_new(&kernel_interface, kernel_features, apparmorfs) == -1) {
@@ -1771,6 +2016,7 @@ int main(int argc, char *argv[])
 					break;
 			}
 		} else if (binary_input) {
+			zstd_compress_policy = ZSTD_COMPRESS_GUESS;
 			/* ignore return as error is handled in work_spawn */
 			work_spawn(process_binary(option, kernel_interface,
 						  profilename),
