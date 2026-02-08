@@ -27,10 +27,10 @@
   /usr/lib/@{multiarch}/krb5/plugins/authdata/ r,
   /usr/lib/@{multiarch}/krb5/plugins/authdata/* mr,
 
-  /etc/krb5.keytab            rk,
-  /etc/krb5.conf              r,
-  /etc/krb5.conf.d/           r,
-  /etc/krb5.conf.d/*          r,
+  /etc/{,krb5/}krb5.keytab    rk,
+  /etc/{,krb5/}krb5.conf      r,
+  /etc/{,krb5/}krb5.conf.d/   r,
+  /etc/{,krb5/}krb5.conf.d/*  r,
 
   # Path included by configuration file installed by SSSD
   /var/lib/sss/pubconf/krb5.include.d/   r,
