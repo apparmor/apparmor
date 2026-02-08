@@ -43,6 +43,41 @@ be written in a single file. The policy language is compiled to a
 architecture independent binary format that is loaded into the kernel
 for enforcement.
 
+AppArmor compiled policy is stored in a cross platform container format.
+When loaded into the kernel it is verified and converted into the best
+format for the host. While it is technically possible to convert host
+policy back to the load format, recreating the exact format, layout and
+sha256sum is not feasible. So if the userspace wants to be able to
+obtain the currently enforced policy from the kernel (for example criu
+support needs to do this), AppArmor needs to hold onto the originally
+loaded policy. To reduce the amount of memory that the loaded policy
+uses, AppArmor compresses the policy using two different types of
+compression: an internal state layout compression, and a policy container
+level compression.
+
+The policy state layout compression is only done in the compiler and
+is not changed by the kernel during the unpack, and is natively part
+of the state machine used for mediation. The policy container
+compression can be done by the kernel or the policy compiler to reduce
+the amount of memory the policy container uses to support CRIU and
+policy introspection. If introspection of policy and CRIU support is
+disabled the kernel will not retain the compressed container data.
+
+The policy compiler provides the option to pre-compress policy container, so that
+the kernel will not have to do it after the policy is loaded. This
+provides better control of the compression level that is used, allowing
+userspace to make speed/size trade-offs. It also means that policy is
+only compressed once at compile time instead of every time the policy is
+loaded. This means subsequent policy loads based on just the cache are
+faster, as the kernel only needs to decompress (which is 4-5x faster)
+at the start of the load, instead of compressing at the end.
+
+When enabled the default compression level for userspace compression of
+the policy is higher than the level that the kernel uses. This can make
+first load slightly slower, for a better compression. However subsequent
+loads will be faster. To adjust the default compression level used set
+zstd-compress-level parameter in parser.conf.
+
 The base unit of AppArmor confinement is the profile. It contains a
 set of rules which are enforced when the profile is associated with a
 running program. The rules within the profile provide a whitelist of
