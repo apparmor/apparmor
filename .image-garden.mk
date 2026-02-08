@@ -31,6 +31,7 @@ packages:
 - libpam0g-dev
 - libtool
 - liburing-dev
+- libzstd-dev
 - pkg-config
 - proftpd-core
 - python3-all-dev
@@ -77,6 +78,7 @@ packages:
 - gobject-introspection
 - libtool
 - liburing2-devel
+- libzstd-devel
 - make
 - pam-devel
 - pkg-config
@@ -114,6 +116,7 @@ packages:
 - libstdc++-static
 - libtool
 - liburing-devel
+- libzstd-devel
 - pam-devel
 - perl
 - pkg-config

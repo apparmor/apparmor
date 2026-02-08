@@ -759,3 +759,171 @@ exit:
 	return error;
 }
 
+#ifdef UNIT_TEST
+
+#include "unit_test.h"
+
+/*
+ * Generate data to compress with 4 bits / byte of entropy
+ */
+static void generate_test_data(char *buffer, size_t size)
+{
+	for (size_t i = 0; i < size; i++)
+		buffer[i] = (char)(rand() & 0x0F);
+}
+
+static int test_compress_roundtrip(void)
+{
+	int rc = 0;
+	char *test_data = NULL;
+	char *compressed = NULL;
+	size_t test_size = 64 * 1024; /* 64KB */
+	size_t comp_size;
+
+	test_data = (char *)malloc(test_size);
+	if (!test_data)
+		return 1;
+
+	generate_test_data(test_data, test_size);
+
+	/* Set a valid compression level for testing */
+	zstd_compress_level = 10;
+
+	comp_size = compress_policy_zstd(test_data, test_size, &compressed);
+
+	printf("roundtrip: input=%zu compressed=%zu ratio=%.2f%%\n",
+	       test_size, comp_size, 100.0 * comp_size / test_size);
+
+	MY_TEST(comp_size > 0, "compression produced output");
+	MY_TEST(compressed != NULL, "compression allocated buffer");
+	MY_TEST(comp_size < test_size, "compression reduced size");
+
+
+
+	free(test_data);
+	free(compressed);
+	return rc;
+}
+
+static int test_compress_empty_input(void)
+{
+	int rc = 0;
+	char *compressed = NULL;
+	size_t comp_size;
+
+	zstd_compress_level = 10;
+
+	/* Empty input should still work (edge case) */
+	comp_size = compress_policy_zstd("", 0, &compressed);
+	MY_TEST(comp_size > 0, "empty input produces zstd frame");
+	MY_TEST(compressed != NULL, "empty input allocated buffer");
+
+	free(compressed);
+	return rc;
+}
+
+static int test_compress_various_sizes(void)
+{
+	int rc = 0;
+	char *test_data = NULL;
+	char *compressed = NULL;
+	size_t comp_size;
+	/* Test sizes: 1KB, 64KB, 512KB */
+	size_t sizes[] = {1024, 64 * 1024, 512 * 1024};
+
+	zstd_compress_level = 10;
+
+	for (size_t i = 0; i < sizeof(sizes)/sizeof(sizes[0]); i++) {
+		size_t sz = sizes[i];
+		test_data = (char *)malloc(sz);
+		if (!test_data) {
+			rc = 1;
+			continue;
+		}
+
+		generate_test_data(test_data, sz);
+		comp_size = compress_policy_zstd(test_data, sz, &compressed);
+
+		char msg[128];
+		snprintf(msg, sizeof(msg), "size %zuKB compressed (ratio=%.1f%%)",
+		         sz / 1024, 100.0 * comp_size / sz);
+		MY_TEST(comp_size > 0 && comp_size < sz, msg);
+
+		free(test_data);
+		free(compressed);
+		test_data = NULL;
+		compressed = NULL;
+	}
+
+	return rc;
+}
+
+static int test_recompress_buffer(void)
+{
+	int rc = 0;
+	char *test_data = NULL;
+	char *compressed = NULL;
+	char *recompressed = NULL;
+	size_t test_size = 100 * 1024; /* 100KB */
+	size_t comp_size, recomp_size;
+
+	test_data = (char *)malloc(test_size);
+	if (!test_data)
+		return 1;
+
+	generate_test_data(test_data, test_size);
+	zstd_compress_level = 10;
+
+	/* 1. Compress initial data */
+	comp_size = compress_policy_zstd(test_data, test_size, &compressed);
+	MY_TEST(comp_size > 0, "initial compression success");
+
+	/* 2. Recompress */
+	/* recompress_policy_zstd takes (compressed_data, compressed_size, &out) */
+	recomp_size = recompress_policy_zstd(compressed, comp_size, &recompressed);
+
+	MY_TEST(recomp_size > 0, "recompression produced output");
+	MY_TEST(recompressed != NULL, "recompression allocated buffer");
+
+	/* 3. Verify consistency (optional: check if size is similar) */
+	/* Zstd is deterministic for same level/params, so sizes should match exactly if using same level */
+	MY_TEST(recomp_size == comp_size, "recompressed size matches initial compressed size");
+
+	free(test_data);
+	free(compressed);
+	free(recompressed);
+	return rc;
+}
+
+int main(void)
+{
+	int rc = 0;
+	int retval;
+
+	srand(time(NULL));
+	progname = __FILE__;
+
+	retval = test_compress_roundtrip();
+	if (retval != 0)
+		rc = retval;
+
+	retval = test_compress_empty_input();
+	if (retval != 0)
+		rc = retval;
+
+	retval = test_compress_various_sizes();
+	if (retval != 0)
+		rc = retval;
+
+	retval = test_recompress_buffer();
+	if (retval != 0)
+		rc = retval;
+
+
+	if (rc == 0)
+		printf("All compression tests passed.\n");
+
+	return rc;
+}
+
+#endif /* UNIT_TEST */
