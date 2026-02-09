@@ -1,0 +1,8 @@
+
+  abi <abi/5.0>,
+
+  # authd socket
+  @{run}/authd.sock rw,
+
+  # Include additions to the abstraction
+  include if exists <abstractions/authd.d>

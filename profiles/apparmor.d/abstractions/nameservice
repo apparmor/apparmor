@@ -79,6 +79,9 @@
   # kerberos
   include <abstractions/kerberosclient>
 
+  # authd
+  include <abstractions/authd>
+
   # Also allow lookups for systemd-exec's DynamicUsers via D-Bus
   #   https://www.freedesktop.org/software/systemd/man/systemd.exec.html
   dbus send
