@@ -32,6 +32,10 @@
   /etc/krb5.conf.d/           r,
   /etc/krb5.conf.d/*          r,
 
+  # Path included by configuration file installed by SSSD
+  /var/lib/sss/pubconf/krb5.include.d/   r,
+  /var/lib/sss/pubconf/krb5.include.d/*  r,
+
   # config files found via strings on libs
   /etc/krb.conf               r,
   /etc/krb.realms             r,
