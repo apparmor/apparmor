@@ -64,6 +64,9 @@ import threading
 
 gi.require_version('GLib', '2.0')
 
+# setup module translations
+_ = init_translation()
+
 
 def get_user_login():
     """Portable function to get username.
