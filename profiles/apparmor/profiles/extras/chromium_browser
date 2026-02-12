@@ -28,6 +28,7 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   include <abstractions/mesa>
   include <abstractions/nameservice>
   include <abstractions/user-tmp>
+  include <abstractions/video>
   include <abstractions/vulkan>
 
   # This include specifies which ubuntu-browsers.d abstractions to use. Eg, if
@@ -161,6 +162,9 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   /sys/devices/@{pci_bus}/**/descriptors r,
   /sys/devices/@{pci_bus}/**/device r,
   /sys/devices/@{pci_bus}/**/devnum r,
+  /sys/devices/@{pci_bus}/**/idProduct r,
+  /sys/devices/@{pci_bus}/**/idVendor r,
+  /sys/devices/@{pci_bus}/**/interface r,
   /sys/devices/@{pci_bus}/**/irq r,
   /sys/devices/@{pci_bus}/**/manufacturer r,
   /sys/devices/@{pci_bus}/**/product r,
@@ -177,7 +181,7 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   /sys/devices/virtual/tty/tty*/active r,
   # This is requested, but doesn't seem to actually be needed so deny for now
   deny /run/udev/data/** r,
-  deny /sys/devices/virtual/dmi/id/* r,
+  deny /sys/devices/virtual/dmi/id/** r,
 
   # Needed for the crash reporter
   owner @{PROC}/@{pid}/auxv r,
@@ -219,9 +223,9 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   # Default profile allows downloads to ~/Downloads and uploads from ~/Public
   owner @{HOME}/ r,
   owner @{HOME}/Public/ r,
-  owner @{HOME}/Public/* r,
+  owner @{HOME}/Public/** r,
   owner @{HOME}/Downloads/ r,
-  owner @{HOME}/Downloads/* rw,
+  owner @{HOME}/Downloads/** rw,
 
   # For migration
   owner @{HOME}/.mozilla/firefox/profiles.ini r,
