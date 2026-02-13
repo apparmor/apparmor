@@ -303,6 +303,8 @@ class DbusRule(BaseRule):
             # Ignore them, even if some of them appear in the log.
             # Also, the log doesn't provide a peer name, therefore always use ALL.
             if access in ('send', 'receive'):
+                if peer_profile is None:
+                    peer_profile = cls.ALL
                 yield cls(access, bus, path, cls.ALL, interface, member, cls.ALL, peer_profile, log_event=True)
             elif access == 'bind':
                 yield cls(access, bus, cls.ALL, name, cls.ALL, cls.ALL, cls.ALL, cls.ALL, log_event=True)
