@@ -1,0 +1,1 @@
+2026-02-11T17:49:21.719707+01:00 sec-questing-amd64 dbus-daemon[3217]: apparmor="DENIED" operation="dbus_method_call"  bus="session" name="org.freedesktop.DBus" path="/org/freedesktop/DBus" interface="org.freedesktop.DBus" member="Hello" mask="send" pid=1234 profile="random_test"

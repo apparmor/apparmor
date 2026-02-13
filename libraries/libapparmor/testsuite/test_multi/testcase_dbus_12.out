@@ -1,0 +1,12 @@
+START
+File: testcase_dbus_12.in
+Event type: AA_RECORD_DENIED
+Operation: dbus_method_call
+Denied Mask: send
+Profile: random_test
+Name: org.freedesktop.DBus
+PID: 1234
+DBus bus: session
+DBus path: /org/freedesktop/DBus
+DBus interface: org.freedesktop.DBus
+DBus member: Hello
