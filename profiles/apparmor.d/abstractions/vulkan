@@ -3,18 +3,14 @@
 
   abi <abi/5.0>,
 
+  # Mesa provides the default Vulkan implementation
+  include <abstractions/mesa>
+  # NVIDIA is another implementation we want to allow by default
+  include <abstractions/nvidia>
+
   # System files
-  /dev/dri/ r, # libvulkan_radeon.so, libvulkan_intel.so (Mesa)
-  /etc/glvnd/egl_vendor.d/{,*.json} r,
   /etc/vulkan/icd.d/{,*.json} r,
   /etc/vulkan/{explicit,implicit}_layer.d/{,*.json} r,
-  # for drmGetMinorNameForFD() from libvulkan_intel.so (Mesa)
-  @{sys}/devices/@{pci_bus}/*/drm/ r,
-  @{sys}/devices/@{pci_bus}/*/drm/card[0-9]/gt_{max,min}_freq_mhz r, # anv_enumerate_physical_devices() from libvulkan_intel.so
-  @{sys}/devices/@{pci_bus}/*/drm/card[0-9]/metrics/ r, # anv_enumerate_physical_devices() from libvulkan_intel.so
-  @{sys}/devices/@{pci_bus}/*/drm/card[0-9]/metrics/????????-????-????-????-????????????/id r, # anv_enumerate_physical_devices() from libvulkan_intel.so
-  /usr/share/egl/egl_external_platform.d/{,*} r,
-  /usr/share/glvnd/egl_vendor.d/{,*} r,
   /usr/share/vulkan/icd.d/{,*.json} r,
   /usr/share/vulkan/{explicit,implicit}_layer.d/{,*.json} r,
 

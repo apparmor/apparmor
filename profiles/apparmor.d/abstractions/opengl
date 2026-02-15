@@ -1,0 +1,17 @@
+# vim:ft=apparmor
+# Vulkan access requirements
+
+  abi <abi/5.0>,
+
+  # Mesa provides the default OpenGL implementation
+  include <abstractions/mesa>
+  # NVIDIA is another implementation we want to allow by default
+  include <abstractions/nvidia>
+
+  # System files
+  /etc/glvnd/egl_vendor.d/{,*.json} r,
+  /usr/share/egl/egl_external_platform.d/{,*} r,
+  /usr/share/glvnd/egl_vendor.d/{,*} r,
+
+  # Include additions to the abstraction
+  include if exists <abstractions/opengl.d>

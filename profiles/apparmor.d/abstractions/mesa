@@ -3,8 +3,10 @@
 
   abi <abi/5.0>,
 
+  include <abstractions/dri-common>
+  include <abstractions/dri-enumerate>
+
   # System files
-  /dev/dri/ r, # libGLX_mesa.so calls drmGetDevice2()
   /dev/udmabuf rw,
   /usr/share/libdrm/amdgpu.ids r,
 
@@ -13,6 +15,9 @@
   @{PROC}/sys/dev/i915/perf_stream_paranoid r,
 
   @{sys}/devices/@{pci_bus}/**/{revision,config} r,
+
+  # Thread scheduling
+  @{sys}/devices/system/cpu/cpu[0-9]*/cpu_capacity r,
 
   # User files
   owner @{HOME}/.cache/ w, # if user clears all caches
