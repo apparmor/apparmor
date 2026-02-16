@@ -132,8 +132,9 @@ APPARMOR_3.1 {
 	*;
 } APPARMOR_3.0;
 
-APPARMOR_4.1 {
+APPARMOR_5.0 {
   global:
+	aa_get_lsm_iface_name;
 	aa_get_self_attr;
 	aa_set_self_attr;
   local:

@@ -65,6 +65,8 @@ struct compound_label {
 	struct single_label labels[MAX_LABELS];
 };
 
+static bool use_proc_interface = false;
+
 /**
  * Initializes @sl by parsing @compound_label. Returns a pointer to the
  * location of the next label in the compound label string, which should be
@@ -164,10 +166,15 @@ static void verify_confinement_context(int op_type,
 	bool null_expected_mode = expected_mode ?
 				  strcmp(NO_MODE, expected_mode) == 0 : false;
 
-	rc = aa_get_self_attr(op_type, &label, &mode);
+	if (use_proc_interface) {
+		const char *attr = aa_get_lsm_iface_name(op_type);
+		rc = aa_getprocattr(getpid(), attr, &label, &mode);
+	} else {
+		rc = aa_get_self_attr(op_type, &label, &mode);
+	}
 	if (rc < 0) {
 		int err = errno;
-		fprintf(stderr, "FAIL - aa_getprocattr (%s): %m", get_iface_name(op_type));
+		fprintf(stderr, "FAIL - aa_getprocattr (%s): %m", aa_get_lsm_iface_name(op_type));
 		exit(err);
 	}
 
@@ -190,7 +197,7 @@ static void verify_confinement_context(int op_type,
 
 		if (!compound_labels_equal(&cl, &expected_cl)) {
 			fprintf(stderr, "FAIL - %s label \"%s\" != expected_label \"%s\"\n",
-				get_iface_name(op_type), label, expected_label);
+				aa_get_lsm_iface_name(op_type), label, expected_label);
 			rc = EINVAL;
 			goto err;
 		}
@@ -200,7 +207,7 @@ static void verify_confinement_context(int op_type,
 	    ((!mode && !null_expected_mode) ||
 	     (mode && strcmp(mode, expected_mode)))) {
 		fprintf(stderr, "FAIL - %s mode \"%s\" != expected_mode \"%s\"\n",
-			get_iface_name(op_type), mode, expected_mode);
+			aa_get_lsm_iface_name(op_type), mode, expected_mode);
 		rc = EINVAL;
 		goto err;
 	}
@@ -362,7 +369,7 @@ static void parse_opts(int argc, char **argv, struct options *opts)
 	int o, rc;
 
 	memset(opts, 0, sizeof(*opts));
-	while ((o = getopt(argc, argv, "f:L:M:l:m:nO:P:o:p:i:")) != -1) {
+	while ((o = getopt(argc, argv, "Bf:L:M:l:m:nO:P:o:p:i:")) != -1) {
 		switch (o) {
 		case 'f': /* file */
 			opts->file = optarg;
@@ -401,6 +408,9 @@ static void parse_opts(int argc, char **argv, struct options *opts)
 				perror("FAIL: immediate change_profile");
 				exit(err);
 			}
+			break;
+		case 'B': /* test old interfaces - backwards compat check */
+			use_proc_interface = true;
 			break;
 		default: /* '?' */
 			usage(prog);
