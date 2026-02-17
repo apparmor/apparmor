@@ -748,12 +748,15 @@ static int get_apparmor_attr_raw(__u32 op_type, struct lsm_ctx *ctx, __u32 sz)
 		return -1;
 
 	result = lsm_get_self_attr(op_type, ctx, &req_sz, LSM_FLAG_SINGLE);
-	if (result >= 0 || // Success
+	if (result >= sizeof(*ctx) || // Success
 	    (result == -1 && errno == E2BIG) // Buffer too small
-	)
+	) {
 		return (int)req_sz;
-	else
-		return result;
+	} else if (result > 0) {
+		errno = EINVAL;
+		return -1;
+	}
+	return result;
 }
 
 /**
@@ -769,7 +772,7 @@ static int get_apparmor_attr_raw(__u32 op_type, struct lsm_ctx *ctx, __u32 sz)
  */
 int aa_get_self_attr(int op_type, char **label, char **mode)
 {
-	size_t total_size = INITIAL_GUESS_SIZE;
+	size_t total_size = INITIAL_GUESS_SIZE - 1; /* save byte for null termnation */
 	struct lsm_ctx *ctx = malloc(total_size);
 	struct lsm_ctx *tmp_ctx;
 	int rc = -1;
@@ -787,7 +790,7 @@ int aa_get_self_attr(int op_type, char **label, char **mode)
 		goto out;
 
 	// Insufficient size: we try again with the good size
-	tmp_ctx = realloc(ctx, rc);
+	tmp_ctx = realloc(ctx, rc + 1); /* add byte for null termination */
 	if (!tmp_ctx) {
 		rc = -1;
 		goto out;
@@ -798,11 +801,30 @@ int aa_get_self_attr(int op_type, char **label, char **mode)
 		rc = -1;
 		goto out;
 	}
+	/* req_size is rounded up to the next endtry boundary, so
+	 * user the actual data size returned in ctx_len
+	 */
 	rc = size;
 out:
-	if (rc > 0) {
-		rc -= sizeof(struct lsm_ctx);
-		*label = aa_splitcon((char *)ctx->ctx, mode);
+	if (rc > sizeof(*ctx)) {
+		/* choice is to either, move label to start of buffer
+		 * OR strdup()
+		 * less overhead to move so ...
+		 * Note:
+		 *    returned rc can be bigger than actual string due to alignment
+		 *    rounding up. ie. it is at what position of next entry
+		 *    would be if there are multiple entries, so use ctx_len
+		 *   ctx_len does not include null byte we saved space for
+		 */
+		size = ctx->ctx_len;
+		char *buf = (char *)ctx;
+		memmove(ctx, ctx->ctx, size); /* includes null terminator */
+		buf[size] = 0; /* null terminate */
+		*label = splitcon(buf, size, true, mode);
+		/* getprocattr_raw - size includes \n which gets overwritten by
+		 * null byte, emulate here by including null we manually added
+		 */
+		return size + 1; /* includes null terminator */
 	} else {
 		*label = NULL;
 		*mode = NULL;
