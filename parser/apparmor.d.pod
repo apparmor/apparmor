@@ -588,7 +588,7 @@ hardcoded restrictions that are not covered by policy, and thus can
 not be allowed by policy. Hence they are not covered by complain
 mode. When these restrictions are applied they will return EPERM
 instead of EACCES. An example of this is trying to disable AppArmor
-via the module enabled parameter, after AppArmor has been intialized
+via the module enabled parameter, after AppArmor has been initialized
 during kernel initialization in early boot. This parameter is
 restricted to use as a kernel parameters set in the boot loader.
 
