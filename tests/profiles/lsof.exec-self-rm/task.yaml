@@ -1,0 +1,17 @@
+summary: test lsof when used with a process that deleted its executable
+environment:
+    PROGRAM_NAME: lsof
+    PROFILE_NAME: lsof
+execute: |
+    echo -e '#!/bin/bash\nrm -- "$0"\nsleep 60' > /tmp/self-delete.sh
+    chmod +x /tmp/self-delete.sh
+
+    /tmp/self-delete.sh &
+    SCRIPT_PID=$!
+    sleep 2
+
+    # Check if `lsof` can still track it
+    echo "Process PID: $SCRIPT_PID"
+    lsof -p $SCRIPT_PID
+
+    kill $SCRIPT_PID 2>/dev/null

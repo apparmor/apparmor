@@ -1,0 +1,28 @@
+summary: test lsof when used with encrypted volumes
+environment:
+    PROGRAM_NAME: lsof
+    PROFILE_NAME: lsof
+prepare: |
+    dd if=/dev/zero of=/tmp/encrypted.img bs=1M count=30
+    losetup -f /tmp/encrypted.img
+    LOOP=$(losetup | awk '{ if ($6 == "/tmp/encrypted.img") { print $1 }}')
+
+    echo "securest passphrase" | cryptsetup luksFormat "$LOOP" --key-file=-
+    echo "securest passphrase" | cryptsetup luksOpen "$LOOP" encdev --key-file=-
+    mkfs.ext4 /dev/mapper/encdev
+    mkdir -p /mnt/encrypted
+    mount /dev/mapper/encdev /mnt/encrypted
+
+    echo "test content" >/mnt/encrypted/testfile.txt
+execute: |
+    exec 3</mnt/encrypted/testfile.txt
+    lsof /mnt/encrypted
+    exec 3<&-
+restore: |
+    umount /mnt/encrypted
+
+    LOOP=$(losetup | awk '{ if ($6 == "/tmp/encrypted.img") { print $1 }}')
+    cryptsetup luksClose encdev
+    losetup -d "$LOOP"
+
+    rm -f /tmp/encrypted.img

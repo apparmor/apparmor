@@ -1,0 +1,15 @@
+summary: test lsof when used with zombie processes
+environment:
+    PROGRAM_NAME: lsof
+    PROFILE_NAME: lsof
+execute: |
+    # Create a process that turns into a zombie
+    python3 -c 'import os, time; pid = os.fork(); os._exit(0) if pid == 0 else time.sleep(10)' &
+    PARENT_PID=$!
+
+    # Wait a moment and check for zombies
+    sleep 2
+    ps -ef | MATCH defunct
+    lsof -p $PARENT_PID
+
+    kill $PARENT_PID 2>/dev/null

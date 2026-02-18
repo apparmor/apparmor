@@ -1,0 +1,12 @@
+summary: test lsof when used with named pipes
+environment:
+    PROGRAM_NAME: lsof
+    PROFILE_NAME: lsof
+prepare: |
+    mkfifo /tmp/testpipe
+execute: |
+    exec 3<> /tmp/testpipe
+    lsof +E | tee /tmp/lsof.log | MATCH /tmp/testpipe || MATCH FIFO /tmp/lsof.log
+    exec 3<&-
+restore: |
+    rm -f /tmp/testpipe
