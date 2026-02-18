@@ -323,6 +323,7 @@ TESTS=aa_exec \
       mult_mount \
       named_pipe \
       namespaces \
+      net_iface \
       net_inet \
       net_raw \
       overlayfs_kernel \
@@ -463,6 +464,12 @@ mount: mount.c
 
 io_uring: io_uring.c
 	${CC} ${CFLAGS} ${LDFLAGS} $< -o $@ ${LDLIBS} -luring
+
+net_inet_rcv: net_inet_rcv.c net_inet.h
+	${CC} ${CFLAGS} ${LDFLAGS} $^ -o $@ ${LDLIBS}
+
+net_inet_snd: net_inet_snd.c net_inet.h
+	${CC} ${CFLAGS} ${LDFLAGS} $^ -o $@ ${LDLIBS}
 
 build-dep:
 	@if [ `whoami` = "root" ] ;\

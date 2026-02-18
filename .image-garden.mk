@@ -41,6 +41,7 @@ packages:
 - python3-setuptools
 - python3-tk
 - python3-ttkthemes
+- socat
 - swig
 - tinyproxy
 # Update all the packages. This allows us to be on the up-to-date kernel
@@ -91,6 +92,7 @@ packages:
 - python3-tk
 - python311
 - python311-devel
+- socat
 - swig
 - which
 # See above for rationale.
@@ -125,6 +127,7 @@ packages:
 - python3-gobject-base
 - python3-notify2
 - python3-tkinter
+- socat
 - swig
 # See above for rationale.
 package_upgrade: true
