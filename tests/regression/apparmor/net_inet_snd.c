@@ -20,7 +20,8 @@ struct connection_info {
 	char *remote_ip;
 	char *remote_port;
 	char *protocol;
-} net_info;
+	char *interface;
+} net_info = {0};
 
 int send_udp(char *message)
 {
@@ -28,13 +29,13 @@ int send_udp(char *message)
 	struct sockaddr_in remote, local;
 	struct sockaddr_in6 remote6, local6;
 
-	struct ip_address bind_addr;
+	struct ip_address bind_addr = {0};
 	if (!parse_ip(net_info.bind_ip, net_info.bind_port, &bind_addr)) {
 		fprintf(stderr, "FAIL SND - could not parse bind ip address\n");
 		return -1;
 	}
 
-	struct ip_address remote_addr;
+	struct ip_address remote_addr = {0};
 	if (!parse_ip(net_info.remote_ip, net_info.remote_port, &remote_addr)) {
 		fprintf(stderr, "FAIL SND - could not parse remote ip address\n");
 		return -1;
@@ -49,6 +50,12 @@ int send_udp(char *message)
 	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &enable, sizeof(int)) < 0)
 		perror("FAIL SND - setsockopt(SO_REUSEADDR) failed");
 
+	if (net_info.interface) {
+		bind_addr.interface = net_info.interface;
+		remote_addr.interface = net_info.interface;
+		if (setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, net_info.interface, strlen(net_info.interface)) < 0)
+			perror("FAIL - setsockopt(SO_BINDTODEVICE) failed");
+	}
 
 	if (bind_addr.family == AF_INET) {
 		local = convert_to_sockaddr_in(bind_addr);
@@ -91,13 +98,13 @@ int send_tcp(char *message)
 	struct sockaddr_in remote, local;
 	struct sockaddr_in6 remote6, local6;
 
-	struct ip_address bind_addr;
+	struct ip_address bind_addr = {0};
 	if (!parse_ip(net_info.bind_ip, net_info.bind_port, &bind_addr)) {
 		fprintf(stderr, "FAIL SND - could not parse bind ip address\n");
 		return -1;
 	}
 
-	struct ip_address remote_addr;
+	struct ip_address remote_addr = {0};
 	if (!parse_ip(net_info.remote_ip, net_info.remote_port, &remote_addr)) {
 		fprintf(stderr, "FAIL SND - could not parse remote ip address\n");
 		return -1;
@@ -112,6 +119,11 @@ int send_tcp(char *message)
 	const int enable = 1;
 	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &enable, sizeof(int)) < 0)
 		perror("FAIL SND - setsockopt(SO_REUSEADDR) failed");
+
+	if (net_info.interface) {
+		if (setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, net_info.interface, strlen(net_info.interface)) < 0)
+			perror("FAIL - setsockopt(SO_BINDTODEVICE) failed");
+	}
 
 	if (bind_addr.family == AF_INET) {
 		local = convert_to_sockaddr_in(bind_addr);
@@ -218,7 +230,7 @@ int main(int argc, char *argv[])
 	int send_ret;
 
 	if (argc < 6) {
-		printf("Usage: %s bind_ip bind_port remote_ip remote_port proto\n", argv[0]);
+		printf("Usage: %s bind_ip bind_port remote_ip remote_port proto [interface]\n", argv[0]);
 		exit(1);
 	}
 
@@ -227,6 +239,8 @@ int main(int argc, char *argv[])
 	net_info.remote_ip = argv[3];
 	net_info.remote_port = argv[4];
 	net_info.protocol = argv[5];
+	if (argc == 7)
+		net_info.interface = argv[6];
 
 	send_ret = -1;
 	if (strcmp(net_info.protocol, "udp") == 0)
