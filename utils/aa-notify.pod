@@ -107,7 +107,7 @@ Supported Filter TYPE:
 =item mode      - mode eg, DENIED, ALLOWED, STATUS
 -item operation - operation being mediated eg. open
 -item name      - name of object, eg. file name /home/foo/bar
--item denied    - permissons that were denied
+-item denied    - permissions that were denied
 -item family    - socket family, eg. inet, inet6, netlink
 -item socket    - socket type. eg. stream, dgram, rdm
 
@@ -173,11 +173,11 @@ System-wide configuration for B<aa-notify> is done via
   filter.profile="^(foo|bar)$"	# Match the profile:		Only shows notifications for profiles "foo" or "bar"
   filter.mode="^STATUS$"	# Match the mode:		Only show notifications for "STATUS" messages, where mode can be:
 	UNKNOWN		an unknown AppArmor mode
-	ERROR		an error other than a regular denial occured
+	ERROR		an error other than a regular denial occurred
 	ALLOWED		a permissions request which did not match a rule, was allowed due to complain mode.
 	DENIED		a permissions request was denied
 	HINT		additional context information
-	STATUS		some policy or enforcement change has occured
+	STATUS		some policy or enforcement change has occurred
 	KILLED		a permission request was denied and the process that attempted the access was killed.
   filter.operation="^open$"	# Match the operation:		Only shows notifications for "open" operation
   filter.name="^(?!/usr/lib/)"	# Match the name:		Excludes notifications for names starting by "/usr/lib/"
