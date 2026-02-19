@@ -1481,7 +1481,7 @@ int process_profile(int option, aa_kernel_interface *kernel_interface,
 				size_t uncompressed_size = 0, compressed_buffer_size = 0;
 				char* uncompressed_buffer = read_policy_file(writecachename, &uncompressed_size);
 				char* compressed_buffer = NULL;
-				size_t wsize;
+				ssize_t wsize;
 
 				if (!uncompressed_buffer) {
 					PERROR(_("Cannot read cache uncompressed_cache"));
@@ -1506,7 +1506,7 @@ int process_profile(int option, aa_kernel_interface *kernel_interface,
 						wsize = write(compr_cachetmp, compressed_buffer , compressed_buffer_size);
 						if (wsize < 0) {
 							PERROR(_("%s: Error compressing policy\n"), progname);
-						} else if (wsize < compressed_buffer_size) {
+						} else if ((size_t) wsize < compressed_buffer_size) {
 							PERROR(_("%s: Unable to write entire compressed profile entry to cache\n"), progname);
 						} else {
 							install_cache(cachetmpname, writecachename);
