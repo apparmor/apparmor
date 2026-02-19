@@ -470,24 +470,24 @@ void set_compression_level(optflags_t f) {
 	// Is the compression level explicitly set?
 	if (zstd_compress_level != ZSTD_LEVEL_UNSPECIFIED) {
 		goto check_kernel_support;
+	} else if (!kernel_supports_setload || !kernel_supports_zstd_load) {
+		/* no warning needed - unspecified and not supported */
+		zstd_compress_level = ZSTD_COMPRESS_NONE;
+		return;
 	}
 
 	// Fallback to the global compression variable.
-	if ((zstd_compress_level != ZSTD_DISABLED) &&
-	    (f & CONTROL_DFA_TRANS_HIGH)) {
-		zstd_compress_level = ZSTD_COMPRESS_HIGH_VALUE;
-		goto check_kernel_support;
+	if (zstd_compress_level != ZSTD_DISABLED) {
+		if (f & CONTROL_DEFAULT_COMPRESS)
+			zstd_compress_level = ZSTD_COMPRESS_DEFAULT_VALUE;
+		else if (f & CONTROL_DFA_TRANS_HIGH)
+			zstd_compress_level = ZSTD_COMPRESS_HIGH_VALUE;
+		else
+			zstd_compress_level = ZSTD_COMPRESS_FAST_VALUE;
 	}
 
-	if (!kernel_supports_setload || !kernel_supports_zstd_load)
-		zstd_compress_level = ZSTD_COMPRESS_NONE;
-	else
-		zstd_compress_level = ZSTD_COMPRESS_DEFAULT_VALUE;
-
-	return;
-
 check_kernel_support:
-	if ((!kernel_supports_setload || !kernel_supports_zstd_load) && zstd_compress_level != 0) {
+	if ((!kernel_supports_setload || !kernel_supports_zstd_load) && zstd_compress_level != ZSTD_DISABLED) {
 		pwarn(WARN_DEBUG_CACHE, _("WARNING: Kernel does not support compressed policies. Defaulting to uncompressed\n"));
 		zstd_compress_level = ZSTD_COMPRESS_NONE;
 	}
@@ -647,6 +647,11 @@ static int process_arg(int c, char *optarg)
 					      &parseopts.control)) {
 			PERROR("%s: Invalid --Optimize option %s\n",
 			       progname, optarg);
+			exit(1);
+		} else if ((parseopts.control & CONTROL_DFA_TRANS_HIGH) &&
+			   (parseopts.control & CONTROL_DEFAULT_COMPRESS)) {
+			PERROR(_("%s: Conflicting --Optimize options: compress-default, compress-small\n"),
+			       progname);
 			exit(1);
 		}
 		break;

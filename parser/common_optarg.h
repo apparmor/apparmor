@@ -28,9 +28,11 @@
 /*
  * flag: 1 - allow no- inversion
  * flag: 2 - flags specified should be masked off
+ * flag: 4 - flags specified are the default value
  */
 #define OPT_FLAG_CONTROL_PREFIX_NO	1
 #define OPT_FLAG_CONTROL_MASK		2
+#define OPT_FLAG_CONTROL_DEFAULT	4
 typedef struct {
 	int control;
 	const char *option;
