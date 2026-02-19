@@ -237,7 +237,7 @@ int setup_cache_tmp(const char **cachetmpname, char *cachename, int create_compr
 			perror("asprintf");
 			return -1;
 		}
-		prev_mask = umask(S_IRWXU);
+		prev_mask = umask(~S_IRWXU);
 		if ((cache_fd = mkstemp(tmpname)) < 0) {
 			perror("mkstemp");
 			umask(prev_mask);
