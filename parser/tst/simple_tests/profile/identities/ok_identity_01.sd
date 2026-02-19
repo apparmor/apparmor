@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION single identity
+#=EXRESULT PASS
+#
+profile p + identities=(foo) {
+  file,
+}

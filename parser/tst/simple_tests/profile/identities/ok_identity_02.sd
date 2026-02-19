@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION multiple identities
+#=EXRESULT PASS
+#
+profile test + identities=(foo, bar) {
+  file,
+}

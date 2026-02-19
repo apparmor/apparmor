@@ -65,6 +65,7 @@ environment:
     TEST/rw: 1
     TEST/sd_flags: 1
     TEST/setattr: 1
+    TEST/signal_identity: 1
     TEST/socketpair: 1
     TEST/stackonexec: 1
     TEST/stackprofile: 1

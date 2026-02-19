@@ -1,0 +1,8 @@
+#
+#=DESCRIPTION Path-based identities with space
+#=EXRESULT PASS
+#
+
+profile test + identities=("/foo bar", "/tac tic") {
+    file,
+}

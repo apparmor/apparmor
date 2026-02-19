@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION no identity
+#=EXRESULT FAIL
+#
+profile p + identities=() {
+  file,
+}

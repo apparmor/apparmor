@@ -1,0 +1,8 @@
+#
+#=DESCRIPTION identities used at the same times as attachement and flags
+#=EXRESULT PASS
+#
+
+profile foo /bin/foo + identities=(test_profile) flags=(complain)  {
+    file,
+}

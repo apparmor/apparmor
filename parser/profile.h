@@ -389,6 +389,7 @@ public:
 	char *name;
 	char *attachment;
 	struct alt_name *altnames;
+	struct value_list *identities;
 	void *xmatch;
 	size_t xmatch_size;
 	int xmatch_len;
@@ -428,6 +429,7 @@ public:
 		xattrs.list = NULL;
 		xattrs.name = NULL;
 
+		identities = NULL;
 		parent = NULL;
 
 		flags.init();
@@ -479,6 +481,12 @@ public:
 			printf("Local To:\t%s\n", parent->name);
 		else
 			printf("Local To:\t<NULL>\n");
+
+		if (identities) {
+			printf("Identities:\t(");
+			print_value_list(identities, std::cout);
+			printf(")\n");
+		}
 
 		flags.dump(cerr);
 		caps.dump();

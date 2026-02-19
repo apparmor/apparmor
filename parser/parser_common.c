@@ -99,6 +99,7 @@ int kernel_supports_permstable32_v1 = 0;	/* extended permissions */
 int prompt_compat_mode = PROMPT_COMPAT_UNKNOWN;
 int kernel_supports_state32 = 0;	/* 32 bit state table entries */
 int kernel_supports_flags_table = 0;	/* state flags stored in table */
+int features_supports_identity_names = 0;	/* kernel supports identity names */
 int conf_verbose = 0;
 int conf_quiet = 0;
 int names_only = 0;

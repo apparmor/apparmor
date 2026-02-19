@@ -324,6 +324,19 @@ static inline void sd_write_listend(std::ostringstream &buf)
 	sd_write8(buf, SD_LISTEND);
 }
 
+void sd_serialize_identity(std::ostringstream &buf, struct value_list* l)
+{
+	int i;
+	int list_sz = list_len(l);
+
+	sd_write_array(buf, "identity", list_sz);
+	for (i = 0; i < list_sz; i++) {
+		sd_write_string(buf, l->value, NULL);
+		l = l->next;
+	}
+	sd_write_arrayend(buf);
+}
+
 void sd_serialize_perm(std::ostringstream &buf, aa_perms &perms)
 {
 	sd_write_uint32(buf, 0);	/* reserved */
@@ -532,6 +545,9 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 	sd_write_uint32(buf, high_caps(profile->caps.deny & profile->caps.quiet));
 	sd_write_uint32(buf, 0);
 	sd_write_structend(buf);
+
+	if (features_supports_identity_names)
+		sd_serialize_identity(buf, profile->identities);
 
 	sd_serialize_xattrs(buf, profile->xattrs);
 

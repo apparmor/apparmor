@@ -1191,17 +1191,17 @@ void free_value_list(struct value_list *list)
 	}
 }
 
-void print_value_list(struct value_list *list)
+void print_value_list(struct value_list *list, std::ostream &os)
 {
 	struct value_list *entry;
 
 	if (!list)
 		return;
 
-	fprintf(stderr, "%s", list->value);
+	os << list->value;
 	list = list->next;
 	list_for_each(list, entry) {
-		fprintf(stderr, ", %s", entry->value);
+		os << ", " << entry->value;
 	}
 }
 
@@ -1260,7 +1260,7 @@ void print_cond_entry(struct cond_entry *ent)
 {
 	if (ent) {
 		fprintf(stderr, "%s=(", ent->name);
-		print_value_list(ent->vals);
+		print_value_list(ent->vals, std::cerr);
 		fprintf(stderr, ")\n");
 	}
 }
