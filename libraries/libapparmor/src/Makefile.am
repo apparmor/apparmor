@@ -30,10 +30,10 @@
 #
 # After changing the AA_LIB_* variables, also update EXPECTED_SO_NAME.
 
-AA_LIB_CURRENT = 25
-AA_LIB_REVISION = 3
-AA_LIB_AGE = 24
-EXPECTED_SO_NAME = libapparmor.so.1.24.3
+AA_LIB_CURRENT = 30
+AA_LIB_REVISION = 4
+AA_LIB_AGE = 29
+EXPECTED_SO_NAME = libapparmor.so.1.29.4
 
 SUFFIXES = .pc.in .pc
 
