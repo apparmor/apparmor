@@ -759,7 +759,7 @@ static int process_arg(int c, char *optarg)
 		if (!optarg) {
 			zstd_compress_level = ZSTD_COMPRESS_DEFAULT_VALUE;
 		} else if (strcmp(optarg, "none") == 0) {
-			zstd_compress_level = 0;
+			zstd_compress_level = ZSTD_DISABLED;
 		} else if (strcmp(optarg, "default") == 0) {
 			zstd_compress_level = ZSTD_COMPRESS_DEFAULT_VALUE;
 		} else if (strcmp(optarg, "fast") == 0) {
@@ -1910,7 +1910,7 @@ int main(int argc, char *argv[])
 	}
 
 	set_compression_level(parseopts.control);
-	if (zstd_compress_level == 0)
+	if (zstd_compress_level == ZSTD_DISABLED)
 		zstd_compress_policy = ZSTD_COMPRESS_NONE;
 	else
 		zstd_compress_policy = ZSTD_COMPRESS_POLICY;
