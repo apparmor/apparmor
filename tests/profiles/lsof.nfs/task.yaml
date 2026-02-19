@@ -1,0 +1,28 @@
+summary: test lsof when used with NFS mounts
+environment:
+    PROGRAM_NAME: lsof
+    PROFILE_NAME: lsof
+prepare: |
+    mkdir -p /srv/nfs/share
+    echo "test content" >/srv/nfs/share/testfile.txt
+
+    apt install -y nfs-kernel-server
+    echo '/srv/nfs/share 127.0.0.1(rw,sync,no_subtree_check,no_root_squash)' | tee -a /etc/exports
+    exportfs -a
+    systemctl restart nfs-kernel-server
+
+    mkdir -p /mnt/nfs
+    mount -t nfs 127.0.0.1:/srv/nfs/share /mnt/nfs
+execute: |
+    exec 3</mnt/nfs/testfile.txt
+    lsof -c nfsd
+    exec 3<&-
+restore: |
+    umount /mnt/nfs
+
+    truncate --size=0 /etc/exports
+    exportfs -a
+
+    rm -f /srv/nfs/share/testfile.txt
+    rmdir /mnt/nfs /srv/nfs/share /srv/nfs
+    apt remove --purge -y nfs-kernel-server

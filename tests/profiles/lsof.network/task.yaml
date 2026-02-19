@@ -1,0 +1,12 @@
+summary: test lsof when used with TCP ports
+environment:
+    PROGRAM_NAME: lsof
+    PROFILE_NAME: lsof
+execute: |
+    python3 -m http.server 8080 &
+    PYTHON_PID=$!
+    sleep 2
+
+    lsof -i :8080
+
+    kill $PYTHON_PID

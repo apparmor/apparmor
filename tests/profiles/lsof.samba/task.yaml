@@ -1,0 +1,26 @@
+summary: test lsof when used with Samba shares
+environment:
+    PROGRAM_NAME: lsof
+    PROFILE_NAME: lsof
+prepare: |
+    mkdir -p /srv/samba/share
+    echo "test content" >/srv/samba/share/testfile.txt
+
+    apt update && apt install -y samba
+    printf "\n[testshare]\npath = /srv/samba/share\nbrowseable = yes\nread only = no\nguest ok = yes\nforce user = nobody\n" | tee -a /etc/samba/smb.conf
+    systemctl restart smbd nmbd
+    # ss -tulnp | grep smbd  # uncomment if need to troubleshoot SMB.
+
+    modprobe cifs
+    mkdir -p /mnt/smb
+    mount -t cifs //127.0.0.1/testshare /mnt/smb -o guest
+execute: |
+    exec 3</mnt/smb/testfile.txt
+    lsof -c smbd
+    exec 3<&-
+restore: |
+    umount /mnt/smb
+    rm -f /srv/samba/share/testfile.txt
+    rmdir /srv/samba/share /srv/samba /mnt/smb
+    apt remove --purge -y samba
+

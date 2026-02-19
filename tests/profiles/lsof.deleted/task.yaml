@@ -1,0 +1,14 @@
+summary: test lsof when used with deleted files
+environment:
+    PROGRAM_NAME: lsof
+    PROFILE_NAME: lsof
+execute: |
+    echo "test data" > /tmp/deleted-file
+    tail -f /tmp/deleted-file &
+    TAIL_PID=$!
+    sleep 1
+    rm -f /tmp/deleted-file
+
+    lsof | MATCH "/tmp/deleted-file \(deleted\)"
+
+    kill $TAIL_PID
