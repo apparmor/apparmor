@@ -44,6 +44,7 @@ environment:
     TEST/mult_mount: 1
     TEST/named_pipe: 1
     TEST/namespaces: 1
+    TEST/net_inet: 1
     TEST/net_raw: 1
     TEST/nfs: 1
     TEST/nnp: 1

@@ -321,6 +321,7 @@ TESTS=aa_exec \
       mult_mount \
       named_pipe \
       namespaces \
+      net_inet \
       net_raw \
       overlayfs_kernel \
       open \
