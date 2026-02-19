@@ -574,6 +574,69 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 	sd_write_structend(buf);
 }
 
+size_t recompress_policy_zstd(const char *compressed_data, size_t compressed_size,  char **recompressed_buffer)
+{
+	unsigned long long const fcs = ZSTD_getFrameContentSize(compressed_data, compressed_size);
+	if (fcs == ZSTD_CONTENTSIZE_UNKNOWN || fcs == ZSTD_CONTENTSIZE_ERROR) {
+		PERROR(_("Recompression error: could not determine frame content size\n"));
+		return 0;
+	}
+	size_t raw_size = (size_t)fcs;
+
+	if (raw_size == 0) {
+		PERROR(_("Recompression error: raw_size is zero\n"));
+		return 0;
+	}
+	const char *zstd_payload = compressed_data;
+	size_t zstd_payload_size = compressed_size;
+
+	/* Allocate and decompress */
+	char *raw_buf = (char *)malloc(raw_size);
+	if (!raw_buf) {
+		PERROR(_("Recompression error: out of memory\n"));
+		return 0;
+	}
+
+	size_t dec_sz = ZSTD_decompress(raw_buf, raw_size, zstd_payload, zstd_payload_size);
+	if (ZSTD_isError(dec_sz)) {
+		free(raw_buf);
+		PERROR(_("Decompression error: %s\n"), ZSTD_getErrorName(dec_sz));
+		return 0;
+	}
+
+	if (dec_sz != raw_size) {
+		free(raw_buf);
+		PERROR(_("Decompression size mismatch: expected %zu, got %zu\n"),
+			   raw_size, dec_sz);
+		return 0;
+	}
+
+	/* Recompress at current compress_level */
+	size_t out_sz = compress_policy_zstd(raw_buf, raw_size, recompressed_buffer);
+	free(raw_buf);
+	return out_sz;
+}
+
+size_t compress_policy_zstd(const char* raw_data_str, size_t raw_data_size, char** compressed_buffer)
+{
+	size_t bound = ZSTD_compressBound(raw_data_size);
+	*compressed_buffer = (char*) malloc(bound);
+	if (!*compressed_buffer) {
+		PERROR(_("Compression error: out of memory\n"));
+		return 0;
+	}
+
+	size_t compressed_size = ZSTD_compress(*compressed_buffer, bound, raw_data_str, raw_data_size, zstd_compress_level);
+
+	if (ZSTD_isError(compressed_size)) {
+		free(*compressed_buffer);
+		*compressed_buffer = NULL;
+		PERROR(_("Compression error: %s\n"),  ZSTD_getErrorName(compressed_size));
+		return 0;
+	}
+	return compressed_size;
+}
+
 void sd_serialize_top_profile(std::ostringstream &buf, Profile *profile)
 {
 	uint32_t version;
@@ -595,7 +658,7 @@ int __sd_serialize_profile(int option, aa_kernel_interface *kernel_interface,
 			   Profile *prof, int cache_fd)
 {
 	autoclose int fd = -1;
-	int error, size, wsize;
+	int error, policy_size, wsize;
 	std::ostringstream work_area;
 
 	switch (option) {
@@ -636,37 +699,54 @@ int __sd_serialize_profile(int option, aa_kernel_interface *kernel_interface,
 				error = -errno;
 		}
 	} else {
-		std::string tmp;
+		std::string raw_policy_string;
+		const char *policy = NULL;
+		char *compressed_buffer = NULL;
+		int raw_policy_size;
 
 		sd_serialize_top_profile(work_area, prof);
+		raw_policy_string = work_area.str();
+		raw_policy_size = raw_policy_string.size();
 
-		tmp = work_area.str();
-		size = (long) work_area.tellp();
+		if (zstd_compress_policy == ZSTD_COMPRESS_POLICY) {
+			policy_size = compress_policy_zstd(raw_policy_string.c_str(), raw_policy_size, &compressed_buffer);
+			if (policy_size == 0) {
+				error = -1;
+				goto exit;
+			}
+			policy = compressed_buffer;
+		} else {
+			policy = raw_policy_string.c_str();
+			policy_size = raw_policy_size;
+		}
 		if (kernel_load) {
 			if (option == OPTION_ADD &&
 			    aa_kernel_interface_load_policy(kernel_interface,
-							    tmp.c_str(), size) == -1) {
+							    policy, policy_size) == -1) {
 				error = -errno;
 			} else if (option == OPTION_REPLACE &&
 				   aa_kernel_interface_replace_policy(kernel_interface,
-								      tmp.c_str(), size) == -1) {
+								      policy, policy_size) == -1) {
 				error = -errno;
 			}
 		} else if ((option == OPTION_STDOUT || option == OPTION_OFILE) &&
-			   aa_kernel_interface_write_policy(fd, tmp.c_str(), size) == -1) {
+			   aa_kernel_interface_write_policy(fd, policy, policy_size) == -1) {
 			error = -errno;
 		}
 
 		if (cache_fd != -1) {
-			wsize = write(cache_fd, tmp.c_str(), size);
+			/* Cache always stores raw (uncompressed) policy */
+			wsize = write(cache_fd, raw_policy_string.c_str(), raw_policy_size);
 			if (wsize < 0) {
 				error = -errno;
-			} else if (wsize < size) {
+			} else if (wsize < raw_policy_size) {
 				PERROR(_("%s: Unable to write entire profile entry to cache\n"),
 				       progname);
 				error = -EIO;
 			}
 		}
+
+		free(compressed_buffer);
 	}
 
 	if (!prof->hat_table.empty() && option != OPTION_REMOVE) {
@@ -679,3 +759,171 @@ exit:
 	return error;
 }
 
+#ifdef UNIT_TEST
+
+#include "unit_test.h"
+
+/*
+ * Generate data to compress with 4 bits / byte of entropy
+ */
+static void generate_test_data(char *buffer, size_t size)
+{
+	for (size_t i = 0; i < size; i++)
+		buffer[i] = (char)(rand() & 0x0F);
+}
+
+static int test_compress_roundtrip(void)
+{
+	int rc = 0;
+	char *test_data = NULL;
+	char *compressed = NULL;
+	size_t test_size = 64 * 1024; /* 64KB */
+	size_t comp_size;
+
+	test_data = (char *)malloc(test_size);
+	if (!test_data)
+		return 1;
+
+	generate_test_data(test_data, test_size);
+
+	/* Set a valid compression level for testing */
+	zstd_compress_level = 10;
+
+	comp_size = compress_policy_zstd(test_data, test_size, &compressed);
+
+	printf("roundtrip: input=%zu compressed=%zu ratio=%.2f%%\n",
+	       test_size, comp_size, 100.0 * comp_size / test_size);
+
+	MY_TEST(comp_size > 0, "compression produced output");
+	MY_TEST(compressed != NULL, "compression allocated buffer");
+	MY_TEST(comp_size < test_size, "compression reduced size");
+
+
+
+	free(test_data);
+	free(compressed);
+	return rc;
+}
+
+static int test_compress_empty_input(void)
+{
+	int rc = 0;
+	char *compressed = NULL;
+	size_t comp_size;
+
+	zstd_compress_level = 10;
+
+	/* Empty input should still work (edge case) */
+	comp_size = compress_policy_zstd("", 0, &compressed);
+	MY_TEST(comp_size > 0, "empty input produces zstd frame");
+	MY_TEST(compressed != NULL, "empty input allocated buffer");
+
+	free(compressed);
+	return rc;
+}
+
+static int test_compress_various_sizes(void)
+{
+	int rc = 0;
+	char *test_data = NULL;
+	char *compressed = NULL;
+	size_t comp_size;
+	/* Test sizes: 1KB, 64KB, 512KB */
+	size_t sizes[] = {1024, 64 * 1024, 512 * 1024};
+
+	zstd_compress_level = 10;
+
+	for (size_t i = 0; i < sizeof(sizes)/sizeof(sizes[0]); i++) {
+		size_t sz = sizes[i];
+		test_data = (char *)malloc(sz);
+		if (!test_data) {
+			rc = 1;
+			continue;
+		}
+
+		generate_test_data(test_data, sz);
+		comp_size = compress_policy_zstd(test_data, sz, &compressed);
+
+		char msg[128];
+		snprintf(msg, sizeof(msg), "size %zuKB compressed (ratio=%.1f%%)",
+		         sz / 1024, 100.0 * comp_size / sz);
+		MY_TEST(comp_size > 0 && comp_size < sz, msg);
+
+		free(test_data);
+		free(compressed);
+		test_data = NULL;
+		compressed = NULL;
+	}
+
+	return rc;
+}
+
+static int test_recompress_buffer(void)
+{
+	int rc = 0;
+	char *test_data = NULL;
+	char *compressed = NULL;
+	char *recompressed = NULL;
+	size_t test_size = 100 * 1024; /* 100KB */
+	size_t comp_size, recomp_size;
+
+	test_data = (char *)malloc(test_size);
+	if (!test_data)
+		return 1;
+
+	generate_test_data(test_data, test_size);
+	zstd_compress_level = 10;
+
+	/* 1. Compress initial data */
+	comp_size = compress_policy_zstd(test_data, test_size, &compressed);
+	MY_TEST(comp_size > 0, "initial compression success");
+
+	/* 2. Recompress */
+	/* recompress_policy_zstd takes (compressed_data, compressed_size, &out) */
+	recomp_size = recompress_policy_zstd(compressed, comp_size, &recompressed);
+
+	MY_TEST(recomp_size > 0, "recompression produced output");
+	MY_TEST(recompressed != NULL, "recompression allocated buffer");
+
+	/* 3. Verify consistency (optional: check if size is similar) */
+	/* Zstd is deterministic for same level/params, so sizes should match exactly if using same level */
+	MY_TEST(recomp_size == comp_size, "recompressed size matches initial compressed size");
+
+	free(test_data);
+	free(compressed);
+	free(recompressed);
+	return rc;
+}
+
+int main(void)
+{
+	int rc = 0;
+	int retval;
+
+	srand(time(NULL));
+	progname = __FILE__;
+
+	retval = test_compress_roundtrip();
+	if (retval != 0)
+		rc = retval;
+
+	retval = test_compress_empty_input();
+	if (retval != 0)
+		rc = retval;
+
+	retval = test_compress_various_sizes();
+	if (retval != 0)
+		rc = retval;
+
+	retval = test_recompress_buffer();
+	if (retval != 0)
+		rc = retval;
+
+
+	if (rc == 0)
+		printf("All compression tests passed.\n");
+
+	return rc;
+}
+
+#endif /* UNIT_TEST */

@@ -356,6 +356,29 @@ The default value is the number of cpus in the system. Note that if jobs
 is a positive integer number the --jobs-max parameter is automatically
 set to the same value.
 
+=item -c[n], --zstd-compress-level=n
+
+Compress the profile using the zstd algorithm at level n.
+
+Where n can be on of:
+   none   - disable compression, equivalent to 0
+   default - default apparmor preset compression level
+   fast   - use a pre-chosen value that is fast
+   small  - use a pre-chosen value that will result in better compression (slower)
+   0-22   - a number in the range 0-22, where 0 disables A compression level of 0 disables
+            compression entirely. Levels otherwise range up to 22, though levels of 20
+            and above (the 'ultra' levels) require significantly more memory and are much slower.
+
+Policies can be loaded and stored in the kernel in compressed format. Using a
+higher level of compression, policy can save both CPU time and memory,
+especially when compressed policies are retrieved from an existing cache.
+
+If the compression level is unspecified, a default value of 10 is used.
+--zstd-compress-level values only affect container compression unlike
+the --Optimize flag which adjusts multiple optimization parameters.
+
+See also the optimization flag zstd-recompress.
+
 =item --max-jobs n
 
 When --jobs is set to a scaling value (ie. auto or xN) the specify a
@@ -378,6 +401,15 @@ of time to complete.
 
 Use --help=optimize to see a full list of which optimization flags are
 supported.
+
+=over 4
+
+=item B<zstd-recompress>
+
+Force recompression of the policy file if the compression level is higher
+than the currently cached file.
+
+=back
 
 =item --abort-on-error
 Abort processing of profiles on the first error encountered, otherwise

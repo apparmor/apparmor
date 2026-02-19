@@ -122,7 +122,7 @@ OBJECTS = $(patsubst %.cc, %.o, $(SRCS:.c=.o))
 AAREDIR= libapparmor_re
 AAREOBJECT = ${AAREDIR}/libapparmor_re.a
 AAREOBJECTS = $(AAREOBJECT)
-AARE_LDFLAGS = -L. $(LDFLAGS)
+AARE_LDFLAGS = -L. $(LDFLAGS) -lzstd
 ifdef WITH_STATIC_LINKING
   AARE_LDFLAGS += -static-libgcc -static-libstdc++
 endif
@@ -161,7 +161,7 @@ EXTRA_CFLAGS += $(INCLUDE_APPARMOR)
 LEX_C_FILES	= parser_lex.c
 YACC_C_FILES	= parser_yacc.c parser_yacc.h
 
-TESTS = tst_regex tst_misc tst_symtab tst_variable tst_lib
+TESTS = tst_regex tst_misc tst_symtab tst_variable tst_lib tst_interface
 TEST_CFLAGS = $(EXTRA_CFLAGS) -DUNIT_TEST -Wno-unused-result
 TEST_OBJECTS = $(filter-out \
 			parser_lex.o \

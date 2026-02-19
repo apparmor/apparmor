@@ -102,6 +102,8 @@ static int load_policy_file(const char *file)
 
 	struct aa_kernel_interface *kernel_interface;
 
+	// Todo: Check cache validity
+
 	if (aa_kernel_interface_new(&kernel_interface, NULL, NULL)) {
 		rc = -errno;
 		error("Failed to open kernel interface '%s': %m", file);

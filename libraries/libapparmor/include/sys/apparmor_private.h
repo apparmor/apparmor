@@ -18,6 +18,7 @@
 #define _SYS_APPARMOR_PRIVATE_H	1
 
 #include <stdio.h>
+#include <stdint.h>
 #include <sys/stat.h>
 
 #ifdef __cplusplus
@@ -36,6 +37,14 @@ int _aa_dirat_for_each(int dirfd, const char *name, void *data,
 		       int (* cb)(int, const char *, struct stat *, void *));
 int _aa_overlaydirat_for_each(int dirfd[], int n, void *data,
 			int (* cb)(int, const char *, struct stat *, void *));
+
+#define COMPR_USER_HDR_VERSION 1
+
+struct compr_user_header {
+	uint8_t version;
+	uint8_t compress_level;
+	uint8_t padding[6];	/* force 8-byte alignment */
+} __attribute__((packed, aligned(8)));
 
 #ifdef __cplusplus
 }

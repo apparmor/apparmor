@@ -52,6 +52,7 @@ class AAErrorTests(testlib.AATestTemplate):
 
         ignore_messages = (
             'Cache read/write disabled: interface file missing. (Kernel needs AppArmor 2.4 compatibility patch.)\n',
+            'WARNING: Kernel does not support compressed policies. Defaulting to uncompressed\n',
         )
         for ign in ignore_messages:
             if ign in outerr:

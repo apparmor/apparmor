@@ -67,6 +67,7 @@ int perms_create = 0;                   /* perms contain create flag */
 int net_af_max_override = -1;           /* use kernel to determine af_max */
 int kernel_load = 1;
 int kernel_supports_setload = 0;	/* kernel supports atomic set loads */
+bool kernel_supports_zstd_load = 0;	/* kernel supports compressed policies */
 int features_supports_network = 0;	/* kernel supports network rules */
 int features_supports_networkv8 = 0;	/* kernel supports 4.17 network rules */
 bool features_supports_networkv9 = 0;	/* kernel supports v9 network rules */
@@ -103,7 +104,8 @@ int conf_quiet = 0;
 int names_only = 0;
 int current_lineno = 1;
 int option = OPTION_ADD;
-
+zstd_compress_t zstd_compress_policy = ZSTD_COMPRESS_NONE;
+int zstd_compress_level = ZSTD_LEVEL_UNSPECIFIED;
 
 const char *progname = __FILE__;
 char *profile_ns = NULL;

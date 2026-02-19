@@ -105,10 +105,12 @@ optflag_table_t dfaoptflag_table[] = {
 	  CONTROL_DFA_FILTER_DENY },
 	{ 1, "remove-unreachable", "dfa unreachable state removal",
 	  CONTROL_DFA_REMOVE_UNREACHABLE },
+	{ 4, "compress-default", "use default level compression optimizations",
+	  CONTROL_DEFAULT_COMPRESS },
 	{ 0, "compress-small",
-	  "do slower dfa transition table compression",
+	  "do slower compression optimizations",
 	  CONTROL_DFA_TRANS_HIGH },
-	{ 2, "compress-fast", "do faster dfa transition table compression",
+	{ 2, "compress-fast", "do faster compression optimizations",
 	  CONTROL_DFA_TRANS_HIGH },
 	{ 1, "diff-encode", "Differentially encode transitions",
 	  CONTROL_DFA_DIFF_ENCODE },
@@ -117,6 +119,8 @@ optflag_table_t dfaoptflag_table[] = {
 	  CONTROL_DFA_STATE32 },
 	{ 1, "flags-table", "use independent flags table",
 	  CONTROL_DFA_FLAGS_TABLE },
+	{ 1, "zstd-recompress", "Recompress if the compressed level is higher than the existing cache",
+	  CONTROL_ZSTD_FLAGS_RECOMPRESS },
 	{ 0, NULL, NULL, 0 },
 };
 
@@ -145,7 +149,9 @@ void print_flags(const char *prefix, optflag_table_t *table,
 
 	printf("%s=", prefix);
 	for (i = 0; table[i].option; i++) {
-		if ((table[i].flags & flags) == table[i].flags) {
+		int flag_set = (table[i].flags & flags) == table[i].flags;
+		if ((table[i].control != 2 && flag_set) ||
+		    (table[i].control == 2 && !flag_set)) {
 			if (count)
 				printf(", ");
 			printf("%s", table[i].option);
