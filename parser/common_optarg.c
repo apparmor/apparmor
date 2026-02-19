@@ -149,7 +149,9 @@ void print_flags(const char *prefix, optflag_table_t *table,
 
 	printf("%s=", prefix);
 	for (i = 0; table[i].option; i++) {
-		if ((table[i].flags & flags) == table[i].flags) {
+		int flag_set = (table[i].flags & flags) == table[i].flags;
+		if ((table[i].control != 2 && flag_set) ||
+		    (table[i].control == 2 && !flag_set)) {
 			if (count)
 				printf(", ");
 			printf("%s", table[i].option);
