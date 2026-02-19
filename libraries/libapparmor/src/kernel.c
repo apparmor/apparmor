@@ -396,14 +396,14 @@ static bool is_self_syscall_enabled(void)
 {
 	return check_self_syscall_enabled() == 1;
 }
-#else  /* ifdef HAVE_LINIUX_LSM_H */
+#else  /* ifdef HAVE_LINUX_LSM_H */
 
 /* lib compiled without syscall support */
 static bool is_self_syscall_enabled(void)
 {
 	return false;
 }
-#endif /* ifdef HAVE_LINIUX_LSM_H */
+#endif /* ifdef HAVE_LINUX_LSM_H */
 
 static inline pid_t aa_gettid(void)
 {
@@ -973,7 +973,7 @@ int aa_get_self_attr(int op_type, char **label, char **mode)
 		/* check if syscall is supported in some form but failing
 		 * at the hook level, instead of in AppArmor
 		 */
-		if (ret != ENOSYS && ret != EOPNOTSUPP)
+		if (ret != -1 || (errno != ENOSYS && errno != EOPNOTSUPP))
 			return ret;
 	}
 	const char *iface = aa_get_lsm_iface_name(op_type);
@@ -999,7 +999,7 @@ int aa_set_self_attr(int op_type, char *buf, int len)
 	if (is_self_syscall_enabled()) {
 		int ret = set_self_attr_via_syscall(op_type, buf, len);
 
-		if (ret != ENOSYS && ret != EOPNOTSUPP)
+		if (ret != -1 || (errno != ENOSYS && errno != EOPNOTSUPP))
 			return ret;
 	}
 	const char *iface = aa_get_lsm_iface_name(op_type);
