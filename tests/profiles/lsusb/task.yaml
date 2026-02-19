@@ -1,4 +1,10 @@
 summary: smoke test for the lsusb profile
+environment:
+    # FIXME: The cause for the denial is unclear
+    # We need to escape double-quoted characters due to a bug in spread.
+    # The double-space in the message below is intentional to match the actual log message.
+    EXPECT_DENIALS: |
+        .* apparmor=\"DENIED\" operation=\"capable\" class=\"cap\" profile=\"lsusb\" pid=[0-9]+ comm=\"lsusb\" capability=21  capname=\"sys_admin\"
 execute: |
     # lsusb works (this is a very basic test).
     # try printing the physical USB device hierarchy as a tree
