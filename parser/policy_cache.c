@@ -220,6 +220,7 @@ int setup_cache_tmp(const char **cachetmpname, char *cachename, int create_compr
 
 	*cachetmpname = NULL;
 	if (write_cache) {
+		mode_t prev_mask;
 		if (create_compressed) {
 			end = strrchr(cachename, '/');
 			*end = '\0';
@@ -236,10 +237,13 @@ int setup_cache_tmp(const char **cachetmpname, char *cachename, int create_compr
 			perror("asprintf");
 			return -1;
 		}
+		prev_mask = umask(S_IRWXU);
 		if ((cache_fd = mkstemp(tmpname)) < 0) {
 			perror("mkstemp");
+			umask(prev_mask);
 			return -1;
 		}
+		umask(prev_mask);
 		*cachetmpname = tmpname;
 	}
 
