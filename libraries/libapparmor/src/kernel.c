@@ -120,6 +120,9 @@
  *     prev       - when in HAT set to parent label
  *     sockcreate - unused by apparmor
  *
+ * LSM syscall interface
+ *     lsm_get_self_attr - syscall equivalent of read /proc/self/attr/current
+ *     lsm_set_self_attr - syscall equivalent of write /proc/self/attr/current
  *
  * Below /proc/ interface combinations are documented on how the library
  * currently behaves and how it used to behave. This serves to document
@@ -354,6 +357,53 @@ int aa_is_enabled(void)
 
 	return 0;
 }
+
+#ifdef HAVE_LINUX_LSM_H
+#include <linux/lsm.h>
+
+static pthread_once_t self_syscall_ctl = PTHREAD_ONCE_INIT;
+static int self_syscall_enabled = 0;
+
+static int lsm_get_self_attr(unsigned int attr, struct lsm_ctx *ctx,
+			    __u32 *size, __u32 flags);
+
+static void self_syscall_enabled_init_once(void)
+{
+	__u32 total_size = sizeof(struct lsm_ctx) + 8;
+	union {
+		struct lsm_ctx ctx_buff;
+		char buff[total_size]; /* force allocate trailing space */
+	} buff;
+	struct lsm_ctx *ctx = &buff.ctx_buff;
+
+	ctx->id = LSM_ID_APPARMOR;
+	ctx->flags = 0;
+	ctx->len = total_size;
+	ctx->ctx_len = total_size - sizeof(struct lsm_ctx);
+
+	self_syscall_enabled = !((lsm_get_self_attr(LSM_ATTR_CURRENT, ctx, &total_size, LSM_FLAG_SINGLE) == -1) &&
+				 (errno == ENOSYS || errno == EOPNOTSUPP));
+}
+
+static int check_self_syscall_enabled()
+{
+	if (pthread_once(&self_syscall_ctl, self_syscall_enabled_init_once) == 0 && self_syscall_enabled >= 0)
+		return self_syscall_enabled;
+	return 0;
+}
+
+static bool is_self_syscall_enabled(void)
+{
+	return check_self_syscall_enabled() == 1;
+}
+#else  /* ifdef HAVE_LINUX_LSM_H */
+
+/* lib compiled without syscall support */
+static bool is_self_syscall_enabled(void)
+{
+	return false;
+}
+#endif /* ifdef HAVE_LINUX_LSM_H */
 
 static inline pid_t aa_gettid(void)
 {
@@ -712,6 +762,164 @@ int aa_getprocattr(pid_t tid, const char *attr, char **label, char **mode)
 	return rc;
 }
 
+// #ifdef HAVE_LINUX_LSM_H is not enough as some custom <6.8 kernel cherrypicked a 'custom' lsm.h, without actually supporting lsm syscalls (e.g. Ubuntu Mantic's 6.5.0-x).
+#if defined(HAVE_LINUX_LSM_H) && defined(__NR_lsm_get_self_attr) && defined(__NR_lsm_set_self_attr)
+
+#ifndef lsm_get_self_attr
+static inline int lsm_get_self_attr(unsigned int attr, struct lsm_ctx *ctx,
+				    __u32 *size, __u32 flags)
+{
+	return syscall(__NR_lsm_get_self_attr, attr, ctx, size, flags);
+}
+#endif
+
+#ifndef lsm_set_self_attr
+static inline int lsm_set_self_attr(unsigned int attr, struct lsm_ctx *ctx,
+				    __u32 size, __u32 flags)
+{
+	return syscall(__NR_lsm_set_self_attr, attr, ctx, size, flags);
+}
+#endif
+
+static int get_apparmor_attr_raw(__u32 op_type, struct lsm_ctx *ctx, __u32 sz)
+{
+	__u32 req_sz = sz;
+	int result;
+
+	if (!ctx)
+		return -1;
+
+	/* lsm_get_self_attr returns 1, with size in req_sz */
+	result = lsm_get_self_attr(op_type, ctx, &req_sz, LSM_FLAG_SINGLE);
+	if (result >= 1 || // Success
+	    (result == -1 && errno == E2BIG) // Buffer too small
+	) {
+		return (int)req_sz;
+	}
+	return result;
+}
+
+/**
+ * aa_get_self_attr - gets an attribute for current process
+ * @param op_type The lsm attribute to get
+ * @label: pointer to returned buffer with the label
+ * @mode: if non-NULL and a mode is present, will point to mode string in @label
+ *
+ * Returns the int-aligned size of @label. On error, returns -1 and sets errno.
+ *
+ * The calling thread is responsible for freeing @label.
+ * As @mode is always a substring of @label, it should NOT be freed manually
+ */
+static int get_self_attr_via_syscall(int op_type, char **label, char **mode)
+{
+	size_t total_size = INITIAL_GUESS_SIZE - 1; /* save byte for null termnation */
+	struct lsm_ctx *ctx = malloc(total_size);
+	struct lsm_ctx *tmp_ctx;
+
+	if (!ctx)
+		return -1;
+
+	ctx->id = LSM_ID_APPARMOR;
+	ctx->flags = 0;
+	ctx->len = total_size;
+	ctx->ctx_len = total_size - sizeof(struct lsm_ctx);
+	int rc = get_apparmor_attr_raw(op_type, ctx, total_size);
+	if (rc <= (int)total_size)
+		goto check;
+
+	// Insufficient size: we try again with the good size
+	tmp_ctx = realloc(ctx, rc + 1); /* add byte for null termination */
+	if (!tmp_ctx)
+		goto error;
+
+	ctx = tmp_ctx;
+	ctx->id = LSM_ID_APPARMOR;
+	ctx->flags = 0;
+	ctx->len = rc;
+	ctx->ctx_len = rc - sizeof(struct lsm_ctx);
+	int size = get_apparmor_attr_raw(op_type, ctx, rc);
+	if (size > rc) { // Insufficient size: Should never happen
+		errno = ENOSPC;
+		goto error;
+	}
+	/* req_size is rounded up to the next endtry boundary, so
+	 * user the actual data size returned in ctx_len
+	 */
+	rc = size;
+check:
+	if (rc > (int)sizeof(*ctx)) {
+		/* choice is to either, move label to start of buffer
+		 * OR strdup()
+		 * less overhead to move so ...
+		 * Note:
+		 *    returned rc can be bigger than actual string due to alignment
+		 *    rounding up. ie. it is at what position of next entry
+		 *    would be if there are multiple entries, so use ctx_len
+		 *   ctx_len does not include null byte we saved space for
+		 */
+		size = ctx->ctx_len;
+		char *buf = (char *)ctx;
+		memmove(ctx, ctx->ctx, size); /* includes null terminator */
+		buf[size] = 0; /* null terminate */
+		*label = splitcon(buf, size, true, mode);
+		/* getprocattr_raw - size includes \n which gets overwritten by
+		 * null byte, emulate here by including null we manually added
+		 */
+		return size + 1; /* includes null terminator */
+	} else if (rc >= 0) {
+		/* returned size is smaller than a ctx - this should never happen */
+		errno = EINVAL;
+	}
+error:
+	rc = -1;
+	*label = NULL;
+	*mode = NULL;
+	free(ctx);
+	return rc;
+}
+
+/**
+ * aa_set_self_attr - sets an attribute for current process
+ * @param op_type The lsm attribute to set
+ * @operation: The buffer to set the attribute
+ * @op_len: The length of @buf
+ *
+ * Returns 0 on success. On error, returns -1 and sets errno.
+ */
+static int set_self_attr_via_syscall(int op_type, char *operation, int op_len)
+{
+	size_t total_size = sizeof(struct lsm_ctx) + op_len;
+	struct lsm_ctx *ctx = (struct lsm_ctx *)malloc(total_size);
+	int ret;
+
+	if (!ctx)
+		return -1;
+	ctx->id = LSM_ID_APPARMOR;
+	ctx->flags = LSM_FLAG_SINGLE;
+	ctx->len = total_size;
+	ctx->ctx_len = op_len;
+	memcpy(ctx->ctx, operation, op_len);
+	ret = lsm_set_self_attr(op_type, ctx, total_size, 0);
+	free(ctx);
+	return ret;
+}
+
+#else /* defined(HAVE_LINUX_LSM_H) && defined(__NR_lsm_get_self_attr) && defined(__NR_lsm_set_self_attr) */
+
+static int get_self_attr_via_syscall(int op_type, char **label, char **mode)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+static int set_self_attr_via_syscall(int op_type, char *operation, int op_len)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
+#endif /* defined(HAVE_LINUX_LSM_H) && defined(__NR_lsm_get_self_attr) && defined(__NR_lsm_set_self_attr) */
+
 static int setprocattr(pid_t tid, const char *attr, const char *buf, int len)
 {
 	int rc = -1;
@@ -746,6 +954,77 @@ out:
 	return rc;
 }
 
+/**
+ * aa_get_self_attr - gets an attribute for current process
+ * @param op_type The lsm attribute to get
+ * @label: pointer to returned buffer with the label
+ * @mode: if non-NULL and a mode is present, will point to mode string in @label
+ *
+ * Returns 0 on success. else on error, returns -1 and sets errno.
+ *
+ * The calling thread is responsible for freeing @label.
+ * As @mode is always a substring of @label, it should NOT be freed manually
+ */
+int aa_get_self_attr(int op_type, char **label, char **mode)
+{
+	if (is_self_syscall_enabled()) {
+		int ret = get_self_attr_via_syscall(op_type, label, mode);
+
+		/* check if syscall is supported in some form but failing
+		 * at the hook level, instead of in AppArmor
+		 */
+		if (ret != -1 || (errno != ENOSYS && errno != EOPNOTSUPP))
+			return ret;
+	}
+	const char *iface = aa_get_lsm_iface_name(op_type);
+
+	if (!iface) {
+		errno = EINVAL;
+		return -1;
+	}
+	return aa_getprocattr(aa_gettid(), iface, label, mode);
+}
+
+
+/**
+ * aa_set_self_attr - sets an attribute for current process
+ * @param op_type The lsm attribute to set
+ * @buf: The buffer to set the attribute
+ * @mode: The length of @buf
+ *
+ * Returns 0 on success. On error, returns -1 and sets errno.
+ */
+int aa_set_self_attr(int op_type, char *buf, int len)
+{
+	if (is_self_syscall_enabled()) {
+		int ret = set_self_attr_via_syscall(op_type, buf, len);
+
+		if (ret != -1 || (errno != ENOSYS && errno != EOPNOTSUPP))
+			return ret;
+	}
+	const char *iface = aa_get_lsm_iface_name(op_type);
+
+	if (!iface) {
+		errno = EINVAL;
+		return -1;
+	}
+	return setprocattr(aa_gettid(), iface, buf, len);
+}
+
+const char *aa_get_lsm_iface_name(int op)
+{
+	switch (op) {
+	case LSM_ATTR_CURRENT:
+		return "current";
+	case LSM_ATTR_EXEC:
+		return "exec";
+	case LSM_ATTR_PREV:
+		return "prev";
+	default:
+		return NULL;
+	}
+}
+
 int aa_change_hat(const char *subprofile, unsigned long token)
 {
 	int rc = -1;
@@ -769,7 +1048,7 @@ int aa_change_hat(const char *subprofile, unsigned long token)
 		goto out;
 	}
 
-	rc = setprocattr(aa_gettid(), "current", buf, len);
+	rc = aa_set_self_attr(LSM_ATTR_CURRENT, buf, len);
 out:
 	if (buf) {
 		/* clear local copy of magic token before freeing */
@@ -800,7 +1079,7 @@ int aa_change_profile(const char *profile)
 	if (len < 0)
 		return -1;
 
-	rc = setprocattr(aa_gettid(), "current", buf, len);
+	rc = aa_set_self_attr(LSM_ATTR_CURRENT, buf, len);
 
 	free(buf);
 	return rc;
@@ -821,7 +1100,7 @@ int aa_change_onexec(const char *profile)
 	if (len < 0)
 		return -1;
 
-	rc = setprocattr(aa_gettid(), "exec", buf, len);
+	rc = aa_set_self_attr(LSM_ATTR_EXEC, buf, len);
 
 	free(buf);
 	return rc;
@@ -882,7 +1161,7 @@ int aa_change_hatv(const char *subprofiles[], unsigned long token)
 		/* step pos past trailing \0 */
 		pos++;
 
-	rc = setprocattr(aa_gettid(), "current", buf, pos - buf);
+	rc = aa_set_self_attr(LSM_ATTR_CURRENT, buf, pos - buf);
 
 out:
 	if (buf) {
@@ -937,7 +1216,7 @@ int aa_stack_profile(const char *profile)
 	if (len < 0)
 		return -1;
 
-	rc = setprocattr(aa_gettid(), "current", buf, len);
+	rc = aa_set_self_attr(LSM_ATTR_CURRENT, buf, len);
 
 	free(buf);
 	return rc;
@@ -958,7 +1237,7 @@ int aa_stack_onexec(const char *profile)
 	if (len < 0)
 		return -1;
 
-	rc = setprocattr(aa_gettid(), "exec", buf, len);
+	rc = aa_set_self_attr(LSM_ATTR_EXEC, buf, len);
 
 	free(buf);
 	return rc;
@@ -1000,7 +1279,7 @@ int aa_gettaskcon(pid_t target, char **label, char **mode)
  */
 int aa_getcon(char **label, char **mode)
 {
-	return aa_gettaskcon(aa_gettid(), label, mode);
+	return aa_get_self_attr(LSM_ATTR_CURRENT, label, mode);
 }
 
 

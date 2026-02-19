@@ -377,6 +377,11 @@ extern int aa_stack_onexec(const char *profile);
 
 extern int aa_find_mountpoint(char **mnt);
 extern int aa_getprocattr(pid_t tid, const char *attr, char **label, char **mode);
+
+extern const char *aa_get_lsm_iface_name(int op);
+extern int aa_get_self_attr(int op_type, char** label, char** mode);
+extern int aa_set_self_attr(int op_type, char *buf, int len);
+
 extern int aa_gettaskcon(pid_t target, char **label, char **mode);
 extern int aa_getcon(char **label, char **mode);
 extern int aa_getpeercon(int fd, char **label, char **mode);

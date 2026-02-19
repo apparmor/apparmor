@@ -57,55 +57,56 @@ touch $file $otherfile $sharedfile $thirdfile
 #    elfmmap=""
 #fi
 
+for iface in "" "-B" ; do
 # Verify file access and contexts by an unconfined process
-runchecktest "EXEC_STACK (unconfined - file)" pass -f $file
-runchecktest "EXEC_STACK (unconfined - otherfile)" pass -f $otherfile
-runchecktest "EXEC_STACK (unconfined - thirdfile)" pass -f $thirdfile
-runchecktest "EXEC_STACK (unconfined - sharedfile)" pass -f $sharedfile
+runchecktest "EXEC_STACK iface='$iface' (unconfined - file)" pass $iface -f $file
+runchecktest "EXEC_STACK iface='$iface' (unconfined - otherfile)" pass $iface -f $otherfile
+runchecktest "EXEC_STACK iface='$iface' (unconfined - thirdfile)" pass $iface -f $thirdfile
+runchecktest "EXEC_STACK iface='$iface' (unconfined - sharedfile)" pass $iface -f $sharedfile
 
-runchecktest "EXEC_STACK (unconfined - okcon)" pass -l unconfined -m '(null)'
-runchecktest "EXEC_STACK (unconfined - bad label)" fail -l "$test" -m '(null)'
-runchecktest "EXEC_STACK (unconfined - bad mode)" fail -l unconfined -m enforce
+runchecktest "EXEC_STACK iface='$iface' (unconfined - okcon)" pass $iface -l unconfined -m '(null)'
+runchecktest "EXEC_STACK iface='$iface' (unconfined - bad label)" fail $iface -l "$test" -m '(null)'
+runchecktest "EXEC_STACK iface='$iface' (unconfined - bad mode)" fail $iface -l unconfined -m enforce
 
 # Verify file access and contexts by a non-stacked profile
 genprofile $fileok $sharedok $getcon
-runchecktest "EXEC_STACK (not stacked - file)" pass -f $file
-runchecktest_errno EACCES "EXEC_STACK (not stacked - otherfile)" fail -f $otherfile
-runchecktest_errno EACCES "EXEC_STACK (not stacked - thirdfile)" fail -f $thirdfile
-runchecktest "EXEC_STACK (not stacked - sharedfile)" pass -f $sharedfile
+runchecktest "EXEC_STACK iface='$iface' (not stacked - file)" pass $iface -f $file
+runchecktest_errno EACCES "EXEC_STACK iface='$iface' (not stacked - otherfile)" fail $iface -f $otherfile
+runchecktest_errno EACCES "EXEC_STACK iface='$iface' (not stacked - thirdfile)" fail $iface -f $thirdfile
+runchecktest "EXEC_STACK iface='$iface' (not stacked - sharedfile)" pass $iface -f $sharedfile
 
-runchecktest "EXEC_STACK (not stacked - okcon)" pass -l "$test" -m enforce
-runchecktest "EXEC_STACK (not stacked - bad label)" fail -l "${test}XXX" -m enforce
-runchecktest "EXEC_STACK (not stacked - bad mode)" fail -l "$test" -m complain
+runchecktest "EXEC_STACK iface='$iface' (not stacked - okcon)" pass $iface -l "$test" -m enforce
+runchecktest "EXEC_STACK iface='$iface' (not stacked - bad label)" fail $iface -l "${test}XXX" -m enforce
+runchecktest "EXEC_STACK iface='$iface' (not stacked - bad mode)" fail $iface -l "$test" -m complain
 
 # Verify file access and contexts by 2 stacked profiles
 genprofile -I $fileok $sharedok $getcon $test:"ix -> &$othertest" -- \
 	image=$othertest addimage:$test $otherok $sharedok $getcon $test:rm
-runchecktest_errno EACCES "EXEC_STACK (2 stacked - file)" fail -- $test -f $file
-runchecktest_errno EACCES "EXEC_STACK (2 stacked - otherfile)" fail -- $test -f $otherfile
-runchecktest_errno EACCES "EXEC_STACK (2 stacked - thirdfile)" fail -- $test -f $thirdfile
-runchecktest "EXEC_STACK (2 stacked - sharedfile)" pass -- $test -f $sharedfile
+runchecktest_errno EACCES "EXEC_STACK iface='$iface' (2 stacked - file)" fail $iface -- $test -f $file
+runchecktest_errno EACCES "EXEC_STACK iface='$iface' (2 stacked - otherfile)" fail $iface -- $test -f $otherfile
+runchecktest_errno EACCES "EXEC_STACK iface='$iface' (2 stacked - thirdfile)" fail $iface -- $test -f $thirdfile
+runchecktest "EXEC_STACK iface='$iface' (2 stacked - sharedfile)" pass $iface -- $test -f $sharedfile
 
-runchecktest "EXEC_STACK (2 stacked - okcon)" pass -- $test -l "${test}//&${othertest}" -m enforce
-runchecktest "EXEC_STACK (2 stacked - bad label)" fail -- $test -l "${test}//&${test}" -m enforce
-runchecktest "EXEC_STACK (2 stacked - bad mode)" fail -- $test -l "${test}//&${test}" -m '(null)'
+runchecktest "EXEC_STACK iface='$iface' (2 stacked - okcon)" pass $iface -- $test -l "${test}//&${othertest}" -m enforce
+runchecktest "EXEC_STACK iface='$iface' (2 stacked - bad label)" fail $iface -- $test -l "${test}//&${test}" -m enforce
+runchecktest "EXEC_STACK iface='$iface' (2 stacked - bad mode)" fail $iface -- $test -l "${test}//&${test}" -m '(null)'
 
 # Verify file access and contexts by 3 stacked profiles
 genprofile -I $fileok $sharedok $getcon $test:"ix -> &$othertest" -- \
 	image=$othertest addimage:$test $otherok $sharedok $getcon $test:"rix -> &$thirdtest" -- \
 	image=$thirdtest addimage:$test $thirdok $sharedok $getcon $test:rm
-runchecktest_errno EACCES "EXEC_STACK (3 stacked - file)" fail -- $test -- $test -f $file
-runchecktest_errno EACCES "EXEC_STACK (3 stacked - otherfile)" fail -- $test -- $test -f $otherfile
-runchecktest_errno EACCES "EXEC_STACK (3 stacked - thirdfile)" fail -- $test -- $test -f $thirdfile
-runchecktest "EXEC_STACK (3 stacked - sharedfile)" pass -- $test -- $test -f $sharedfile
+runchecktest_errno EACCES "EXEC_STACK iface='$iface' (3 stacked - file)" fail $iface -- $test -- $test -f $file
+runchecktest_errno EACCES "EXEC_STACK iface='$iface' (3 stacked - otherfile)" fail $iface -- $test -- $test -f $otherfile
+runchecktest_errno EACCES "EXEC_STACK iface='$iface' (3 stacked - thirdfile)" fail $iface -- $test -- $test -f $thirdfile
+runchecktest "EXEC_STACK iface='$iface' (3 stacked - sharedfile)" pass $iface -- $test -- $test -f $sharedfile
 
-runchecktest "EXEC_STACK (3 stacked - okcon)" pass -- $test -- $test -l "${thirdtest}//&${test}//&${othertest}" -m enforce
+runchecktest "EXEC_STACK iface='$iface' (3 stacked - okcon)" pass $iface -- $test -- $test -l "${thirdtest}//&${test}//&${othertest}" -m enforce
 
 genprofile -I $sharedok $stackotherok $stackthirdok $test:"rix -> &$othertest" -- \
 	image=$othertest addimage:$test $sharedok $stackthirdok $test:"rix -> &$thirdtest" -- \
 	image=$thirdtest addimage:$test $sharedok $stackthirdok $test:rm
 # Triggered an AppArmor WARN in the initial stacking patch set
-runchecktest "EXEC_STACK (3 stacked - old AA WARN)" pass -p $othertest -- $test -p $thirdtest -f $sharedfile
+runchecktest "EXEC_STACK iface='$iface' (3 stacked - old AA WARN)" pass $iface -p $othertest -- $test -p $thirdtest -f $sharedfile
 
 ns="ns"
 prof="stackprofile"
@@ -127,25 +128,28 @@ $nstest {
   audit deny $thirdfile $okperm,
 }
 EOF
-runchecktest_errno EACCES "EXEC_STACK (stacked with namespaced profile - file)" fail -- $test -f $file
-runchecktest_errno EACCES "EXEC_STACK (stacked with namespaced profile - otherfile)" fail -- $test -f $otherfile
-runchecktest_errno EACCES "EXEC_STACK (stacked with namespaced profile - thirdfile)" fail -- $test -f $thirdfile
-runchecktest "EXEC_STACK (stacked with namespaced profile - sharedfile)" pass -- $test -f $sharedfile
+runchecktest_errno EACCES "EXEC_STACK iface='$iface' (stacked with namespaced profile - file)" fail -- $test -f $file
+runchecktest_errno EACCES "EXEC_STACK iface='$iface' (stacked with namespaced profile - otherfile)" fail -- $test -f $otherfile
+runchecktest_errno EACCES "EXEC_STACK iface='$iface' (stacked with namespaced profile - thirdfile)" fail -- $test -f $thirdfile
+runchecktest "EXEC_STACK iface='$iface' (stacked with namespaced profile - sharedfile)" pass $iface -- $test -f $sharedfile
 
-runchecktest "EXEC_STACK (stacked with namespaced profile - okcon)" pass -- $test -l $prof -m enforce
+runchecktest "EXEC_STACK iface='$iface' (stacked with namespaced profile - okcon)" pass $iface -- $test -l $prof -m enforce
 
 # Verify file access and contexts in mixed mode
 genprofile -I $fileok $sharedok $getcon $test:"ix -> &$othertest" -- \
 	image=$othertest flag:complain addimage:$test $otherok $sharedok $getcon $test:rm
-runchecktest "EXEC_STACK (mixed mode - file)" pass -- $test -f $file
-runchecktest_errno EACCES "EXEC_STACK (mixed mode - otherfile)" fail -- $test -f $otherfile
-runchecktest "EXEC_STACK (mixed mode - sharedfile)" pass -- $test -f $sharedfile
+runchecktest "EXEC_STACK iface='$iface' (mixed mode - file)" pass $iface -- $test -f $file
+runchecktest_errno EACCES "EXEC_STACK iface='$iface' (mixed mode - otherfile)" fail $iface -- $test -f $otherfile
+runchecktest "EXEC_STACK iface='$iface' (mixed mode - sharedfile)" pass $iface -- $test -f $sharedfile
 
-runchecktest "EXEC_STACK (mixed mode - okcon)" pass -- $test -l "${othertest}//&${test}" -m mixed
+runchecktest "EXEC_STACK iface='$iface' (mixed mode - okcon)" pass $iface -- $test -l "${othertest}//&${test}" -m mixed
 
 # Verify file access and contexts in complain mode
 genprofile -I flag:complain $getcon $test:"ix -> &$othertest" -- \
 	image=$othertest flag:complain addimage:$test $getcon
-runchecktest "EXEC_STACK (complain mode - file)" pass -- $test -f $file
+runchecktest "EXEC_STACK iface='$iface' (complain mode - file)" pass $iface -- $test -f $file
 
-runchecktest "EXEC_STACK (complain mode - okcon)" pass -- $test -l "${test}//&${othertest}" -m complain
+runchecktest "EXEC_STACK iface='$iface' (complain mode - okcon)" pass $iface -- $test -l "${test}//&${othertest}" -m complain
+
+removeprofile
+done # for iface

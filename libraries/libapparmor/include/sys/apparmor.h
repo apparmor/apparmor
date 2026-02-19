@@ -93,6 +93,20 @@ extern int aa_getprocattr_raw(pid_t tid, const char *attr, char *buf, int len,
 			      char **mode);
 extern int aa_getprocattr(pid_t tid, const char *attr, char **label,
 			  char **mode);
+
+#ifdef HAVE_LINUX_LSM_H
+	#include <linux/lsm.h>
+#else
+	/* needed for aa_get_lsm_iface @op */
+	#define LSM_ATTR_CURRENT       100
+	#define LSM_ATTR_EXEC          101
+	#define LSM_ATTR_PREV          104
+#endif /* HAVE_LINUX_LSM_H */
+
+extern const char *aa_get_lsm_iface_name(int op);
+extern int aa_get_self_attr(int op_type, char **label, char **mode);
+extern int aa_set_self_attr(int op_type, char *buf, int len);
+
 extern int aa_gettaskcon(pid_t target, char **label, char **mode);
 extern int aa_getcon(char **label, char **mode);
 extern int aa_getpeercon_raw(int fd, char *buf, socklen_t *len, char **mode);

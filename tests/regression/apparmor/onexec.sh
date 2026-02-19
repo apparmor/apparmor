@@ -45,13 +45,13 @@ do_test()
 
     desc="ONEXEC $desc ($prof -> $target_prof)"
     if [ "$target_prof" = "nochange" ] ; then
-        runchecktest "$desc" $res -l "$prof" -- "$@"
+        runchecktest "iface=$iface $desc" $res $iface -l "$prof" -- "$@"
     else
-        runchecktest "$desc" $res -O "$target_prof" -l "$prof" -L "$target_prof" -- "$@"
+        runchecktest "iface=$iface $desc" $res $iface -O "$target_prof" -l "$prof" -L "$target_prof" -- "$@"
     fi
 }
 
-
+for iface in "" "-B" ; do
 # ONEXEC from UNCONFINED - don't change profile
 do_test "" unconfined nochange pass "$bin/open" $file
 
@@ -124,4 +124,7 @@ do_test "glob override px" $test "$bin/open" fail "$bin/open" $file
 # ONEXEC from COFINED - change to exec profile via glob rule, override exec profile, exec profile has perms
 genprofile 'change_profile->':/** $exec_w $attrs_r -- "image=$bin/rw" "$bin/open:rix" $file:rw  -- "image=$bin/open" $file:rw
 do_test "glob override px" $test "$bin/rw" pass "$bin/open" $file
+
+removeprofile
+done # for iface
 
