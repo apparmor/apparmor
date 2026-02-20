@@ -170,6 +170,7 @@ warnings.warn("free_record is now a no-op as the record's memory is handled auto
   }
 }
 
+extern const char *aa_get_lsm_iface_name(int op);
 extern char *aa_splitcon(char *con, char **mode);
 
 #ifdef SWIGPYTHON
@@ -378,7 +379,6 @@ extern int aa_stack_onexec(const char *profile);
 extern int aa_find_mountpoint(char **mnt);
 extern int aa_getprocattr(pid_t tid, const char *attr, char **label, char **mode);
 
-extern const char *aa_get_lsm_iface_name(int op);
 extern int aa_get_self_attr(int op_type, char** label, char** mode);
 extern int aa_set_self_attr(int op_type, char *buf, int len);
 
