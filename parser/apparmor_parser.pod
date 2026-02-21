@@ -365,7 +365,7 @@ Where n can be on of:
    default - default apparmor preset compression level
    fast   - use a pre-chosen value that is fast
    small  - use a pre-chosen value that will result in better compression (slower)
-   0-22   - a number in the range 0-22, where 0 disables A compression level of 0 disables
+   0-22   - a number in the range 0-22, where a compression level of 0 disables
             compression entirely. Levels otherwise range up to 22, though levels of 20
             and above (the 'ultra' levels) require significantly more memory and are much slower.
 
