@@ -20,8 +20,29 @@ profile lsusb /usr/bin/lsusb {
 
   network netlink raw,
 
-  # Needed for additional information gathered under sudo
-  capability net_admin,
+  # CAP_NET_ADMIN is invoked as part of setsockopt(2) on a udev socket
+  # using SO_RCVBUFFORCE to override rlimits:
+
+  # libudev/libudev-monitor.c:udev_monitor_new_from_netlink
+  # libsystemd/sd-device/device-monitor.c:device_monitor_new_full
+  # libsystemd/sd-device/device-monitor.c:sd_device_monitor_set_receive_buffer_size
+  # basic/socket-util.c:fd_set_rcvbuf
+
+  # Because libudev can work just fine with a suboptimal buffer size,
+  # the capability isn't actually necessary, and we can silence the denial.
+  deny capability net_admin,
+
+  # CAP_SYS_ADMIN is invoked to set a classic BPF filter on a udev socket,
+  # using setsockopt(2) with SO_ATTACHFILTER:
+
+  # libudev/libudev-monitor.c:udev_monitor_enable_receiving
+  # libsystemd/sd-device/device-monitor.c:device_monitor_new_full
+  # libsystemd/sd-device/device-monitor.c:sd_device_monitor_filter_update
+
+  # libudev seems to work fine without the BPF filter in place, so we
+  # can silence the denial.
+  deny capability sys_admin,
+
   /dev/bus/usb/@{d}@{d}@{d}/@{d}@{d}@{d} rw,
 
   /dev/ r,
