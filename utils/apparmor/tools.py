@@ -40,6 +40,7 @@ class aa_tools:
         self.explicit_profile = getattr(args, 'profile', None)
         self.explicit_profile_file = getattr(args, 'profile_file', None)
         self.explicit_executable = getattr(args, 'executable_file', None)
+        self.force = getattr(args, 'force', False)
 
         if tool_name == 'audit':
             self.remove = args.remove
@@ -194,12 +195,32 @@ class aa_tools:
 
     def cmd_enforce(self):
         for (program, prof_filename, output_name) in self.get_next_for_modechange():
+            if not self.force:
+                try:
+                    flags = apparmor.get_profile_flags(prof_filename, program)
+                except AppArmorException:
+                    flags = ''
+
+                if flags and 'unconfined' in flags:
+                    aaui.UI_Info(_('Profile %s is in unconfined mode. Use --force to switch it to enforce mode.') % output_name)
+                    continue
+
             apparmor.set_enforce(prof_filename, program)
 
             self.reload_profile(prof_filename)
 
     def cmd_complain(self):
         for (program, prof_filename, output_name) in self.get_next_for_modechange():
+            if not self.force:
+                try:
+                    flags = apparmor.get_profile_flags(prof_filename, program)
+                except AppArmorException:
+                    flags = ''
+
+                if flags and 'unconfined' in flags:
+                    aaui.UI_Info(_('Profile %s is in unconfined mode. Use --force to switch it to complain mode.') % output_name)
+                    continue
+
             apparmor.set_complain(prof_filename, program)
 
             self.reload_profile(prof_filename)
