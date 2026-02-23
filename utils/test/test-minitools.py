@@ -281,6 +281,44 @@ class MinitoolsTest(AATest):
 
         self._test_with_cleanprof_profile(command, output_file, errormsg, False)
 
+    def test_enforce_unconfined(self):
+        # Create an unconfined profile
+        write_file(self.profile_dir, os.path.basename(self.local_profilename), '%s flags=(unconfined) {\n}\n' % self.test_path)
+        self.assertEqual(apparmor.get_profile_flags(self.local_profilename, self.test_path), 'unconfined')
+
+        # aa-enforce without --force should skip it
+        output = subprocess.check_output('{} ./../aa-enforce --no-reload -d {} {} --configdir ./'.format(
+            python_interpreter, self.profile_dir, self.test_path), shell=True)
+        expected_output = ('Profile %s is in unconfined mode. Use --force to switch it to enforce mode.\n' % self.test_path).encode('utf-8')
+        self.assertEqual(output, expected_output)
+        self.assertEqual(apparmor.get_profile_flags(self.local_profilename, self.test_path), 'unconfined',
+                         'aa-enforce modified an unconfined profile without --force')
+
+        # aa-enforce with --force should enforce it
+        subprocess.check_output('{} ./../aa-enforce --force --no-reload -d {} {} --configdir ./'.format(
+            python_interpreter, self.profile_dir, self.test_path), shell=True)
+        self.assertEqual(apparmor.get_profile_flags(self.local_profilename, self.test_path), None,
+                         'aa-enforce --force failed to modify an unconfined profile')
+
+    def test_complain_unconfined(self):
+        # Create an unconfined profile
+        write_file(self.profile_dir, os.path.basename(self.local_profilename), '%s flags=(unconfined) {\n}\n' % self.test_path)
+        self.assertEqual(apparmor.get_profile_flags(self.local_profilename, self.test_path), 'unconfined')
+
+        # aa-complain without --force should skip it
+        output = subprocess.check_output('{} ./../aa-complain --no-reload -d {} {} --configdir ./'.format(
+            python_interpreter, self.profile_dir, self.test_path), shell=True)
+        expected_output = ('Profile %s is in unconfined mode. Use --force to switch it to complain mode.\n' % self.test_path).encode('utf-8')
+        self.assertEqual(output, expected_output)
+        self.assertEqual(apparmor.get_profile_flags(self.local_profilename, self.test_path), 'unconfined',
+                         'aa-complain modified an unconfined profile without --force')
+
+        # aa-complain with --force should complain it
+        subprocess.check_output('{} ./../aa-complain --force --no-reload -d {} {} --configdir ./'.format(
+            python_interpreter, self.profile_dir, self.test_path), shell=True)
+        self.assertEqual(apparmor.get_profile_flags(self.local_profilename, self.test_path), 'complain',
+                         'aa-complain --force failed to modify an unconfined profile')
+
 
 setup_aa(apparmor)
 setup_all_loops(__name__)
