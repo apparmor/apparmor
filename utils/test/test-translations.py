@@ -42,10 +42,10 @@ class TestHotkeyConflicts(AATest):
     def _run_test(self, params, expected):
         self.createTmpdir()
 
-        subprocess.run("make -C ../po >/dev/null", shell=True, check=True)
+        subprocess.run(['make', '-C', '../po'], stdout=subprocess.DEVNULL, check=True)
         subprocess.run(
-            "DESTDIR={} NAME=apparmor-utils make -C ../po install >/dev/null".format(self.tmpdir),
-            shell=True, check=True,
+            ['make', '-C', '../po', 'install', 'DESTDIR={}'.format(self.tmpdir), 'NAME=apparmor-utils'],
+            stdout=subprocess.DEVNULL, check=True,
         )
 
         self.localedir = '{}/usr/share/locale'.format(self.tmpdir)

@@ -275,7 +275,7 @@ def UI_BusyStop():
 
 def diff(oldprofile, newprofile):
     difftemp = NamedTemporaryFile('w')
-    subprocess.call('diff -u -p %s %s > %s' % (oldprofile, newprofile, difftemp.name), shell=True)
+    subprocess.call(['diff', '-u', '-p', oldprofile, newprofile], stdout=difftemp)
     return difftemp
 
 

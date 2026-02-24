@@ -47,9 +47,7 @@ class MinitoolsTest(AATest):
     def test_audit(self):
         # Set test profile to audit mode and check if it was correctly set
         subprocess.check_output(
-            '{} ./../aa-audit --no-reload -d {} {} --configdir ./'.format(
-                python_interpreter, self.profile_dir, self.test_path),
-            shell=True)
+            [python_interpreter, './../aa-audit', '--no-reload', '-d', self.profile_dir, self.test_path, '--configdir', './'])
 
         self.assertEqual(
             apparmor.get_profile_flags(self.local_profilename, self.test_path),
@@ -58,8 +56,7 @@ class MinitoolsTest(AATest):
 
         # Remove audit mode from test profile and check if it was correctly removed
         subprocess.check_output(
-            '{} ./../aa-audit --no-reload -d {} -r {} --configdir ./'.format(
-                python_interpreter, self.profile_dir, self.test_path), shell=True)
+            [python_interpreter, './../aa-audit', '--no-reload', '-d', self.profile_dir, '-r', self.test_path, '--configdir', './'])
 
         self.assertEqual(
             apparmor.get_profile_flags(self.local_profilename, self.test_path),
@@ -80,9 +77,7 @@ class MinitoolsTest(AATest):
     def test_complain(self):
         # Set test profile to complain mode and check if it was correctly set
         subprocess.check_output(
-            '{} ./../aa-complain --no-reload -d {} {} --configdir ./'.format(
-                python_interpreter, self.profile_dir, self.test_path),
-            shell=True)
+            [python_interpreter, './../aa-complain', '--no-reload', '-d', self.profile_dir, self.test_path, '--configdir', './'])
 
         # "manually" create a force-complain symlink (will be deleted by aa-enforce later)
         force_complain_dir = self.profile_dir + '/force-complain'
@@ -103,9 +98,7 @@ class MinitoolsTest(AATest):
 
         # Set test profile to enforce mode and check if it was correctly set
         subprocess.check_output(
-            '{} ./../aa-enforce --no-reload -d {} {} --configdir ./'.format(
-                python_interpreter, self.profile_dir, self.test_path),
-            shell=True)
+            [python_interpreter, './../aa-enforce', '--no-reload', '-d', self.profile_dir, self.test_path, '--configdir', './'])
 
         self.assertEqual(
             os.path.islink('{}/{}'.format(force_complain_dir, os.path.basename(self.local_profilename))),
@@ -122,13 +115,9 @@ class MinitoolsTest(AATest):
 
         # Set audit flag and then complain flag in a profile
         subprocess.check_output(
-            '{} ./../aa-audit --no-reload -d {} {} --configdir ./'.format(
-                python_interpreter, self.profile_dir, self.test_path),
-            shell=True)
+            [python_interpreter, './../aa-audit', '--no-reload', '-d', self.profile_dir, self.test_path, '--configdir', './'])
         subprocess.check_output(
-            '{} ./../aa-complain --no-reload -d {} {} --configdir ./'.format(
-                python_interpreter, self.profile_dir, self.test_path),
-            shell=True)
+            [python_interpreter, './../aa-complain', '--no-reload', '-d', self.profile_dir, self.test_path, '--configdir', './'])
         # "manually" create a force-complain symlink (will be deleted by aa-enforce later)
         os.symlink(
             self.local_profilename,
@@ -145,9 +134,7 @@ class MinitoolsTest(AATest):
 
         # Remove complain flag first i.e. set to enforce mode
         subprocess.check_output(
-            '{} ./../aa-enforce --no-reload -d {} {} --configdir ./'.format(
-                python_interpreter, self.profile_dir, self.test_path),
-            shell=True)
+            [python_interpreter, './../aa-enforce', '--no-reload', '-d', self.profile_dir, self.test_path, '--configdir', './'])
 
         self.assertEqual(
             os.path.islink('{}/{}'.format(force_complain_dir, os.path.basename(self.local_profilename))),
@@ -164,16 +151,12 @@ class MinitoolsTest(AATest):
 
         # Remove audit flag
         subprocess.check_output(
-            '{} ./../aa-audit --no-reload -d {} -r {} --configdir ./'.format(
-                python_interpreter, self.profile_dir, self.test_path),
-            shell=True)
+            [python_interpreter, './../aa-audit', '--no-reload', '-d', self.profile_dir, '-r', self.test_path, '--configdir', './'])
 
     def test_enforce(self):
         # Set test profile to enforce mode and check if it was correctly set
         subprocess.check_output(
-            '{} ./../aa-enforce --no-reload -d {} {} --configdir ./'.format(
-                python_interpreter, self.profile_dir, self.test_path),
-            shell=True)
+            [python_interpreter, './../aa-enforce', '--no-reload', '-d', self.profile_dir, self.test_path, '--configdir', './'])
 
         self.assertEqual(
             os.path.islink('{}/force-complain/{}'.format(self.profile_dir, os.path.basename(self.local_profilename))),
@@ -191,9 +174,7 @@ class MinitoolsTest(AATest):
     def test_disable(self):
         # Disable the test profile and check if it was correctly disabled
         subprocess.check_output(
-            '{} ./../aa-disable --no-reload -d {} {} --configdir ./'.format(
-                python_interpreter, self.profile_dir, self.test_path),
-            shell=True)
+            [python_interpreter, './../aa-disable', '--no-reload', '-d', self.profile_dir, self.test_path, '--configdir', './'])
 
         self.assertEqual(
             os.path.islink('{}/disable/{}'.format(self.profile_dir, os.path.basename(self.local_profilename))),
@@ -233,10 +214,10 @@ class MinitoolsTest(AATest):
     @unittest.skipIf(apparmor.check_for_apparmor() is None, "Securityfs not mounted or doesn't have the apparmor directory.")
     def test_unconfined(self):
         output = subprocess.check_output(
-            python_interpreter + ' ./../aa-unconfined --configdir ./', shell=True)
+            [python_interpreter, './../aa-unconfined', '--configdir', './'])
 
         output_force = subprocess.check_output(
-            python_interpreter + ' ./../aa-unconfined --paranoid --configdir ./', shell=True)
+            [python_interpreter, './../aa-unconfined', '--paranoid', '--configdir', './'])
 
         self.assertIsNot(output, '', 'Failed to run aa-unconfined')
 
@@ -248,14 +229,12 @@ class MinitoolsTest(AATest):
         # We position the local testfile
         shutil.copy('./' + input_file, self.profile_dir)
 
-        subprocess.check_output(
-            '{} ./../{}  --no-reload -d {} {} --configdir ./'.format(
-                python_interpreter, command, self.profile_dir, profile),
-            shell=True)
+        cmd = [python_interpreter, './../' + command.split()[0]] + command.split()[1:] + ['--no-reload', '-d', self.profile_dir, profile, '--configdir', './']
+        subprocess.check_output(cmd)
 
         # Strip off the first line (#modified line)
         if delete_first_line:
-            subprocess.check_output('sed -i 1d {}/{}'.format(self.profile_dir, input_file), shell=True)
+            subprocess.check_output(['sed', '-i', '1d', '{}/{}'.format(self.profile_dir, input_file)])
 
         exp_content = read_file('./' + output_file)
         real_content = read_file('{}/{}'.format(self.profile_dir, input_file))
@@ -287,16 +266,16 @@ class MinitoolsTest(AATest):
         self.assertEqual(apparmor.get_profile_flags(self.local_profilename, self.test_path), 'unconfined')
 
         # aa-enforce without --force should skip it
-        output = subprocess.check_output('{} ./../aa-enforce --no-reload -d {} {} --configdir ./'.format(
-            python_interpreter, self.profile_dir, self.test_path), shell=True)
+        output = subprocess.check_output(
+            [python_interpreter, './../aa-enforce', '--no-reload', '-d', self.profile_dir, self.test_path, '--configdir', './'])
         expected_output = ('Profile %s is in unconfined mode. Use --force to switch it to enforce mode.\n' % self.test_path).encode('utf-8')
         self.assertEqual(output, expected_output)
         self.assertEqual(apparmor.get_profile_flags(self.local_profilename, self.test_path), 'unconfined',
                          'aa-enforce modified an unconfined profile without --force')
 
         # aa-enforce with --force should enforce it
-        subprocess.check_output('{} ./../aa-enforce --force --no-reload -d {} {} --configdir ./'.format(
-            python_interpreter, self.profile_dir, self.test_path), shell=True)
+        subprocess.check_output(
+            [python_interpreter, './../aa-enforce', '--force', '--no-reload', '-d', self.profile_dir, self.test_path, '--configdir', './'])
         self.assertEqual(apparmor.get_profile_flags(self.local_profilename, self.test_path), None,
                          'aa-enforce --force failed to modify an unconfined profile')
 
@@ -306,16 +285,16 @@ class MinitoolsTest(AATest):
         self.assertEqual(apparmor.get_profile_flags(self.local_profilename, self.test_path), 'unconfined')
 
         # aa-complain without --force should skip it
-        output = subprocess.check_output('{} ./../aa-complain --no-reload -d {} {} --configdir ./'.format(
-            python_interpreter, self.profile_dir, self.test_path), shell=True)
+        output = subprocess.check_output(
+            [python_interpreter, './../aa-complain', '--no-reload', '-d', self.profile_dir, self.test_path, '--configdir', './'])
         expected_output = ('Profile %s is in unconfined mode. Use --force to switch it to complain mode.\n' % self.test_path).encode('utf-8')
         self.assertEqual(output, expected_output)
         self.assertEqual(apparmor.get_profile_flags(self.local_profilename, self.test_path), 'unconfined',
                          'aa-complain modified an unconfined profile without --force')
 
         # aa-complain with --force should complain it
-        subprocess.check_output('{} ./../aa-complain --force --no-reload -d {} {} --configdir ./'.format(
-            python_interpreter, self.profile_dir, self.test_path), shell=True)
+        subprocess.check_output(
+            [python_interpreter, './../aa-complain', '--force', '--no-reload', '-d', self.profile_dir, self.test_path, '--configdir', './'])
         self.assertEqual(apparmor.get_profile_flags(self.local_profilename, self.test_path), 'complain',
                          'aa-complain --force failed to modify an unconfined profile')
 
