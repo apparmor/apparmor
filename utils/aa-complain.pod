@@ -26,7 +26,7 @@ aa-complain - set an AppArmor security profile to I<complain> mode.
 
 =head1 SYNOPSIS
 
-B<aa-complain I<E<lt>executableE<gt>> [I<E<lt>executableE<gt>> ...] [I<-d /path/to/profiles>] [I<--no-reload>]>
+B<aa-complain I<E<lt>executableE<gt>> [I<E<lt>executableE<gt>> ...] [I<-d /path/to/profiles>] [I<--no-reload>] [I<--force>]>
 
 =head1 OPTIONS
 
@@ -37,6 +37,9 @@ B<-d --dir  /path/to/profiles>
 
 B<--no-reload>
    Do not reload the profile after modifying it.
+
+B<--force>
+   Force the profile to be set to complain mode even if it is currently in unconfined mode.
 
 =head1 DESCRIPTION
 

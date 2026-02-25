@@ -29,6 +29,7 @@ parser.add_argument('--profile', type=str, help=_('profile name to operate on'))
 parser.add_argument('--profile-file', dest='profile_file', type=str, help=_('path to profile file'))
 parser.add_argument('--executable-file', dest='executable_file', type=str, help=_('path to executable (derive profile from it)'))
 parser.add_argument('--configdir', type=str, help=argparse.SUPPRESS)
+parser.add_argument('--force', action='store_true', help=_('force the profile into enforce mode even if it is currently in unconfined mode'))
 args = parser.parse_args()
 
 if not args.program and not args.profile and not args.profile_file and not args.executable_file:
