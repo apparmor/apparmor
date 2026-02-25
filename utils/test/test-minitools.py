@@ -33,7 +33,7 @@ class MinitoolsTest(AATest):
 
         # copy the local profiles to the test directory
         # Should be the set of cleanprofile
-        self.profile_dir = self.tmpdir + '/profiles'
+        self.profile_dir = os.path.join(self.tmpdir, 'profiles')
         shutil.copytree('../../profiles/apparmor.d/', self.profile_dir,
                         symlinks=True)
 
@@ -42,7 +42,7 @@ class MinitoolsTest(AATest):
         # Path for the program
         self.test_path = '/usr/sbin/winbindd'
         # Path for the target file containing profile
-        self.local_profilename = self.profile_dir + '/usr.sbin.winbindd'
+        self.local_profilename = os.path.join(self.profile_dir, 'usr.sbin.winbindd')
 
     def test_audit(self):
         # Set test profile to audit mode and check if it was correctly set
@@ -66,13 +66,13 @@ class MinitoolsTest(AATest):
     def test_audit_with_garbage(self):
         # Inject a garbage profile into the profile directory and check that
         # test_audit still passes
-        with open(self.profile_dir + "/duchamps_readymades", "w") as fil:
+        with open(os.path.join(self.profile_dir, 'duchamps_readymades'), 'w') as fil:
             fil.write("a porcelain toilet rotated on its side and signed")
 
         try:
             self.test_audit()
         finally:
-            os.unlink(self.profile_dir + "/duchamps_readymades")
+            os.unlink(os.path.join(self.profile_dir, 'duchamps_readymades'))
 
     def test_complain(self):
         # Set test profile to complain mode and check if it was correctly set
@@ -80,15 +80,15 @@ class MinitoolsTest(AATest):
             [python_interpreter, './../aa-complain', '--no-reload', '-d', self.profile_dir, self.test_path, '--configdir', './'])
 
         # "manually" create a force-complain symlink (will be deleted by aa-enforce later)
-        force_complain_dir = self.profile_dir + '/force-complain'
+        force_complain_dir = os.path.join(self.profile_dir, 'force-complain')
         if not os.path.isdir(force_complain_dir):
             os.mkdir(force_complain_dir)
         os.symlink(
             self.local_profilename,
-            '{}/{}'.format(force_complain_dir, os.path.basename(self.local_profilename)))
+            os.path.join(force_complain_dir, os.path.basename(self.local_profilename)))
 
         self.assertEqual(
-            os.path.islink('{}/{}'.format(force_complain_dir, os.path.basename(self.local_profilename))),
+            os.path.islink(os.path.join(force_complain_dir, os.path.basename(self.local_profilename))),
             True,
             'Failed to create a symlink for {} in force-complain'.format(self.local_profilename))
         self.assertEqual(
@@ -101,11 +101,11 @@ class MinitoolsTest(AATest):
             [python_interpreter, './../aa-enforce', '--no-reload', '-d', self.profile_dir, self.test_path, '--configdir', './'])
 
         self.assertEqual(
-            os.path.islink('{}/{}'.format(force_complain_dir, os.path.basename(self.local_profilename))),
+            os.path.islink(os.path.join(force_complain_dir, os.path.basename(self.local_profilename))),
             False,
             'Failed to remove symlink for {} from force-complain'.format(self.local_profilename))
         self.assertEqual(
-            os.path.islink('{}/disable/{}'.format(self.profile_dir, os.path.basename(self.local_profilename))),
+            os.path.islink(os.path.join(self.profile_dir, 'disable', os.path.basename(self.local_profilename))),
             False,
             'Failed to remove symlink for {} from disable'.format(self.local_profilename))
         self.assertEqual(
@@ -121,10 +121,10 @@ class MinitoolsTest(AATest):
         # "manually" create a force-complain symlink (will be deleted by aa-enforce later)
         os.symlink(
             self.local_profilename,
-            '{}/{}'.format(force_complain_dir, os.path.basename(self.local_profilename)))
+            os.path.join(force_complain_dir, os.path.basename(self.local_profilename)))
 
         self.assertEqual(
-            os.path.islink('{}/{}'.format(force_complain_dir, os.path.basename(self.local_profilename))),
+            os.path.islink(os.path.join(force_complain_dir, os.path.basename(self.local_profilename))),
             True,
             'Failed to create a symlink for {} in force-complain'.format(self.local_profilename))
         self.assertEqual(
@@ -137,11 +137,11 @@ class MinitoolsTest(AATest):
             [python_interpreter, './../aa-enforce', '--no-reload', '-d', self.profile_dir, self.test_path, '--configdir', './'])
 
         self.assertEqual(
-            os.path.islink('{}/{}'.format(force_complain_dir, os.path.basename(self.local_profilename))),
+            os.path.islink(os.path.join(force_complain_dir, os.path.basename(self.local_profilename))),
             False,
             'Failed to remove symlink for {} from force-complain'.format(self.local_profilename))
         self.assertEqual(
-            os.path.islink('{}/disable/{}'.format(self.profile_dir, os.path.basename(self.local_profilename))),
+            os.path.islink(os.path.join(self.profile_dir, 'disable', os.path.basename(self.local_profilename))),
             False,
             'Failed to remove symlink for {} from disable'.format(self.local_profilename))
         self.assertEqual(
@@ -159,11 +159,11 @@ class MinitoolsTest(AATest):
             [python_interpreter, './../aa-enforce', '--no-reload', '-d', self.profile_dir, self.test_path, '--configdir', './'])
 
         self.assertEqual(
-            os.path.islink('{}/force-complain/{}'.format(self.profile_dir, os.path.basename(self.local_profilename))),
+            os.path.islink(os.path.join(self.profile_dir, 'force-complain', os.path.basename(self.local_profilename))),
             False,
             'Failed to remove symlink for {} from force-complain'.format(self.local_profilename))
         self.assertEqual(
-            os.path.islink('{}/disable/{}'.format(self.profile_dir, os.path.basename(self.local_profilename))),
+            os.path.islink(os.path.join(self.profile_dir, 'disable', os.path.basename(self.local_profilename))),
             False,
             'Failed to remove symlink for {} from disable'.format(self.local_profilename))
         self.assertEqual(
@@ -177,7 +177,7 @@ class MinitoolsTest(AATest):
             [python_interpreter, './../aa-disable', '--no-reload', '-d', self.profile_dir, self.test_path, '--configdir', './'])
 
         self.assertEqual(
-            os.path.islink('{}/disable/{}'.format(self.profile_dir, os.path.basename(self.local_profilename))),
+            os.path.islink(os.path.join(self.profile_dir, 'disable', os.path.basename(self.local_profilename))),
             True,
             'Failed to create a symlink for {} in disable'.format(self.local_profilename))
 
@@ -223,42 +223,47 @@ class MinitoolsTest(AATest):
 
         self.assertIsNot(output_force, '', 'Failed to run aa-unconfined in paranoid mode')
 
-    def _test_with_cleanprof_profile(self, command, output_file, errormsg, delete_first_line):
+    def _test_with_cleanprof_profile(self, command, command_arg, output_file, errormsg, delete_first_line):
         input_file = 'cleanprof_test.in'
         profile = '/usr/bin/a/simple/cleanprof/test/profile'
         # We position the local testfile
-        shutil.copy('./' + input_file, self.profile_dir)
+        shutil.copy(os.path.join('.', input_file), self.profile_dir)
 
-        cmd = [python_interpreter, './../' + command.split()[0]] + command.split()[1:] + ['--no-reload', '-d', self.profile_dir, profile, '--configdir', './']
+        cmd = [python_interpreter, os.path.join('./..', command)]
+        if command_arg:
+            cmd.append(command_arg)
+        cmd += ['--no-reload', '-d', self.profile_dir, profile, '--configdir', './']
         subprocess.check_output(cmd)
 
         # Strip off the first line (#modified line)
         if delete_first_line:
-            subprocess.check_output(['sed', '-i', '1d', '{}/{}'.format(self.profile_dir, input_file)])
+            subprocess.check_output(['sed', '-i', '1d', os.path.join(self.profile_dir, input_file)])
 
-        exp_content = read_file('./' + output_file)
-        real_content = read_file('{}/{}'.format(self.profile_dir, input_file))
+        exp_content = read_file(os.path.join('.', output_file))
+        real_content = read_file(os.path.join(self.profile_dir, input_file))
         self.maxDiff = None
         self.assertEqual(exp_content, real_content, errormsg)
 
     def test_cleanprof(self):
         ''' run aa-cleanprof on cleanprof.in and check if it matches cleanprof.out '''
 
-        command = 'aa-cleanprof -s'
+        command = 'aa-cleanprof'
+        command_arg = '-s'
         output_file = 'cleanprof_test.out'
         errormsg = 'Failed to cleanup profile properly'
 
-        self._test_with_cleanprof_profile(command, output_file, errormsg, True)
+        self._test_with_cleanprof_profile(command, command_arg, output_file, errormsg, True)
 
     def test_complain_cleanprof(self):
         ''' test if all child profiles in cleanprof_test.in get the complain flag added when switching the profile to complain mode '''
         # TODO: works for hats, but not for child profiles
 
         command = 'aa-complain'
+        command_arg = None
         output_file = 'cleanprof_test.complain'
         errormsg = 'Failed to switch profile to complain mode'
 
-        self._test_with_cleanprof_profile(command, output_file, errormsg, False)
+        self._test_with_cleanprof_profile(command, command_arg, output_file, errormsg, False)
 
     def test_enforce_unconfined(self):
         # Create an unconfined profile
