@@ -231,6 +231,31 @@ static int test_walk_one(void)
 	return rc;
 }
 
+/*
+ * Test bugfix for https://bugs.launchpad.net/apparmor/+bug/2105986,
+ * commit 7243029359c7e75f65f2c984aed863590e7cb6b2
+ */
+static int test_features_supports_prefixing() {
+	int rc = 0;
+	const char* FEATURES_STR = "network_v9 {af_unix {yes\n"
+		"}\n"
+		"}\n"
+		"network_v8 {af_inet {yes\n"
+		"}\n"
+		"}\n"
+		"network {af_unix {yes\n"
+		"}\n"
+		"}";
+	aa_features *features;
+	aa_features_new_from_string(&features, FEATURES_STR, strlen(FEATURES_STR));
+	MY_TEST(features != NULL, "Could not create aa_features from string");
+	if (features) {
+		MY_TEST(aa_features_supports(features, "network"), "aa_features network not found");
+		aa_features_unref(features);
+	}
+	return rc;
+}
+
 int main(void)
 {
 	int retval, rc = 0;
@@ -240,6 +265,10 @@ int main(void)
 		rc = retval;
 
 	retval = test_walk_one();
+	if (retval)
+		rc = retval;
+
+	retval = test_features_supports_prefixing();
 	if (retval)
 		rc = retval;
 
