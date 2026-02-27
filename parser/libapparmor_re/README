@@ -140,19 +140,25 @@ post_parse_profile semantic check
          v
   expr simplification	(expr-tree.{h,c})
          |
-         +- D expr-tree
+         + -D expr-tree
          |
-         +- D expr-simplified
+         + -D expr-simplified
          |
 ==== Back End - Create cHFA out of expr tree and other HFAs ====
          v
     hfa creation	(hfa.{h,cc})
          |
-         +- D dfa-node-map
+	 +---+ hfa.node-map creation
+	     |
+	     + hfa.perm deduplication & uniq perm map creation
+	     |
+	 +---+
          |
-         +- D dfa-uniq-perms
+         + -D dfa-node-map
          |
-         +- D dfa-states-initial
+         + -D dfa-uniq-perms
+         |
+         + -D dfa-states-initial
          |
          v
     hfa rewrite		(not yet implemented)
@@ -160,44 +166,44 @@ post_parse_profile semantic check
          v
     filter deny		(hfa.{h,cc})
          |
-         +- D dfa-states-post-filter
+         + -D dfa-states-post-filter
          |
          v
     minimization	(hfa.{h,cc})
          |
-         +- D dfa-minimize-partitions
+         + -D dfa-minimize-partitions
          |
-         +- D dfa-minimize-uniq-perms
+         + -D dfa-minimize-uniq-perms
          |
-         +- D dfa-states-post-minimize
+         + -D dfa-states-post-minimize
          |
          v
    unreachable state removal	(hfa.{h,cc})
          |
-         +- D dfa-states-post-unreachable
+         + -D dfa-states-post-unreachable
          |
-         +- D dfa-states	constructed hfa
+         + -D dfa-states	constructed hfa
          |
-         +- D dfa-graph
+         + -D dfa-graph
          |
          v
 equivalence class construction
          |
-         +- D equiv
+         + -D equiv
          |
      diff encode		(hfa.{h,cc})
          |
-         +- D diff-encode
+         + -D diff-encode
          |
 compute perms table
          |
-         +- D compressed-dfa == perm table dump
+         + -D compressed-dfa == perm table dump
          |
    compressed hfa			(chfa.{h,cc}
          |
-         +- D compressed-dfa == transition tables
+         + -D compressed-dfa == transition tables
          |
-         +- D dfa-compressed-states    - compress HFA in state form
+         + -D dfa-compressed-states    - compress HFA in state form
          |
          v
   Return to Mid Layer
