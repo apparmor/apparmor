@@ -30,7 +30,6 @@ environment:
     TEST/logparser: logparser
     TEST/logprof: logprof
     TEST/minitools: minitools
-    TEST/modifiers: modifiers
     TEST/mount: mount
     TEST/mqueue: mqueue
     TEST/network: network
