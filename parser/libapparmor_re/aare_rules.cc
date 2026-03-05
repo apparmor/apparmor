@@ -202,8 +202,10 @@ bool aare_rules::append_rule(const char *rule, bool oob, bool with_perm,
 CHFA *aare_rules::create_chfa(int *min_match_len,
 			      vector <aa_perms> &perms_table,
 			      optflags const &opts, bool filedfa,
-			      bool extended_perms, bool prompt)
+			      int permstable32_version, bool prompt)
 {
+	bool extended_perms = permstable32_version >= 2;
+
 	/* finish constructing the expr tree from the different permission
 	 * set nodes */
 	PermExprMap::iterator i = expr_map.begin();
@@ -328,7 +330,7 @@ CHFA *aare_rules::create_chfa(int *min_match_len,
 				cerr << "\n";
 			}
 		}
-		chfa = new CHFA(dfa, eq, opts, extended_perms, prompt);
+		chfa = new CHFA(dfa, eq, opts, permstable32_version, prompt);
 		if (opts.dump & DUMP_DFA_TRANS_TABLE)
 			chfa->dump(cerr);
 		if (opts.dump & DUMP_DFA_COMPTRESSED_STATES)
@@ -349,14 +351,14 @@ CHFA *aare_rules::create_chfa(int *min_match_len,
 void *aare_rules::create_dfablob(size_t *size, int *min_match_len,
 				 vector <aa_perms> &perms_table,
 				 optflags const &opts, bool filedfa,
-				 bool extended_perms, bool prompt)
+				 int permstable32_version, bool prompt)
 {
 	char *buffer = NULL;
 	stringstream stream;
 
 	try {
 		CHFA *chfa = create_chfa(min_match_len, perms_table,
-					 opts, filedfa, extended_perms,
+					 opts, filedfa, permstable32_version,
 					 prompt);
 		if (!chfa) {
 			*size = 0;

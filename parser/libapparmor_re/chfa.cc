@@ -55,8 +55,11 @@ void CHFA::init_free_list(vector<pair<size_t, size_t> > &free_list,
  *       permtable index flag
  */
 CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
-	   bool permindex, bool prompt): eq(eq)
+	   int permstable32_version, bool prompt): eq(eq)
 {
+	bool permindex = permstable32_version >= 2;
+	bool supports_permstable_accept2 = permstable32_version >= 3;
+
 	if (opts.dump & DUMP_DFA_TRANS_PROGRESS)
 		fprintf(stderr, "Compressing HFA:\r");
 
@@ -107,7 +110,7 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 
 	/* minimum size is 2 */
 	accept.resize(max(dfa.states.size(), (size_t) 2));
-	if (!permindex || dfa.filedfa)
+	if (!permindex || (dfa.filedfa && supports_permstable_accept2))
 		/* currently only using accept2 for owner cond in the
 		 * file dfa
 		 */
@@ -149,7 +152,7 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 				if (permindex) {
 					accept[num.size()] = (*i)->idx;
 					/* set owner conditional */
-					if (dfa.filedfa)
+					if (dfa.filedfa && supports_permstable_accept2)
 						accept2[num.size()] = 1; // TODO: Define this flag
 				} else {
 					(*i)->perms->map_perms_to_accept(accept[num.size()],
@@ -175,7 +178,7 @@ CHFA::CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
 				insert_state(free_list, i->second, dfa);
 				if (permindex) {
 					accept[num.size()] = i->second->idx;
-					if (dfa.filedfa)
+					if (dfa.filedfa && supports_permstable_accept2)
 						accept2[num.size()] = 1; // TODO: Define this flag.
 				} else {
 					i->second->perms->map_perms_to_accept(accept[num.size()],

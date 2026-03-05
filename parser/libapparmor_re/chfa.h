@@ -41,7 +41,7 @@ class CHFA {
       public:
 	CHFA(void);
 	CHFA(DFA &dfa, map<transchar, transchar> &eq, optflags const &opts,
-	     bool permindex, bool prompt);
+	     int permstable32_version, bool prompt);
 	void dump(ostream & os);
 	void flex_table(ostream &os, optflags const &opts);
 	void init_free_list(vector<pair<size_t, size_t> > &free_list,
