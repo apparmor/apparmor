@@ -364,7 +364,7 @@ extern int features_supports_flag_error;
 extern int kernel_supports_oob;
 extern int kernel_supports_promptdev;
 extern int kernel_supports_permstable32;
-extern int kernel_supports_permstable32_v1;
+extern int kernel_supports_permstable32_version;
 extern int prompt_compat_mode;
 extern int kernel_supports_state32;
 extern int kernel_supports_flags_table;
