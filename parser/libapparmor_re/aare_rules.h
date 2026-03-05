@@ -123,11 +123,12 @@ class aare_rules {
 	CHFA *create_chfa(int *min_match_len,
 			  std::vector <aa_perms> &perms_table,
 			  optflags const &opts, bool filedfa,
-			  bool extended_perms);
+			  int permstable32_version);
 	void *create_dfablob(size_t *size, int *min_match_len,
 			 std::vector <aa_perms> &perms_table,
 			 optflags const &opts,
-			 bool filedfa, bool extended_perms);
+			 bool filedfa,
+			 int permstable32_version);
 };
 
 #endif				/* __LIBAA_RE_RULES_H */
