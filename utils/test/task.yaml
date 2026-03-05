@@ -8,6 +8,7 @@ environment:
     TEST/aa_decode: aa-decode
     TEST/aa_easyprof: aa-easyprof
     TEST/aa_notify: aa-notify
+    TEST/aa_show_usage: aa-show-usage
     TEST/aa: aa
     TEST/aare: aare
     TEST/abi: abi
@@ -18,6 +19,7 @@ environment:
     TEST/capability: capability
     TEST/change_profile: change_profile
     TEST/common: common
+    TEST/conditional: conditional
     TEST/config: config
     TEST/dbus: dbus
     TEST/example: example
