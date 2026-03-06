@@ -144,9 +144,9 @@ public:
 			return prompt < rhs.prompt;
 		if (audit != rhs.audit)
 			return audit < rhs.audit;
-		if (audit != rhs.audit)
-			return audit > rhs.audit;
-		return quiet < rhs.quiet;
+		if (quiet != rhs.quiet)
+			return quiet < rhs.quiet;
+		return false;
 	}
 
 	bool operator==(perms_t const &rhs)const
