@@ -817,6 +817,7 @@ static int process_arg(int c, char *optarg)
 		fprintf(stderr, "Prompt compat mode: ");
 		print_prompt_compat_mode(stderr);
 		fprintf(stderr, "\n");
+		exit(0);
 		break;
 	default:
 		/* 'unrecognized option' error message gets printed by getopt_long() */
