@@ -192,18 +192,22 @@ signal_rule::signal_rule(perm32_t perms_p, struct cond_entry *conds):
 	free_cond_list(conds);
 }
 
+static void format_signal_perms(ostream &os, perm32_t perms)
+{
+	if (perms & AA_MAY_SEND)
+		os << "send ";
+	if (perms & AA_MAY_RECEIVE)
+		os << "receive ";
+}
+
 ostream &signal_rule::dump(ostream &os)
 {
 	class_rule_t::dump(os);
 
 	if (perms != AA_VALID_SIGNAL_PERMS) {
 		os << " (";
-
-		if (perms & AA_MAY_SEND)
-			os << "send ";
-		if (perms & AA_MAY_RECEIVE)
-			os << "receive ";
-		os << ")";
+		format_signal_perms(os, perms);
+		os << " )";
 	}
 
 	if (!signals.empty()) {
@@ -222,6 +226,13 @@ ostream &signal_rule::dump(ostream &os)
 
 	if (peer_label)
 		os << " " << peer_label;
+
+	/* Show merge information if rule was merged */
+	if (saved && saved != perms) {
+		os << " /* merged from: ( ";
+		format_signal_perms(os, saved);
+		os << " ) */";
+	}
 
 	os << ",\n";
 

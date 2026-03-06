@@ -119,12 +119,8 @@ dbus_rule::dbus_rule(perm32_t perms_p, struct cond_entry *conds,
 	free_cond_list(peer_conds);
 }
 
-ostream &dbus_rule::dump(ostream &os)
+static void format_dbus_perms(ostream &os, perm32_t perms)
 {
-	class_rule_t::dump(os);
-
-	os << " ( ";
-	/* override default perms */
 	if (perms & AA_DBUS_SEND)
 		os << "send ";
 	if (perms & AA_DBUS_RECEIVE)
@@ -133,7 +129,16 @@ ostream &dbus_rule::dump(ostream &os)
 		os << "bind ";
 	if (perms & AA_DBUS_EAVESDROP)
 		os << "eavesdrop ";
-	os << ")";
+}
+
+ostream &dbus_rule::dump(ostream &os)
+{
+	class_rule_t::dump(os);
+
+	os << " ( ";
+	/* override default perms */
+	format_dbus_perms(os, perms);
+	os << " )";
 
 	if (bus)
 		os << " bus=\"" << bus << "\"";
@@ -153,6 +158,13 @@ ostream &dbus_rule::dump(ostream &os)
 		if (name)
 			os << "name=\"" << name << "\" ";
 		os << ")";
+	}
+
+	/* Show merge information if rule was merged */
+	if (saved && saved != perms) {
+		os << " /* merged from: ( ";
+		format_dbus_perms(os, saved);
+		os << " ) */";
 	}
 
 	os << ",\n";

@@ -566,20 +566,25 @@ mnt_rule::mnt_rule(struct cond_entry *src_conds, char *device_p,
 	perms = perms_p;
 }
 
+static void format_mnt_perms(ostream &os, perm32_t perms)
+{
+	if (perms & AA_MAY_MOUNT)
+		os << "mount ";
+	if (perms & AA_MAY_UMOUNT)
+		os << "umount ";
+	if (perms & AA_MAY_PIVOTROOT)
+		os << "pivotroot ";
+	if (!(perms & (AA_MAY_MOUNT | AA_MAY_UMOUNT | AA_MAY_PIVOTROOT)))
+		os << "error: unknown mount perm ";
+}
+
 ostream &mnt_rule::dump(ostream &os)
 {
 	prefix_rule_t::dump(os);
 
 	std::ios::fmtflags fmt(os.flags());
 
-	if (perms & AA_MAY_MOUNT)
-		os << "mount";
-	else if (perms & AA_MAY_UMOUNT)
-		os << "umount";
-	else if (perms & AA_MAY_PIVOTROOT)
-		os << "pivotroot";
-	else
-		os << "error: unknown mount perm";
+	format_mnt_perms(os, perms);
 
 	for (unsigned int i = 0; i < flagsv.size(); i++)
 		os << " flags=(0x" << hex << flagsv[i] << ")";
@@ -603,6 +608,14 @@ ostream &mnt_rule::dump(ostream &os)
 
 
 	os << " " << "(0x" << hex << perms << "/0x" << (audit != AUDIT_UNSPECIFIED ? perms : 0) << ")";
+
+	/* Show merge information if rule was merged */
+	if (saved && saved != perms) {
+		os << " /* merged from: ( ";
+		format_mnt_perms(os, saved);
+		os << " ) */";
+	}
+
 	os << ",\n";
 
 	os.flags(fmt);

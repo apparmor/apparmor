@@ -57,13 +57,26 @@ userns_rule::userns_rule(perm32_t perms_p, struct cond_entry *conds):
 	free_cond_list(conds);
 }
 
+static void format_userns_perms(ostream &os, perm32_t perms)
+{
+	if (perms & AA_USERNS_CREATE)
+		os << "create ";
+}
+
 ostream &userns_rule::dump(ostream &os)
 {
 	class_rule_t::dump(os);
 
 	if (perms != AA_VALID_USERNS_PERMS) {
-		if (perms & AA_USERNS_CREATE)
-			os << " create";
+		os << " ";
+		format_userns_perms(os, perms);
+	}
+
+	/* Show merge information if rule was merged */
+	if (saved && saved != perms) {
+		os << " /* merged from: ( ";
+		format_userns_perms(os, saved);
+		os << " ) */";
 	}
 
 	os << ",\n";
