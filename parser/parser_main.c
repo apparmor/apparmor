@@ -255,7 +255,7 @@ static void display_usage(const char *command)
 	       "--abort-on-error	Abort processing of profiles on first error\n"
 	       "--skip-bad-cache-rebuild Do not try rebuilding the cache if it is rejected by the kernel\n"
 	       "--config-file n		Specify the parser config file location, processed early before other options.\n"
-	       "--print-config		Print config file location\n"
+	       "--print-config-file	Print config file location\n"
 	       "--warn n		Enable warnings (see --help=warn)\n"
 	       "--Werror [n]		Convert warnings to errors. If n is specified turn warn n into an error\n"
 	       ,command);
