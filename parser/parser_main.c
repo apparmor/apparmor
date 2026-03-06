@@ -1419,6 +1419,7 @@ static void setup_parallel_compile(long ncpus, long maxcpus)
 #define PREFIX_TOTAL	"MemTotal:"
 #define PREFIX_FREE	"MemFree:"
 #define PREFIX_CACHE	"Cached:"
+#define AUTOTUNE_MIN_FREE_MEM (256LL * 1024 * 1024)
 
 static bool get_memstat(long long &mem_total, long long &mem_free,
 			long long &mem_cache)
@@ -1476,7 +1477,7 @@ static void auto_tune_parameters(void)
 	    jobs == JOBS_AUTO) {
 		long estimated_jobs = (long) (mem_free / estimated_job_size);
 
-		if (mem_free < 2) {
+		if (mem_free < AUTOTUNE_MIN_FREE_MEM) {
 			/* -j0 - no workers */
 			jobs = jobs_max = 0;
 			PDEBUG("Auto tune: --jobs=0");
