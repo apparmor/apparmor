@@ -197,7 +197,7 @@ struct option long_options[] = {
 	{"config-file",		1, 0, EARLY_ARG_CONFIG_FILE},	/* early option, no short option */
 	{"estimated-compile-size", 1, 0, ARG_ESTIMATED_COMPILE_SIZE}, /* no short option, not in help */
 	{"prompt-compat",	1, 0, ARG_PROMPT_COMPAT},	/* no short option */
-	{"print-prompt-compat",	1, 0, ARG_PRINT_PROMPT_COMPAT},	/* no short option */
+	{"print-prompt-compat",	0, 0, ARG_PRINT_PROMPT_COMPAT},	/* no short option */
 
 	{NULL, 0, 0, 0},
 };
