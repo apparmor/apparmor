@@ -861,6 +861,7 @@ static int process_arg(int c, char *optarg)
 		break;
 	case ARG_PRINT_CONFIG_FILE:
 		printf("%s\n", config_file);
+		exit(0);
 		break;
 	case ARG_ESTIMATED_COMPILE_SIZE:
 		/* used to auto tune parser on low resource systems */
