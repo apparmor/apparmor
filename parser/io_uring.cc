@@ -66,23 +66,33 @@ io_uring_rule::io_uring_rule(perm32_t perms_p, struct cond_entry *conds, struct 
 	free_cond_list(ring_conds);
 }
 
+static void format_io_uring_perms(ostream &os, perm32_t perms)
+{
+	if (perms & AA_IO_URING_OVERRIDE_CREDS)
+		os << "override_creds ";
+	if (perms & AA_IO_URING_SQPOLL)
+		os << "sqpoll ";
+}
+
 ostream &io_uring_rule::dump(ostream &os)
 {
 	class_rule_t::dump(os);
 
 	if (perms != AA_VALID_IO_URING_PERMS) {
 		os << " ( ";
-
-		if (perms & AA_IO_URING_OVERRIDE_CREDS)
-			os << "override_creds ";
-		if (perms & AA_IO_URING_SQPOLL)
-			os << " sqpoll ";
-
-		os << ")";
+		format_io_uring_perms(os, perms);
+		os << " )";
 	}
 
 	if (label)
 		os << " label=" << label;
+
+	/* Show merge information if rule was merged */
+	if (saved && saved != perms) {
+		os << " /* merged from: ( ";
+		format_io_uring_perms(os, saved);
+		os << " ) */";
+	}
 
 	os << ",\n";
 

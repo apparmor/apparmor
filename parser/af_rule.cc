@@ -90,42 +90,54 @@ int af_rule::move_base_cond(struct cond_entry *ent, bool peer)
 	return true;
 }
 
+static void format_af_perms(ostream &os, perm32_t perms)
+{
+	if (perms & AA_NET_SEND)
+		os << "send ";
+	if (perms & AA_NET_RECEIVE)
+		os << "receive ";
+	if (perms & AA_NET_CREATE)
+		os << "create ";
+	if (perms & AA_NET_SHUTDOWN)
+		os << "shutdown ";
+	if (perms & AA_NET_CONNECT)
+		os << "connect ";
+	if (perms & AA_NET_SETATTR)
+		os << "setattr ";
+	if (perms & AA_NET_GETATTR)
+		os << "getattr ";
+	if (perms & AA_NET_BIND)
+		os << "bind ";
+	if (perms & AA_NET_ACCEPT)
+		os << "accept ";
+	if (perms & AA_NET_LISTEN)
+		os << "listen ";
+	if (perms & AA_NET_SETOPT)
+		os << "setopt ";
+	if (perms & AA_NET_GETOPT)
+		os << "getopt ";
+}
+
 ostream &af_rule::dump_local(ostream &os)
 {
 	if (perms != AA_VALID_NET_PERMS) {
 		os << " (";
-
-		if (perms & AA_NET_SEND)
-			os << "send ";
-		if (perms & AA_NET_RECEIVE)
-			os << "receive ";
-		if (perms & AA_NET_CREATE)
-			os << "create ";
-		if (perms & AA_NET_SHUTDOWN)
-			os << "shutdown ";
-		if (perms & AA_NET_CONNECT)
-			os << "connect ";
-		if (perms & AA_NET_SETATTR)
-			os << "setattr ";
-		if (perms & AA_NET_GETATTR)
-			os << "getattr ";
-		if (perms & AA_NET_BIND)
-			os << "bind ";
-		if (perms & AA_NET_ACCEPT)
-			os << "accept ";
-		if (perms & AA_NET_LISTEN)
-			os << "listen ";
-		if (perms & AA_NET_SETOPT)
-			os << "setopt ";
-		if (perms & AA_NET_GETOPT)
-			os << "getopt ";
-		os << ")";
+		format_af_perms(os, perms);
+		os << " )";
 	}
 
 	if (sock_type)
 		os << " type=" << sock_type;
 	if (proto)
 		os << " protocol=" << proto;
+
+	/* Show merge information if rule was merged */
+	if (saved && saved != perms) {
+		os << " /* merged from: ( ";
+		format_af_perms(os, saved);
+		os << " ) */";
+	}
+
 	return os;
 }
 

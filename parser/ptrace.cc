@@ -62,6 +62,18 @@ ptrace_rule::ptrace_rule(perm32_t perms_p, struct cond_entry *conds):
 	free_cond_list(conds);
 }
 
+static void format_ptrace_perms(ostream &os, perm32_t perms)
+{
+	if (perms & AA_MAY_READ)
+		os << "read ";
+	if (perms & AA_MAY_READBY)
+		os << "readby ";
+	if (perms & AA_MAY_TRACE)
+		os << "trace ";
+	if (perms & AA_MAY_TRACEDBY)
+		os << "tracedby ";
+}
+
 ostream &ptrace_rule::dump(ostream &os)
 {
 	class_rule_t::dump(os);
@@ -69,20 +81,19 @@ ostream &ptrace_rule::dump(ostream &os)
 	/* override default perm dump */
 	if (perms != AA_VALID_PTRACE_PERMS) {
 		os << " (";
-
-		if (perms & AA_MAY_READ)
-			os << "read ";
-		if (perms & AA_MAY_READBY)
-			os << "readby ";
-		if (perms & AA_MAY_TRACE)
-			os << "trace ";
-		if (perms & AA_MAY_TRACEDBY)
-			os << "tracedby ";
-		os << ")";
+		format_ptrace_perms(os, perms);
+		os << " )";
 	}
 
 	if (peer_label)
 		os << " " << peer_label;
+
+	/* Show merge information if rule was merged */
+	if (saved && saved != perms) {
+		os << " /* merged from: ( ";
+		format_ptrace_perms(os, saved);
+		os << " ) */";
+	}
 
 	os << ",\n";
 

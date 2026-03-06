@@ -22,6 +22,8 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <sstream>
+#include <map>
 
 #include "capability.h"
 #include "parser.h"
@@ -494,8 +496,33 @@ public:
 		if (entries)
 			debug_cod_entries(entries);
 
-		for (RuleList::iterator i = rule_ents.begin(); i != rule_ents.end(); i++) {
+		std::map<rule_t *, unsigned int> visible_rule_lines;
+		unsigned int fake_lineno = 1;
+		for (auto i = rule_ents.cbegin(); i != rule_ents.cend(); i++) {
+			if ((*i)->skip()) {
+				if (((*i)->flags & RULE_FLAG_MERGED) && (*i)->removed_by)
+					fake_lineno += 2;  // merged rules print two lines.
+				continue;
+			}
+			visible_rule_lines[*i] = fake_lineno++;
+		}
+
+		fake_lineno = 1;
+		for (auto i = rule_ents.cbegin(); i != rule_ents.cend(); i++) {
+			if ((*i)->skip()) {
+				if (((*i)->flags & RULE_FLAG_MERGED) && (*i)->removed_by) {
+					auto merged_into = visible_rule_lines.find((*i)->removed_by);
+					std::cout << fake_lineno << ": # The following rule was merged into a rule on line " << merged_into->second << std::endl;
+					fake_lineno++;
+					std::cout << fake_lineno << ": # ";
+					(*i)->dump(std::cout);
+					fake_lineno++; // account for the extra comment.
+				}
+				continue;
+			}
+			std::cout << fake_lineno << ": ";
 			(*i)->dump(std::cout);
+			fake_lineno++;
 		}
 
 		printf("\n");

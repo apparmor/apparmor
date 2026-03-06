@@ -116,6 +116,24 @@ mqueue_rule::mqueue_rule(perm32_t perms_p, struct cond_entry *conds, char *qname
 
 }
 
+static void format_mqueue_perms(ostream &os, perm32_t perms)
+{
+	if (perms & AA_MQUEUE_WRITE)
+		os << "write ";
+	if (perms & AA_MQUEUE_READ)
+		os << "read ";
+	if (perms & AA_MQUEUE_OPEN)
+		os << "open ";
+	if (perms & AA_MQUEUE_CREATE)
+		os << "create ";
+	if (perms & AA_MQUEUE_DELETE)
+		os << "delete ";
+	if (perms & AA_MQUEUE_SETATTR)
+		os << "setattr ";
+	if (perms & AA_MQUEUE_GETATTR)
+		os << "getattr ";
+}
+
 ostream &mqueue_rule::dump(ostream &os)
 {
 	class_rule_t::dump(os);
@@ -129,29 +147,21 @@ ostream &mqueue_rule::dump(ostream &os)
 
 	if (perms != AA_VALID_MQUEUE_PERMS) {
 		os << " ( ";
-
-		if (perms & AA_MQUEUE_WRITE)
-			os << "write ";
-		if (perms & AA_MQUEUE_READ)
-			os << "read ";
-		if (perms & AA_MQUEUE_OPEN)
-			os << "open ";
-		if (perms & AA_MQUEUE_CREATE)
-			os << "create ";
-		if (perms & AA_MQUEUE_DELETE)
-			os << "delete ";
-		if (perms & AA_MQUEUE_SETATTR)
-			os << "setattr ";
-		if (perms & AA_MQUEUE_GETATTR)
-			os << "getattr ";
-
-		os << ")";
+		format_mqueue_perms(os, perms);
+		os << " )";
 	}
 
 	if (label)
 		os << " label=" << label;
 	if (qname)
 		os << " " << qname;
+
+	/* Show merge information if rule was merged */
+	if (saved && saved != perms) {
+		os << " /* merged from: ( ";
+		format_mqueue_perms(os, saved);
+		os << " ) */";
+	}
 
 	os << ",\n";
 
