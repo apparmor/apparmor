@@ -124,7 +124,7 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 	int grouping_count[MAX_ALT_DEPTH] = {0};
 
 	error = e_no_error;
-	ptype = ePatternBasic;	/* assume no regex */
+	ptype = pattern_t::ePatternBasic;	/* assume no regex */
 
 	sptr = aare;
 
@@ -201,16 +201,16 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 					 */
 					update_re_pos(sptr - aare);
 					if (*(sptr + 2) == '\0' &&
-					    ptype == ePatternBasic) {
-						ptype = ePatternTailGlob;
+					    ptype == pattern_t::ePatternBasic) {
+						ptype = pattern_t::ePatternTailGlob;
 					} else {
-						ptype = ePatternRegex;
+						ptype = pattern_t::ePatternRegex;
 					}
 					error = append_glob(pcre, glob, "[^\\x00]*", ".*");
 					sptr++;
 				} else {
 					update_re_pos(sptr - aare);
-					ptype = ePatternRegex;
+					ptype = pattern_t::ePatternRegex;
 					error = append_glob(pcre, glob, "[^/\\x00]*", "[^/]*");
 				}	/* *(sptr+1) == '*' */
 			}	/* bEscape */
@@ -226,7 +226,7 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 				pcre.append(1, *sptr);
 			} else {
 				update_re_pos(sptr - aare);
-				ptype = ePatternRegex;
+				ptype = pattern_t::ePatternRegex;
 				switch (glob) {
 				case glob_default:
 					pcre.append("[^/\\x00]");
@@ -249,7 +249,7 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 			} else {
 				update_re_pos(sptr - aare);
 				incharclass = 1;
-				ptype = ePatternRegex;
+				ptype = pattern_t::ePatternRegex;
 				pcre.append(1, *sptr);
 			}
 			break;
@@ -285,7 +285,7 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 
 					} else {
 						grouping_count[ingrouping] = 0;
-						ptype = ePatternRegex;
+						ptype = pattern_t::ePatternRegex;
 						pcre.append("(");
 					}
 				}	/* incharclass */
@@ -425,7 +425,7 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 
 out:
 	if (ret == 0)
-		ptype = ePatternInvalid;
+		ptype = pattern_t::ePatternInvalid;
 
 	if (parseopts.dump & DUMP_DFA_RULE_EXPR)
 		fprintf(stderr, "%s\n", pcre.c_str());
@@ -484,10 +484,10 @@ static bool process_profile_name_xmatch(Profile *prof)
 	filter_slashes(name);
 	ptype = convert_aaregex_to_pcre(name, 0, glob_default, tbuf,
 					&prof->xmatch_len);
-	if (ptype == ePatternBasic)
+	if (ptype == pattern_t::ePatternBasic)
 		prof->xmatch_len = strlen(name);
 
-	if (ptype == ePatternInvalid) {
+	if (ptype == pattern_t::ePatternInvalid) {
 		PERROR(_("%s: Invalid profile name '%s' - bad regular expression\n"), progname, name);
 		if (!prof->attachment)
 			free(name);
@@ -497,7 +497,7 @@ static bool process_profile_name_xmatch(Profile *prof)
 	if (!prof->attachment)
 		free(name);
 
-	if (ptype == ePatternBasic && !(prof->altnames || prof->attachment || prof->xattrs.list)) {
+	if (ptype == pattern_t::ePatternBasic && !(prof->altnames || prof->attachment || prof->xattrs.list)) {
 		/* no regex so do not set xmatch */
 		prof->xmatch = NULL;
 		prof->xmatch_len = 0;
@@ -619,7 +619,7 @@ static bool process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 	if (!is_change_profile_perms(entry->perms))
 		filter_slashes(entry->name);
 	ptype = convert_aaregex_to_pcre(entry->name, 0, glob_default, tbuf, &pos);
-	if (ptype == ePatternInvalid)
+	if (ptype == pattern_t::ePatternInvalid)
 		return false;
 
 	entry->pattern_type = ptype;
@@ -660,7 +660,7 @@ static bool process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 		if (entry->link_name) {
 			filter_slashes(entry->link_name);
 			ptype = convert_aaregex_to_pcre(entry->link_name, 0, glob_default, lbuf, &pos);
-			if (ptype == ePatternInvalid)
+			if (ptype == pattern_t::ePatternInvalid)
 				return false;
 			if (entry->subset)
 				perms |= LINK_TO_LINK_SUBSET(perms);
@@ -693,7 +693,7 @@ static bool process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 
 		if (entry->onexec) {
 			ptype = convert_aaregex_to_pcre(entry->onexec, 0, glob_default, xbuf, &pos);
-			if (ptype == ePatternInvalid)
+			if (ptype == pattern_t::ePatternInvalid)
 				return false;
 			vec[0] = xbuf.c_str();
 		} else
@@ -810,13 +810,13 @@ bool build_list_val_expr(std::string& buffer, struct value_list *list)
 	buffer.append("(");
 
 	ptype = convert_aaregex_to_pcre(list->value, 0, glob_default, buffer, &pos);
-	if (ptype == ePatternInvalid)
+	if (ptype == pattern_t::ePatternInvalid)
 		goto fail;
 
 	list_for_each(list->next, ent) {
 		buffer.append("|");
 		ptype = convert_aaregex_to_pcre(ent->value, 0, glob_default, buffer, &pos);
-		if (ptype == ePatternInvalid)
+		if (ptype == pattern_t::ePatternInvalid)
 			goto fail;
 	}
 	buffer.append(")");
@@ -833,7 +833,7 @@ bool convert_entry(std::string& buffer, char *entry)
 
 	if (entry) {
 		ptype = convert_aaregex_to_pcre(entry, 0, glob_default, buffer, &pos);
-		if (ptype == ePatternInvalid)
+		if (ptype == pattern_t::ePatternInvalid)
 			return false;
 	} else {
 		buffer.append(default_match_pattern);
@@ -949,7 +949,7 @@ bool convert_range(std::string& buffer, bignum start, bignum end)
 
 	if (!regex_range.empty()) {
 		ptype = convert_aaregex_to_pcre(regex_range.c_str(), 0, glob_default, buffer, &pos);
-		if (ptype == ePatternInvalid)
+		if (ptype == pattern_t::ePatternInvalid)
 			return false;
 	} else {
 		buffer.append(default_match_pattern);
@@ -1270,7 +1270,7 @@ static int test_filter_slashes(void)
 		int pos;										\
 													\
 		ptype = convert_aaregex_to_pcre((input), 0, glob_default, tbuf, &pos); \
-		MY_TEST(ptype == ePatternInvalid, "simple regex conversion invalid type check for '" input "'"); \
+		MY_TEST(ptype == pattern_t::ePatternInvalid, "simple regex conversion invalid type check for '" input "'"); \
 	}												\
 	while (0)
 
@@ -1278,56 +1278,56 @@ static int test_aaregex_to_pcre(void)
 {
 	int rc = 0;
 
-	MY_REGEX_TEST("/most/basic/test", "/most/basic/test", ePatternBasic);
+	MY_REGEX_TEST("/most/basic/test", "/most/basic/test", pattern_t::ePatternBasic);
 
 	MY_REGEX_FAIL_TEST("\\");
-	MY_REGEX_TEST("\\\\", "\\\\", ePatternBasic);
-	MY_REGEX_TEST("\\blort", "blort", ePatternBasic);
-	MY_REGEX_TEST("\\\\blort", "\\\\blort", ePatternBasic);
+	MY_REGEX_TEST("\\\\", "\\\\", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\blort", "blort", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\\\blort", "\\\\blort", pattern_t::ePatternBasic);
 	MY_REGEX_FAIL_TEST("blort\\");
-	MY_REGEX_TEST("blort\\\\", "blort\\\\", ePatternBasic);
-	MY_REGEX_TEST("*", "[^/\\x00]*", ePatternRegex);
-	MY_REGEX_TEST("blort*", "blort[^/\\x00]*", ePatternRegex);
-	MY_REGEX_TEST("*blort", "[^/\\x00]*blort", ePatternRegex);
-	MY_REGEX_TEST("\\*", "\\*", ePatternBasic);
-	MY_REGEX_TEST("blort\\*", "blort\\*", ePatternBasic);
-	MY_REGEX_TEST("\\*blort", "\\*blort", ePatternBasic);
+	MY_REGEX_TEST("blort\\\\", "blort\\\\", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("*", "[^/\\x00]*", pattern_t::ePatternRegex);
+	MY_REGEX_TEST("blort*", "blort[^/\\x00]*", pattern_t::ePatternRegex);
+	MY_REGEX_TEST("*blort", "[^/\\x00]*blort", pattern_t::ePatternRegex);
+	MY_REGEX_TEST("\\*", "\\*", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("blort\\*", "blort\\*", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\*blort", "\\*blort", pattern_t::ePatternBasic);
 
 	/* simple quoting */
-	MY_REGEX_TEST("\\[", "\\[", ePatternBasic);
-	MY_REGEX_TEST("\\]", "\\]", ePatternBasic);
-	MY_REGEX_TEST("\\?", "?", ePatternBasic);
-	MY_REGEX_TEST("\\{", "\\{", ePatternBasic);
-	MY_REGEX_TEST("\\}", "\\}", ePatternBasic);
-	MY_REGEX_TEST("\\,", ",", ePatternBasic);
-	MY_REGEX_TEST("^", "\\^", ePatternBasic);
-	MY_REGEX_TEST("$", "\\$", ePatternBasic);
-	MY_REGEX_TEST(".", "\\.", ePatternBasic);
-	MY_REGEX_TEST("+", "\\+", ePatternBasic);
-	MY_REGEX_TEST("|", "\\|", ePatternBasic);
-	MY_REGEX_TEST("(", "\\(", ePatternBasic);
-	MY_REGEX_TEST(")", "\\)", ePatternBasic);
-	MY_REGEX_TEST("\\^", "\\^", ePatternBasic);
-	MY_REGEX_TEST("\\$", "\\$", ePatternBasic);
-	MY_REGEX_TEST("\\.", "\\.", ePatternBasic);
-	MY_REGEX_TEST("\\+", "\\+", ePatternBasic);
-	MY_REGEX_TEST("\\|", "\\|", ePatternBasic);
-	MY_REGEX_TEST("\\(", "\\(", ePatternBasic);
-	MY_REGEX_TEST("\\)", "\\)", ePatternBasic);
+	MY_REGEX_TEST("\\[", "\\[", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\]", "\\]", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\?", "?", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\{", "\\{", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\}", "\\}", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\,", ",", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("^", "\\^", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("$", "\\$", pattern_t::ePatternBasic);
+	MY_REGEX_TEST(".", "\\.", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("+", "\\+", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("|", "\\|", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("(", "\\(", pattern_t::ePatternBasic);
+	MY_REGEX_TEST(")", "\\)", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\^", "\\^", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\$", "\\$", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\.", "\\.", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\+", "\\+", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\|", "\\|", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\(", "\\(", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\)", "\\)", pattern_t::ePatternBasic);
 
 	/* simple character class tests */
-	MY_REGEX_TEST("[blort]", "[blort]", ePatternRegex);
+	MY_REGEX_TEST("[blort]", "[blort]", pattern_t::ePatternRegex);
 	MY_REGEX_FAIL_TEST("[blort");
 	MY_REGEX_FAIL_TEST("b[lort");
 	MY_REGEX_FAIL_TEST("blort[");
 	MY_REGEX_FAIL_TEST("blort]");
 	MY_REGEX_FAIL_TEST("blo]rt");
 	MY_REGEX_FAIL_TEST("]blort");
-	MY_REGEX_TEST("b[lor]t", "b[lor]t", ePatternRegex);
+	MY_REGEX_TEST("b[lor]t", "b[lor]t", pattern_t::ePatternRegex);
 
 	/* simple alternation tests */
-	MY_REGEX_TEST("{alpha,beta}", "(alpha|beta)", ePatternRegex);
-	MY_REGEX_TEST("baz{alpha,beta}blort", "baz(alpha|beta)blort", ePatternRegex);
+	MY_REGEX_TEST("{alpha,beta}", "(alpha|beta)", pattern_t::ePatternRegex);
+	MY_REGEX_TEST("baz{alpha,beta}blort", "baz(alpha|beta)blort", pattern_t::ePatternRegex);
 	MY_REGEX_FAIL_TEST("{beta}");
 	MY_REGEX_FAIL_TEST("biz{beta");
 	MY_REGEX_FAIL_TEST("biz}beta");
@@ -1336,80 +1336,80 @@ static int test_aaregex_to_pcre(void)
 	MY_REGEX_FAIL_TEST("biz{}beta");
 
 	/* nested alternations */
-	MY_REGEX_TEST("{{alpha,blort,nested},beta}", "((alpha|blort|nested)|beta)", ePatternRegex);
+	MY_REGEX_TEST("{{alpha,blort,nested},beta}", "((alpha|blort|nested)|beta)", pattern_t::ePatternRegex);
 	MY_REGEX_FAIL_TEST("{{alpha,blort,nested}beta}");
-	MY_REGEX_TEST("{{alpha,{blort,nested}},beta}", "((alpha|(blort|nested))|beta)", ePatternRegex);
-	MY_REGEX_TEST("{{alpha,alpha{blort,nested}}beta,beta}", "((alpha|alpha(blort|nested))beta|beta)", ePatternRegex);
-	MY_REGEX_TEST("{{alpha,alpha{blort,nested}}beta,beta}", "((alpha|alpha(blort|nested))beta|beta)", ePatternRegex);
-	MY_REGEX_TEST("{{a,b{c,d}}e,{f,{g,{h{i,j,k},l}m},n}o}", "((a|b(c|d))e|(f|(g|(h(i|j|k)|l)m)|n)o)", ePatternRegex);
+	MY_REGEX_TEST("{{alpha,{blort,nested}},beta}", "((alpha|(blort|nested))|beta)", pattern_t::ePatternRegex);
+	MY_REGEX_TEST("{{alpha,alpha{blort,nested}}beta,beta}", "((alpha|alpha(blort|nested))beta|beta)", pattern_t::ePatternRegex);
+	MY_REGEX_TEST("{{alpha,alpha{blort,nested}}beta,beta}", "((alpha|alpha(blort|nested))beta|beta)", pattern_t::ePatternRegex);
+	MY_REGEX_TEST("{{a,b{c,d}}e,{f,{g,{h{i,j,k},l}m},n}o}", "((a|b(c|d))e|(f|(g|(h(i|j|k)|l)m)|n)o)", pattern_t::ePatternRegex);
 	/* max nesting depth = 50 */
 	MY_REGEX_TEST("{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a,b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b}b,blort}",
-			"(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)b|blort)", ePatternRegex);
+			"(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)|b)b|blort)", pattern_t::ePatternRegex);
 	MY_REGEX_FAIL_TEST("{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a{a,b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b},b}b,blort}");
 
 	/* simple single char */
-	MY_REGEX_TEST("blor?t", "blor[^/\\x00]t", ePatternRegex);
+	MY_REGEX_TEST("blor?t", "blor[^/\\x00]t", pattern_t::ePatternRegex);
 
 	/* simple globbing */
-	MY_REGEX_TEST("/*", "/[^/\\x00][^/\\x00]*", ePatternRegex);
-	MY_REGEX_TEST("/blort/*", "/blort/[^/\\x00][^/\\x00]*", ePatternRegex);
-	MY_REGEX_TEST("/*/blort", "/[^/\\x00][^/\\x00]*/blort", ePatternRegex);
-	MY_REGEX_TEST("/*/", "/[^/\\x00][^/\\x00]*/", ePatternRegex);
-	MY_REGEX_TEST("/**", "/[^/\\x00][^\\x00]*", ePatternTailGlob);
-	MY_REGEX_TEST("/blort/**", "/blort/[^/\\x00][^\\x00]*", ePatternTailGlob);
-	MY_REGEX_TEST("/**/blort", "/[^/\\x00][^\\x00]*/blort", ePatternRegex);
-	MY_REGEX_TEST("/**/", "/[^/\\x00][^\\x00]*/", ePatternRegex);
+	MY_REGEX_TEST("/*", "/[^/\\x00][^/\\x00]*", pattern_t::ePatternRegex);
+	MY_REGEX_TEST("/blort/*", "/blort/[^/\\x00][^/\\x00]*", pattern_t::ePatternRegex);
+	MY_REGEX_TEST("/*/blort", "/[^/\\x00][^/\\x00]*/blort", pattern_t::ePatternRegex);
+	MY_REGEX_TEST("/*/", "/[^/\\x00][^/\\x00]*/", pattern_t::ePatternRegex);
+	MY_REGEX_TEST("/**", "/[^/\\x00][^\\x00]*", pattern_t::ePatternTailGlob);
+	MY_REGEX_TEST("/blort/**", "/blort/[^/\\x00][^\\x00]*", pattern_t::ePatternTailGlob);
+	MY_REGEX_TEST("/**/blort", "/[^/\\x00][^\\x00]*/blort", pattern_t::ePatternRegex);
+	MY_REGEX_TEST("/**/", "/[^/\\x00][^\\x00]*/", pattern_t::ePatternRegex);
 
 	/* more complicated quoting */
 	MY_REGEX_FAIL_TEST("\\\\[");
 	MY_REGEX_FAIL_TEST("\\\\]");
-	MY_REGEX_TEST("\\\\?", "\\\\[^/\\x00]", ePatternRegex);
+	MY_REGEX_TEST("\\\\?", "\\\\[^/\\x00]", pattern_t::ePatternRegex);
 	MY_REGEX_FAIL_TEST("\\\\{");
 	MY_REGEX_FAIL_TEST("\\\\}");
-	MY_REGEX_TEST("\\\\,", "\\\\,", ePatternBasic);
-	MY_REGEX_TEST("\\\\^", "\\\\\\^", ePatternBasic);
-	MY_REGEX_TEST("\\\\$", "\\\\\\$", ePatternBasic);
-	MY_REGEX_TEST("\\\\.", "\\\\\\.", ePatternBasic);
-	MY_REGEX_TEST("\\\\+", "\\\\\\+", ePatternBasic);
-	MY_REGEX_TEST("\\\\|", "\\\\\\|", ePatternBasic);
-	MY_REGEX_TEST("\\\\(", "\\\\\\(", ePatternBasic);
-	MY_REGEX_TEST("\\\\)", "\\\\\\)", ePatternBasic);
-	MY_REGEX_TEST("\\000", "\\000", ePatternBasic);
-	MY_REGEX_TEST("\\x00", "\\x00", ePatternBasic);
-	MY_REGEX_TEST("\\d000", "\\d000", ePatternBasic);
+	MY_REGEX_TEST("\\\\,", "\\\\,", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\\\^", "\\\\\\^", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\\\$", "\\\\\\$", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\\\.", "\\\\\\.", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\\\+", "\\\\\\+", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\\\|", "\\\\\\|", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\\\(", "\\\\\\(", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\\\)", "\\\\\\)", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\000", "\\000", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\x00", "\\x00", pattern_t::ePatternBasic);
+	MY_REGEX_TEST("\\d000", "\\d000", pattern_t::ePatternBasic);
 
 	/* more complicated character class tests */
 	/*   -- embedded alternations */
-	MY_REGEX_TEST("b[\\lor]t", "b[lor]t", ePatternRegex);
-	MY_REGEX_TEST("b[{a,b}]t", "b[{a,b}]t", ePatternRegex);
-	MY_REGEX_TEST("{alpha,b[{a,b}]t,gamma}", "(alpha|b[{a,b}]t|gamma)", ePatternRegex);
+	MY_REGEX_TEST("b[\\lor]t", "b[lor]t", pattern_t::ePatternRegex);
+	MY_REGEX_TEST("b[{a,b}]t", "b[{a,b}]t", pattern_t::ePatternRegex);
+	MY_REGEX_TEST("{alpha,b[{a,b}]t,gamma}", "(alpha|b[{a,b}]t|gamma)", pattern_t::ePatternRegex);
 
 	/* pcre will ignore the '\' before '\{', but it should be okay
 	 * for us to pass this on to pcre as '\{' */
-	MY_REGEX_TEST("b[\\{a,b\\}]t", "b[\\{a,b\\}]t", ePatternRegex);
-	MY_REGEX_TEST("{alpha,b[\\{a,b\\}]t,gamma}", "(alpha|b[\\{a,b\\}]t|gamma)", ePatternRegex);
-	MY_REGEX_TEST("{alpha,b[\\{a\\,b\\}]t,gamma}", "(alpha|b[\\{a\\,b\\}]t|gamma)", ePatternRegex);
+	MY_REGEX_TEST("b[\\{a,b\\}]t", "b[\\{a,b\\}]t", pattern_t::ePatternRegex);
+	MY_REGEX_TEST("{alpha,b[\\{a,b\\}]t,gamma}", "(alpha|b[\\{a,b\\}]t|gamma)", pattern_t::ePatternRegex);
+	MY_REGEX_TEST("{alpha,b[\\{a\\,b\\}]t,gamma}", "(alpha|b[\\{a\\,b\\}]t|gamma)", pattern_t::ePatternRegex);
 
 	/* test different globbing behavior conversion */
-	MY_REGEX_EXT_TEST(glob_default, "/foo/**", "/foo/[^/\\x00][^\\x00]*", ePatternTailGlob);
-	MY_REGEX_EXT_TEST(glob_null, "/foo/**", "/foo/[^/].*", ePatternTailGlob);
-	MY_REGEX_EXT_TEST(glob_default, "/foo/f**", "/foo/f[^\\x00]*", ePatternTailGlob);
-	MY_REGEX_EXT_TEST(glob_null, "/foo/f**", "/foo/f.*", ePatternTailGlob);
+	MY_REGEX_EXT_TEST(glob_default, "/foo/**", "/foo/[^/\\x00][^\\x00]*", pattern_t::ePatternTailGlob);
+	MY_REGEX_EXT_TEST(glob_null, "/foo/**", "/foo/[^/].*", pattern_t::ePatternTailGlob);
+	MY_REGEX_EXT_TEST(glob_default, "/foo/f**", "/foo/f[^\\x00]*", pattern_t::ePatternTailGlob);
+	MY_REGEX_EXT_TEST(glob_null, "/foo/f**", "/foo/f.*", pattern_t::ePatternTailGlob);
 
-	MY_REGEX_EXT_TEST(glob_default, "/foo/*", "/foo/[^/\\x00][^/\\x00]*", ePatternRegex);
-	MY_REGEX_EXT_TEST(glob_null, "/foo/*", "/foo/[^/][^/]*", ePatternRegex);
-	MY_REGEX_EXT_TEST(glob_default, "/foo/f*", "/foo/f[^/\\x00]*", ePatternRegex);
-	MY_REGEX_EXT_TEST(glob_null, "/foo/f*", "/foo/f[^/]*", ePatternRegex);
+	MY_REGEX_EXT_TEST(glob_default, "/foo/*", "/foo/[^/\\x00][^/\\x00]*", pattern_t::ePatternRegex);
+	MY_REGEX_EXT_TEST(glob_null, "/foo/*", "/foo/[^/][^/]*", pattern_t::ePatternRegex);
+	MY_REGEX_EXT_TEST(glob_default, "/foo/f*", "/foo/f[^/\\x00]*", pattern_t::ePatternRegex);
+	MY_REGEX_EXT_TEST(glob_null, "/foo/f*", "/foo/f[^/]*", pattern_t::ePatternRegex);
 
-	MY_REGEX_EXT_TEST(glob_default, "/foo/**.ext", "/foo/[^\\x00]*\\.ext", ePatternRegex);
-	MY_REGEX_EXT_TEST(glob_null, "/foo/**.ext", "/foo/.*\\.ext", ePatternRegex);
-	MY_REGEX_EXT_TEST(glob_default, "/foo/f**.ext", "/foo/f[^\\x00]*\\.ext", ePatternRegex);
-	MY_REGEX_EXT_TEST(glob_null, "/foo/f**.ext", "/foo/f.*\\.ext", ePatternRegex);
+	MY_REGEX_EXT_TEST(glob_default, "/foo/**.ext", "/foo/[^\\x00]*\\.ext", pattern_t::ePatternRegex);
+	MY_REGEX_EXT_TEST(glob_null, "/foo/**.ext", "/foo/.*\\.ext", pattern_t::ePatternRegex);
+	MY_REGEX_EXT_TEST(glob_default, "/foo/f**.ext", "/foo/f[^\\x00]*\\.ext", pattern_t::ePatternRegex);
+	MY_REGEX_EXT_TEST(glob_null, "/foo/f**.ext", "/foo/f.*\\.ext", pattern_t::ePatternRegex);
 
-	MY_REGEX_EXT_TEST(glob_default, "/foo/*.ext", "/foo/[^/\\x00]*\\.ext", ePatternRegex);
-	MY_REGEX_EXT_TEST(glob_null, "/foo/*.ext", "/foo/[^/]*\\.ext", ePatternRegex);
-	MY_REGEX_EXT_TEST(glob_default, "/foo/f*.ext", "/foo/f[^/\\x00]*\\.ext", ePatternRegex);
-	MY_REGEX_EXT_TEST(glob_null, "/foo/f*.ext", "/foo/f[^/]*\\.ext", ePatternRegex);
+	MY_REGEX_EXT_TEST(glob_default, "/foo/*.ext", "/foo/[^/\\x00]*\\.ext", pattern_t::ePatternRegex);
+	MY_REGEX_EXT_TEST(glob_null, "/foo/*.ext", "/foo/[^/]*\\.ext", pattern_t::ePatternRegex);
+	MY_REGEX_EXT_TEST(glob_default, "/foo/f*.ext", "/foo/f[^/\\x00]*\\.ext", pattern_t::ePatternRegex);
+	MY_REGEX_EXT_TEST(glob_null, "/foo/f*.ext", "/foo/f[^/]*\\.ext", pattern_t::ePatternRegex);
 
 	return rc;
 }

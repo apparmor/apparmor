@@ -136,7 +136,7 @@
 #define AA_IPV6_UDP			0x0020
 #define AA_NETLINK			0x0040
 
-enum pattern_t {
+enum class pattern_t {
 	ePatternBasic,
 	ePatternTailGlob,
 	ePatternRegex,

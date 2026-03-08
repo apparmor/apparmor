@@ -226,7 +226,7 @@ int dbus_rule::gen_policy_re(Profile &prof)
 
 	if (bus) {
 		ptype = convert_aaregex_to_pcre(bus, 0, glob_default, busbuf, &pos);
-		if (ptype == ePatternInvalid)
+		if (ptype == pattern_t::ePatternInvalid)
 			goto fail;
 	} else {
 		/* match any char except \000 0 or more times */
@@ -236,7 +236,7 @@ int dbus_rule::gen_policy_re(Profile &prof)
 
 	if (name) {
 		ptype = convert_aaregex_to_pcre(name, 0, glob_default, namebuf, &pos);
-		if (ptype == ePatternInvalid)
+		if (ptype == pattern_t::ePatternInvalid)
 			goto fail;
 		vec[1] = namebuf.c_str();
 	} else {
@@ -247,7 +247,7 @@ int dbus_rule::gen_policy_re(Profile &prof)
 	if (peer_label) {
 		ptype = convert_aaregex_to_pcre(peer_label, 0, glob_default,
 						peer_labelbuf, &pos);
-		if (ptype == ePatternInvalid)
+		if (ptype == pattern_t::ePatternInvalid)
 			goto fail;
 		vec[2] = peer_labelbuf.c_str();
 	} else {
@@ -257,7 +257,7 @@ int dbus_rule::gen_policy_re(Profile &prof)
 
 	if (path) {
 		ptype = convert_aaregex_to_pcre(path, 0, glob_default, pathbuf, &pos);
-		if (ptype == ePatternInvalid)
+		if (ptype == pattern_t::ePatternInvalid)
 			goto fail;
 		vec[3] = pathbuf.c_str();
 	} else {
@@ -267,7 +267,7 @@ int dbus_rule::gen_policy_re(Profile &prof)
 
 	if (interface) {
 		ptype = convert_aaregex_to_pcre(interface, 0, glob_default, ifacebuf, &pos);
-		if (ptype == ePatternInvalid)
+		if (ptype == pattern_t::ePatternInvalid)
 			goto fail;
 		vec[4] = ifacebuf.c_str();
 	} else {
@@ -277,7 +277,7 @@ int dbus_rule::gen_policy_re(Profile &prof)
 
 	if (member) {
 		ptype = convert_aaregex_to_pcre(member, 0, glob_default, memberbuf, &pos);
-		if (ptype == ePatternInvalid)
+		if (ptype == pattern_t::ePatternInvalid)
 			goto fail;
 		vec[5] = memberbuf.c_str();
 	} else {

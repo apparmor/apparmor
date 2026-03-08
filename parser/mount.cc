@@ -752,7 +752,7 @@ static bool build_mnt_opts(std::string& buffer, struct value_list *opts)
 
 	list_for_each(opts, ent) {
 		ptype = convert_aaregex_to_pcre(ent->value, 0, glob_default, buffer, &pos);
-		if (ptype == ePatternInvalid)
+		if (ptype == pattern_t::ePatternInvalid)
 			return false;
 
 		if (ent->next)
