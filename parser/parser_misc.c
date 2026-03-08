@@ -982,7 +982,7 @@ struct cod_entry *new_entry(char *id, perm32_t perms, char *link_id)
 	entry->audit = AUDIT_UNSPECIFIED;
 	entry->rule_mode = RULE_UNSPECIFIED;
 
-	entry->pattern_type = pattern_t::ePatternInvalid;
+	entry->pattern_type = pattern_t::Invalid;
 	entry->pat.regex = NULL;
 
 	entry->next = NULL;

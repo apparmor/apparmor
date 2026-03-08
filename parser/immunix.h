@@ -137,10 +137,10 @@
 #define AA_NETLINK			0x0040
 
 enum class pattern_t {
-	ePatternBasic,
-	ePatternTailGlob,
-	ePatternRegex,
-	ePatternInvalid,
+	Basic,
+	TailGlob,
+	Regex,
+	Invalid,
 };
 
 #define HAS_MAY_READ(mode)		((mode) & AA_MAY_READ)
