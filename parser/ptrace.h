@@ -42,7 +42,7 @@ public:
 
 	ostream &dump(ostream &os) override;
 	int expand_variables(void) override;
-	int gen_policy_re(Profile &prof) override;
+	rule_result_t gen_policy_re(Profile &prof) override;
 
 	bool valid_prefix(const prefixes &p, const char *&error) override {
 		if (p.owner != OWNER_UNSPECIFIED) {

@@ -72,7 +72,7 @@ public:
 
 	void add_implied_rules(Profile &prof) override;
 
-	int gen_policy_re(Profile &prof aa_unused) override { return RULE_OK; };
+	rule_result_t gen_policy_re(Profile &prof aa_unused) override { return rule_result_t::OK; };
 
 protected:
   void warn_once(const char *name aa_unused, const char *msg aa_unused) override { };

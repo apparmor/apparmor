@@ -879,14 +879,14 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 	return true;
 }
 
-int network_rule::gen_policy_re(Profile &prof)
+rule_result_t network_rule::gen_policy_re(Profile &prof)
 {
 	std::ostringstream buffer;
 	std::string buf;
 
 	if (!(features_supports_networkv8 || features_supports_networkv9)) {
 		warn_once(prof.name);
-		return RULE_NOT_SUPPORTED;
+		return rule_result_t::NOT_SUPPORTED;
 	}
 
 	for (const auto& perm : network_perms) {
@@ -909,10 +909,10 @@ int network_rule::gen_policy_re(Profile &prof)
 		}
 
 	}
-	return RULE_OK;
+	return rule_result_t::OK;
 
 fail:
-	return RULE_ERROR;
+	return rule_result_t::ERROR;
 
 }
 

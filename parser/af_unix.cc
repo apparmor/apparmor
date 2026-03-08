@@ -504,7 +504,7 @@ bool unix_rule::write_label(std::ostringstream &buffer, const char *label)
  * Note: that this extension is placed behind a separate features abi
  *       flag so that it is an opt-in change.
  */
-int unix_rule::gen_policy_re(Profile &prof)
+rule_result_t unix_rule::gen_policy_re(Profile &prof)
 {
 	std::ostringstream buffer;
 	std::string buf;
@@ -527,11 +527,11 @@ int unix_rule::gen_policy_re(Profile &prof)
 			if (parseopts.warn & WARN_RULE_DOWNGRADED)
 				rule_t::warn_once(prof.name, "downgrading extended network unix socket rule to generic network rule\n");
 			/* TODO: add ability to abort instead of downgrade */
-			return RULE_OK;
+			return rule_result_t::OK;
 		} else {
 			warn_once(prof.name);
 		}
-		return RULE_NOT_SUPPORTED;
+		return rule_result_t::NOT_SUPPORTED;
 	}
 
 	write_to_prot(buffer);
@@ -650,8 +650,8 @@ int unix_rule::gen_policy_re(Profile &prof)
 			goto fail;
 	}
 
-	return RULE_OK;
+	return rule_result_t::OK;
 
 fail:
-	return RULE_ERROR;
+	return rule_result_t::ERROR;
 }
