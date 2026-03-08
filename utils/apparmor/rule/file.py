@@ -451,6 +451,9 @@ class FileRule(BaseRule):
             hl[ev['name']][ev['name2']] = True
             return
 
+        if not ev['name']:  # missing filename -> ignore event
+            return
+
         # Map c (create) and d (delete) to w (logging is more detailed than the profile language)
         dmask = ev['denied_mask']
         dmask = dmask.replace('c', 'w')
