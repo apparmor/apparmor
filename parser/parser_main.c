@@ -197,7 +197,7 @@ struct option long_options[] = {
 	{"config-file",		1, 0, EARLY_ARG_CONFIG_FILE},	/* early option, no short option */
 	{"estimated-compile-size", 1, 0, ARG_ESTIMATED_COMPILE_SIZE}, /* no short option, not in help */
 	{"prompt-compat",	1, 0, ARG_PROMPT_COMPAT},	/* no short option */
-	{"print-prompt-compat",	1, 0, ARG_PRINT_PROMPT_COMPAT},	/* no short option */
+	{"print-prompt-compat",	0, 0, ARG_PRINT_PROMPT_COMPAT},	/* no short option */
 
 	{NULL, 0, 0, 0},
 };
@@ -260,7 +260,7 @@ static void display_usage(const char *command)
 	       "--abort-on-error	Abort processing of profiles on first error\n"
 	       "--skip-bad-cache-rebuild Do not try rebuilding the cache if it is rejected by the kernel\n"
 	       "--config-file n		Specify the parser config file location, processed early before other options.\n"
-	       "--print-config		Print config file location\n"
+	       "--print-config-file	Print config file location\n"
 	       "--warn n		Enable warnings (see --help=warn)\n"
 	       "--Werror [n]		Convert warnings to errors. If n is specified turn warn n into an error\n"
 	       ,command, ZSTD_COMPRESS_DEFAULT_VALUE);
@@ -861,6 +861,7 @@ static int process_arg(int c, char *optarg)
 		break;
 	case ARG_PRINT_CONFIG_FILE:
 		printf("%s\n", config_file);
+		exit(0);
 		break;
 	case ARG_ESTIMATED_COMPILE_SIZE:
 		/* used to auto tune parser on low resource systems */
@@ -896,6 +897,7 @@ static int process_arg(int c, char *optarg)
 		fprintf(stderr, "Prompt compat mode: ");
 		print_prompt_compat_mode(stderr);
 		fprintf(stderr, "\n");
+		exit(0);
 		break;
 	default:
 		/* 'unrecognized option' error message gets printed by getopt_long() */
