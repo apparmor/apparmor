@@ -102,7 +102,7 @@ typedef enum {
 #define ZSTD_COMPRESS_MIN_VALUE		ZSTD_minCLevel()
 #define ZSTD_COMPRESS_MAX_VALUE		ZSTD_maxCLevel()
 
-typedef enum pattern_t pattern_t;
+enum class pattern_t;
 
 
 struct cod_pattern {

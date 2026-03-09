@@ -136,11 +136,11 @@
 #define AA_IPV6_UDP			0x0020
 #define AA_NETLINK			0x0040
 
-enum pattern_t {
-	ePatternBasic,
-	ePatternTailGlob,
-	ePatternRegex,
-	ePatternInvalid,
+enum class pattern_t {
+	Basic,
+	TailGlob,
+	Regex,
+	Invalid,
 };
 
 #define HAS_MAY_READ(mode)		((mode) & AA_MAY_READ)

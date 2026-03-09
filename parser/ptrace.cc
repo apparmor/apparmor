@@ -135,7 +135,7 @@ rule_result_t ptrace_rule::gen_policy_re(Profile &prof)
 
 	if (peer_label) {
 		ptype = convert_aaregex_to_pcre(peer_label, 0, glob_default, buf, &pos);
-		if (ptype == ePatternInvalid)
+		if (ptype == pattern_t::Invalid)
 			goto fail;
 		buffer << buf;
 	} else {

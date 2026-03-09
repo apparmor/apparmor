@@ -264,7 +264,7 @@ bool unix_rule::write_addr(std::ostringstream &buffer, const char *addr)
 		} else {
 			/* skip leading @ */
 			ptype = convert_aaregex_to_pcre(addr + 1, 0, glob_null, buf, &pos);
-			if (ptype == ePatternInvalid)
+			if (ptype == pattern_t::Invalid)
 				return false;
 			/* kernel starts abstract with \0 */
 			buffer << "\\x00";
@@ -288,7 +288,7 @@ bool unix_rule::write_label(std::ostringstream &buffer, const char *label)
 	if (label) {
 		int pos;
 		ptype = convert_aaregex_to_pcre(label, 0, glob_default, buf, &pos);
-		if (ptype == ePatternInvalid)
+		if (ptype == pattern_t::Invalid)
 			return false;
 		/* kernel starts abstract with \0 */
 		buffer << buf;
