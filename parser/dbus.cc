@@ -202,7 +202,7 @@ void dbus_rule::warn_once(const char *name)
 	rule_t::warn_once(name, "dbus rules not enforced");
 }
 
-int dbus_rule::gen_policy_re(Profile &prof)
+rule_result_t dbus_rule::gen_policy_re(Profile &prof)
 {
 	std::string busbuf;
 	std::string namebuf;
@@ -218,7 +218,7 @@ int dbus_rule::gen_policy_re(Profile &prof)
 
 	if (!features_supports_dbus) {
 		warn_once(prof.name);
-		return RULE_NOT_SUPPORTED;
+		return rule_result_t::NOT_SUPPORTED;
 	}
 
 	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << AA_CLASS_DBUS;
@@ -307,8 +307,8 @@ int dbus_rule::gen_policy_re(Profile &prof)
 			goto fail;
 	}
 
-	return RULE_OK;
+	return rule_result_t::OK;
 
 fail:
-	return RULE_ERROR;
+	return rule_result_t::ERROR;
 }

@@ -64,7 +64,7 @@ public:
 	ostream &dump_local(ostream &os) override;
 	ostream &dump_peer(ostream &os) override;
 	int expand_variables(void) override;
-	int gen_policy_re(Profile &prof) override;
+	rule_result_t gen_policy_re(Profile &prof) override;
 
 	// inherit is_mergable() from af_rule
 	int cmp(rule_t const &rhs) const override

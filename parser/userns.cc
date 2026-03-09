@@ -95,14 +95,14 @@ void userns_rule::warn_once(const char *name)
 	rule_t::warn_once(name, "userns rules not enforced");
 }
 
-int userns_rule::gen_policy_re(Profile &prof)
+rule_result_t userns_rule::gen_policy_re(Profile &prof)
 {
 	std::ostringstream buffer;
 	std::string buf;
 
 	if (!features_supports_userns) {
 		warn_once(prof.name);
-		return RULE_NOT_SUPPORTED;
+		return rule_result_t::NOT_SUPPORTED;
 	}
 
 	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << AA_CLASS_NS;
@@ -123,8 +123,8 @@ int userns_rule::gen_policy_re(Profile &prof)
 			goto fail;
 	}
 
-	return RULE_OK;
+	return rule_result_t::OK;
 
 fail:
-	return RULE_ERROR;
+	return rule_result_t::ERROR;
 }

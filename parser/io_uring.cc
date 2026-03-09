@@ -110,14 +110,14 @@ void io_uring_rule::warn_once(const char *name)
 	rule_t::warn_once(name, "io_uring rules not enforced");
 }
 
-int io_uring_rule::gen_policy_re(Profile &prof)
+rule_result_t io_uring_rule::gen_policy_re(Profile &prof)
 {
 	std::ostringstream buffer;
 	std::string buf, labelbuf;
 
 	if (!features_supports_io_uring) {
 		warn_once(prof.name);
-		return RULE_NOT_SUPPORTED;
+		return rule_result_t::NOT_SUPPORTED;
 	}
 
 	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << AA_CLASS_IO_URING;
@@ -155,7 +155,7 @@ int io_uring_rule::gen_policy_re(Profile &prof)
 		}
 
 	}
-	return RULE_OK;
+	return rule_result_t::OK;
 fail:
-	return RULE_ERROR;
+	return rule_result_t::ERROR;
 }

@@ -33,9 +33,11 @@
 
 class Profile;
 
-#define RULE_NOT_SUPPORTED 0
-#define RULE_ERROR -1
-#define RULE_OK 1
+enum class rule_result_t : int {
+	ERROR = -1,
+	NOT_SUPPORTED = 0,
+	OK = 1,
+};
 
 #define RULE_TYPE_RULE		0
 #define RULE_TYPE_PREFIX	1
@@ -141,7 +143,7 @@ public:
 	};
 
 	// called late frontend to generate data for regex backend
-	virtual int gen_policy_re(Profile &prof) = 0;
+	virtual rule_result_t gen_policy_re(Profile &prof) = 0;
 
 protected:
 	const char *warned_name = NULL;

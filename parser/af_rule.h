@@ -75,7 +75,7 @@ public:
 	virtual ostream &dump_peer(ostream &os);
 	ostream &dump(ostream &os) override;
 	int expand_variables(void) override;
-	int gen_policy_re(Profile &prof) override = 0;
+	rule_result_t gen_policy_re(Profile &prof) override = 0;
 
 	bool is_mergeable(void) override { return true; }
 	int cmp(rule_t const &rhs) const override

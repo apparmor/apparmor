@@ -191,7 +191,7 @@ void mqueue_rule::warn_once(const char *name)
 		rule_t::warn_once(name, "mqueue type=sysv rules not enforced");
 }
 
-int mqueue_rule::gen_policy_re(Profile &prof)
+rule_result_t mqueue_rule::gen_policy_re(Profile &prof)
 {
 	std::string labelbuf;
 	std::string buf;
@@ -201,17 +201,17 @@ int mqueue_rule::gen_policy_re(Profile &prof)
 
 	if (qtype == mqueue_posix && !features_supports_posix_mqueue) {
 		warn_once(prof.name);
-		return RULE_NOT_SUPPORTED;
+		return rule_result_t::NOT_SUPPORTED;
 	} else if (qtype == mqueue_sysv && !features_supports_sysv_mqueue) {
 		warn_once(prof.name);
-		return RULE_NOT_SUPPORTED;
+		return rule_result_t::NOT_SUPPORTED;
 	} else if (qtype == mqueue_unspecified &&
 		   !(features_supports_posix_mqueue ||
 		     features_supports_sysv_mqueue)) {
 		warn_once(prof.name);
 		// should split into warning where posix and sysv can
 		// be separated from nothing being enforced
-		return RULE_NOT_SUPPORTED;
+		return rule_result_t::NOT_SUPPORTED;
 	}
 
 	/* always generate a label and mqueue entry */
@@ -330,8 +330,8 @@ int mqueue_rule::gen_policy_re(Profile &prof)
 		}
 	}
 
-	return RULE_OK;
+	return rule_result_t::OK;
 
 fail:
-	return RULE_ERROR;
+	return rule_result_t::ERROR;
 }

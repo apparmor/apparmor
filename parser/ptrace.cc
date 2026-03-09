@@ -111,7 +111,7 @@ void ptrace_rule::warn_once(const char *name)
 	rule_t::warn_once(name, "ptrace rules not enforced");
 }
 
-int ptrace_rule::gen_policy_re(Profile &prof)
+rule_result_t ptrace_rule::gen_policy_re(Profile &prof)
 {
 	std::ostringstream buffer;
 	std::string buf;
@@ -125,7 +125,7 @@ int ptrace_rule::gen_policy_re(Profile &prof)
 	 */
 	if (!features_supports_ptrace) {
 		warn_once(prof.name);
-		return RULE_NOT_SUPPORTED;
+		return rule_result_t::NOT_SUPPORTED;
 	}
 
 	/* always generate a label and ptrace entry */
@@ -151,9 +151,9 @@ int ptrace_rule::gen_policy_re(Profile &prof)
 			goto fail;
 	}
 
-	return RULE_OK;
+	return rule_result_t::OK;
 
 fail:
-	return RULE_ERROR;
+	return rule_result_t::ERROR;
 }
 

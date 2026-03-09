@@ -768,7 +768,7 @@ void mnt_rule::warn_once(const char *name)
 }
 
 
-int mnt_rule::gen_policy_remount(Profile &prof, int &count,
+rule_result_t mnt_rule::gen_policy_remount(Profile &prof, int &count,
 				 unsigned int flags, unsigned int opt_flags)
 {
 	std::string mntbuf;
@@ -837,13 +837,13 @@ int mnt_rule::gen_policy_remount(Profile &prof, int &count,
 		count++;
 	}
 
-	return RULE_OK;
+	return rule_result_t::OK;
 
 fail:
-	return RULE_ERROR;
+	return rule_result_t::ERROR;
 }
 
-int mnt_rule::gen_policy_bind_mount(Profile &prof, int &count,
+rule_result_t mnt_rule::gen_policy_bind_mount(Profile &prof, int &count,
 				    unsigned int flags, unsigned int opt_flags)
 {
 	std::string mntbuf;
@@ -883,13 +883,13 @@ int mnt_rule::gen_policy_bind_mount(Profile &prof, int &count,
 		goto fail;
 	count++;
 
-	return RULE_OK;
+	return rule_result_t::OK;
 
 fail:
-	return RULE_ERROR;
+	return rule_result_t::ERROR;
 }
 
-int mnt_rule::gen_policy_change_mount_type(Profile &prof, int &count,
+rule_result_t mnt_rule::gen_policy_change_mount_type(Profile &prof, int &count,
 					   unsigned int flags,
 					   unsigned int opt_flags)
 {
@@ -941,13 +941,13 @@ int mnt_rule::gen_policy_change_mount_type(Profile &prof, int &count,
 		goto fail;
 	count++;
 
-	return RULE_OK;
+	return rule_result_t::OK;
 
 fail:
-	return RULE_ERROR;
+	return rule_result_t::ERROR;
 }
 
-int mnt_rule::gen_policy_move_mount(Profile &prof, int &count,
+rule_result_t mnt_rule::gen_policy_move_mount(Profile &prof, int &count,
 				    unsigned int flags, unsigned int opt_flags)
 {
 	std::string mntbuf;
@@ -989,13 +989,13 @@ int mnt_rule::gen_policy_move_mount(Profile &prof, int &count,
 		goto fail;
 	count++;
 
-	return RULE_OK;
+	return rule_result_t::OK;
 
 fail:
-	return RULE_ERROR;
+	return rule_result_t::ERROR;
 }
 
-int mnt_rule::gen_policy_new_mount(Profile &prof, int &count,
+rule_result_t mnt_rule::gen_policy_new_mount(Profile &prof, int &count,
 				   unsigned int flags, unsigned int opt_flags)
 {
 	std::string mntbuf;
@@ -1058,13 +1058,13 @@ int mnt_rule::gen_policy_new_mount(Profile &prof, int &count,
 		count++;
 	}
 
-	return RULE_OK;
+	return rule_result_t::OK;
 
 fail:
-	return RULE_ERROR;
+	return rule_result_t::ERROR;
 }
 
-int mnt_rule::gen_flag_rules(Profile &prof, int &count, unsigned int flags,
+rule_result_t mnt_rule::gen_flag_rules(Profile &prof, int &count, unsigned int flags,
 			     unsigned int opt_flags)
 {
 	/*
@@ -1074,17 +1074,17 @@ int mnt_rule::gen_flag_rules(Profile &prof, int &count, unsigned int flags,
 	if ((perms & AA_MAY_MOUNT) && (!flags || flags == MS_ALL_FLAGS)) {
 		/* no mount flags specified, generate multiple rules */
 		if (!device && !dev_type &&
-		    gen_policy_remount(prof, count, flags, opt_flags) == RULE_ERROR)
-			return RULE_ERROR;
+		    gen_policy_remount(prof, count, flags, opt_flags) == rule_result_t::ERROR)
+			return rule_result_t::ERROR;
 		if (!dev_type && !opts &&
-		    gen_policy_bind_mount(prof, count, flags, opt_flags) == RULE_ERROR)
-			return RULE_ERROR;
+		    gen_policy_bind_mount(prof, count, flags, opt_flags) == rule_result_t::ERROR)
+			return rule_result_t::ERROR;
 		if ((!device || !mnt_point) && !dev_type && !opts &&
-		    gen_policy_change_mount_type(prof, count, flags, opt_flags) == RULE_ERROR)
-			return RULE_ERROR;
+		    gen_policy_change_mount_type(prof, count, flags, opt_flags) == rule_result_t::ERROR)
+			return rule_result_t::ERROR;
 		if (!dev_type && !opts &&
-		    gen_policy_move_mount(prof, count, flags, opt_flags) == RULE_ERROR)
-			return RULE_ERROR;
+		    gen_policy_move_mount(prof, count, flags, opt_flags) == rule_result_t::ERROR)
+			return rule_result_t::ERROR;
 
 		return gen_policy_new_mount(prof, count, flags, opt_flags);
 	} else if ((perms & AA_MAY_MOUNT) && (flags & MS_REMOUNT)
@@ -1106,12 +1106,12 @@ int mnt_rule::gen_flag_rules(Profile &prof, int &count, unsigned int flags,
 		 * above commands
 		 */
 		return gen_policy_new_mount(prof, count, flags, opt_flags);
-	} /* else must be RULE_OK for some rules */
+	} /* else must be rule_result_t::OK for some rules */
 
-	return RULE_OK;
+	return rule_result_t::OK;
 }
 
-int mnt_rule::gen_policy_re(Profile &prof)
+rule_result_t mnt_rule::gen_policy_re(Profile &prof)
 {
 	std::string mntbuf;
 	std::string devbuf;
@@ -1123,7 +1123,7 @@ int mnt_rule::gen_policy_re(Profile &prof)
 
 	if (!features_supports_mount) {
 		warn_once(prof.name);
-		return RULE_NOT_SUPPORTED;
+		return rule_result_t::NOT_SUPPORTED;
 	}
 
 	sprintf(class_mount_hdr, "\\x%02x", AA_CLASS_MOUNT);
@@ -1133,7 +1133,7 @@ int mnt_rule::gen_policy_re(Profile &prof)
 	 */
 	for (size_t i = 0; i < flagsv.size(); i++) {
 		for (size_t j = 0; j < opt_flagsv.size(); j++) {
-			if (gen_flag_rules(prof, count, flagsv[i], opt_flagsv[j]) == RULE_ERROR)
+			if (gen_flag_rules(prof, count, flagsv[i], opt_flagsv[j]) == rule_result_t::ERROR)
 				goto fail;
 		}
 	}
@@ -1169,11 +1169,11 @@ int mnt_rule::gen_policy_re(Profile &prof)
 		/* didn't actually encode anything */
 		goto fail;
 
-	return RULE_OK;
+	return rule_result_t::OK;
 
 fail:
 	PERROR("Encoding of mount rule failed\n");
-	return RULE_ERROR;
+	return rule_result_t::ERROR;
 }
 
 void mnt_rule::post_parse_profile(Profile &prof aa_unused)

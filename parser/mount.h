@@ -133,19 +133,19 @@
 
 
 class mnt_rule: public perms_rule_t {
-	int gen_policy_remount(Profile &prof, int &count, unsigned int flags,
+	rule_result_t gen_policy_remount(Profile &prof, int &count, unsigned int flags,
 			       unsigned int opt_flags);
-	int gen_policy_bind_mount(Profile &prof, int &count, unsigned int flags,
+	rule_result_t gen_policy_bind_mount(Profile &prof, int &count, unsigned int flags,
 				  unsigned int opt_flags);
-	int gen_policy_change_mount_type(Profile &prof, int &count,
+	rule_result_t gen_policy_change_mount_type(Profile &prof, int &count,
 					 unsigned int flags,
 					 unsigned int opt_flags);
-	int gen_policy_move_mount(Profile &prof, int &count, unsigned int flags,
+	rule_result_t gen_policy_move_mount(Profile &prof, int &count, unsigned int flags,
 				  unsigned int opt_flags);
-	int gen_policy_new_mount(Profile &prof, int &count, unsigned int flags,
+	rule_result_t gen_policy_new_mount(Profile &prof, int &count, unsigned int flags,
 				 unsigned int opt_flags);
-	int gen_flag_rules(Profile &prof, int &count, unsigned int flags,
-			   unsigned int opt_flags);
+	rule_result_t gen_flag_rules(Profile &prof, int &count, unsigned int flags,
+		   unsigned int opt_flags);
 public:
 	char *mnt_point;
 	char *device;
@@ -177,7 +177,7 @@ public:
 	};
 	ostream &dump(ostream &os) override;
 	int expand_variables(void) override;
-	int gen_policy_re(Profile &prof) override;
+	rule_result_t gen_policy_re(Profile &prof) override;
 	void post_parse_profile(Profile &prof aa_unused) override;
 
 	bool is_mergeable(void) override { return true; }
