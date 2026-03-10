@@ -44,7 +44,7 @@ public:
 	int add_set_value(struct value_list *value);
 	int expand_variable(void);
 	static int expand_by_alternation(char **name);
-	void dump_set_values(std::set<std::string> values);
+	void dump_set_values(const std::set<std::string> &values);
 	void dump(bool expanded);
 
 	virtual ~variable() {};

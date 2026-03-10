@@ -257,12 +257,12 @@ int main(void)
 	MY_TEST(retsym->values.size() == 1, "only one value");
 	MY_TEST(retsym->expanded.size() == 1, "only one expanded");
 
-	for (std::string value : retsym->values) {
+	for (const std::string &value : retsym->values) {
 		retval = strcmp(value.c_str(), "Mockingbird");
 		MY_TEST(retval == 0, "get set value 1");
 	}
 
-	for (std::string value : retsym->expanded) {
+	for (const std::string &value : retsym->expanded) {
 		retval = strcmp(value.c_str(), "Mockingbird");
 		MY_TEST(retval == 0, "get set value 1 expanded");
 	}

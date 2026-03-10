@@ -390,7 +390,7 @@ out:
 	return rc;
 }
 
-void variable::dump_set_values(std::set<std::string> values)
+void variable::dump_set_values(const std::set<std::string> &values)
 {
 	for (const auto &value : values)
 		printf(" \"%s\"", value.c_str());
