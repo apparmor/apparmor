@@ -123,11 +123,11 @@ class aare_rules {
 	CHFA *create_chfa(int *min_match_len,
 			  vector <aa_perms> &perms_table,
 			  optflags const &opts, bool filedfa,
-			  bool extended_perms, bool prompt);
+			  int permstable32_version, bool prompt);
 	void *create_dfablob(size_t *size, int *min_match_len,
 			 vector <aa_perms> &perms_table,
 			 optflags const &opts,
-			 bool filedfa, bool extended_perms, bool prompt);
+			 bool filedfa, int permstable32_version, bool prompt);
 	void *create_welded_dfablob(aare_rules *file_rules,
 				    size_t *size, int *min_match_len,
 				    size_t *new_start,

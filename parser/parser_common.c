@@ -90,7 +90,7 @@ int features_supports_flag_error = 0;
 int kernel_supports_oob = 0;		/* out of band transitions */
 int kernel_supports_promptdev = 0;	/* prompt via audit perms */
 int kernel_supports_permstable32 = 0;	/* extended permissions */
-int kernel_supports_permstable32_v1 = 0;	/* extended permissions */
+int kernel_supports_permstable32_version = -1;	/* extended permissions (-1 absent, 1..n version) */
 int prompt_compat_mode = PROMPT_COMPAT_UNKNOWN;
 int kernel_supports_state32 = 0;	/* 32 bit state table entries */
 int kernel_supports_flags_table = 0;	/* state flags stored in table */
@@ -182,7 +182,7 @@ void common_warn_once(const char *name, const char *msg, const char **warned_nam
 bool prompt_compat_mode_supported(int mode)
 {
 	if (mode == PROMPT_COMPAT_PERMSV2 &&
-	    (kernel_supports_permstable32 && !kernel_supports_permstable32_v1))
+	    kernel_supports_permstable32_version >= 2)
 		return true;
 	/*
 	else if (mode == PROMPT_COMPAT_DEV &&
