@@ -1,5 +1,4 @@
-Running tests
-=============
+# Running tests
 
 Type "sudo make tests" at the shell prompt, this will make the
 subprograms and run the tests.
@@ -9,26 +8,30 @@ You must be root to execute "make tests" (a requirement of AppArmor).
 (There is also a 'make alltests', which adds a test for bug that, when
 triggered, would cause the kernel to crash.)
 
-Test output
-===========
+## Test output
 
 By default, no output is displayed for a passing test.  The makefile will
 output:
-	running <testname> for each test.
+
+```text
+running <testname> for each test.
+```
 
 To have verbose output with each subtest reporting successes, set the
 environment variable VERBOSE=1:
-	sudo VERBOSE=1 make tests
+
+```bash
+sudo VERBOSE=1 make tests
+```
 
 There are three typical failure scenarios:
-	- Test failed when it was expected to pass
-	- Test passed when it was expected to fail
-	- Unexpected shell error - the test harness encountered an unexpected
-		error.
 
+- Test failed when it was expected to pass
+- Test passed when it was expected to fail
+- Unexpected shell error - the test harness encountered an unexpected
+  error.
 
-Changing environment variables
-==============================
+## Changing environment variables
 
 Common user changeable environment variables are stored in the file
 'uservars.inc'.  Currently the path to the tmp directory, the path
@@ -38,16 +41,16 @@ to the parser are specified in this configuration file.
 (Note: the tmp directory specified in uservars.inc will have an added
 random string appended to it by the mktemp(1) program.)
 
-Debugging test failures
-=======================
+## Debugging test failures
 
-In the event of a failure run the individual test harness using the -r (or 
--retain) option.  This will not remove the temporary test directory and will 
-display it's path.  Inside the directory is a script called 'runtest' which 
-will rerun the last failed command. 
+In the event of a failure run the individual test harness using the -r (or
+-retain) option.  This will not remove the temporary test directory and will
+display it's path.  Inside the directory is a script called 'runtest' which
+will rerun the last failed command.
 
 Example:
 
+```text
 # bash unlink.sh -r
 Files retained in: /tmp/sdtest.25406-19681
 
@@ -57,53 +60,53 @@ total 3
 -rw-r--r--    1 root     root           25 Jul  2 11:51 output.unlink
 -rw-r--r--    1 root     root          182 Jul  2 11:51 profile
 -rw-r--r--    1 root     root          292 Jul  2 11:51 runtest
-
+```
 
 Note that the contents of this directory (when -r is specified) is the output
 of the final test contained within the controlling test harness, in this case
 unlink.sh.   If the harness passed, then output.unlink will contain the output
 from the final run of the executable (which may indicate an expected error).
 If there was an unexpected error (failed when pass was expected or passed when
-failure was expected, or an unexpected test harness error), the controlling 
-test harness will abort processing further tests and the contents of the 
+failure was expected, or an unexpected test harness error), the controlling
+test harness will abort processing further tests and the contents of the
 directory will contain the files for the failed subtest.
 
-It may be necessary to create certain temp files in this directory in order to 
-have the test function correctly, see the AppArmor profile 'profile' in the 
+It may be necessary to create certain temp files in this directory in order to
+have the test function correctly, see the AppArmor profile 'profile' in the
 directory in order to determine which files may need to be created to support
 the executable.
 
-In order to debug more complicated test failures such as an expected 
-shell error (test harness error) it is usually necessary to rerun the test with 
+In order to debug more complicated test failures such as an expected
+shell error (test harness error) it is usually necessary to rerun the test with
 debugging enabled, for example:
 
+```bash
 # bash -x unlink.sh
+```
 
-
-Adding new tests
-================
+## Adding new tests
 
 The test harness is designed to make adding new tests fairly simply.
 
 Each test consists of one controlling shell script and one or more executable
-files.  
+files.
 
-The file 'prologue.inc' must be loaded into the shell script.  This file 
+The file 'prologue.inc' must be loaded into the shell script.  This file
 contains the controlling logic and supporting shell functions.
 
 By default, prologue.inc assumes the test binary is the same name as the shell
-script, with '.sh' removed.  For test scripts with only one executable this 
+script, with '.sh' removed.  For test scripts with only one executable this
 makes things simple.  You may want to have a single shell script run multiple
 executables (syscall.sh for example). In this case, the 'settest' function is
 used to select a new binary executable for this test.
 
-The 'genprofile' function generates a profile based on passed arguments.  
-The function automatically adds the necessary shared libraries and output 
-files necessary to support the execution, it is not necessary to specify 
-these manually.  Therefore a call to genprofile without arguments will build 
+The 'genprofile' function generates a profile based on passed arguments.
+The function automatically adds the necessary shared libraries and output
+files necessary to support the execution, it is not necessary to specify
+these manually.  Therefore a call to genprofile without arguments will build
 a profile allowing the executable to run but without any additional access.
 Specifying additional arguments to genprofile in the form of <filename>:<perm>
-will allow additional access.  
+will allow additional access.
 
 Support for changehat subprofiles is provided by the 'hat:<hatname>'
 argument to genprofile. This will create a hat within the profile named
@@ -123,7 +126,7 @@ domain transitions to be specified via a single invocation of genprofile.
  no longer supported.]
 
 Executing a test is achieved by calling the 'runchecktest' function which
-will run either the executable matching the name of the shell script, or 
+will run either the executable matching the name of the shell script, or
 specified by settest.  The first argument is a brief description of what the
 executable does in this mode, which is displayed in the event of an error.
 The second argument is either "pass" or "fail" indicating whether the test
@@ -140,8 +143,8 @@ operations, such as sending it a signal before checking it's output, this is
 accomplished by separately calling 'runtestbg' and 'checktestbg' instead
 of calling 'runchecktest'.
 
-Profile loading, replacing and unloading is automatically handled by the 
-shell script (via prologue.inc).  Also, cleanup (tempfile removal and 
+Profile loading, replacing and unloading is automatically handled by the
+shell script (via prologue.inc).  Also, cleanup (tempfile removal and
 profile unloading) on exit is automatic.
 
 As an example, the text shell script for exec (exec.sh) is 24 lines and
@@ -149,74 +152,73 @@ may be used as a template for creating new simple tests (changehat.sh is
 a good template for subprofile tests and rw.sh is a template for tests
 requiring signal passing)
 
-	#! /bin/bash
-	
-	pwd=`dirname $0`
-	pwd=`cd $pwd ; pwd`
-	
-	<bin must be set prior to including prologue.inc. This is the only>
-	<requirement placed on the shell script author by prologue.inc>
-	bin=$pwd
-	
-	<prologue.inc must be included before running any tests>
-	. $bin/prologue.inc
-	
-	<variable definitions used by this script?
-	file=/bin/true
-	okperm=x
-	badperm=r
-	
-	# PASS TEST
-	
-	<generate a profile allowing x access to /bin/true>
-	genprofile $file:$okperm
-	
-	<run this test (exec) passing /bin/true as argv[1]>
-	<check it's output, it is expected to pass>
-	runchecktest "EXEC with x" pass $file
-	
-	# NOLINK PERMTEST
-	<generate a new profile allowing only r access to /bin/true>
-	<apparmor_parser will automatically be invoked in -r mode>
-	genprofile $file:$badperm
+```bash
+#! /bin/bash
 
-	<run this test (exec) passing /bin/true as argv[1]>
-	<check it's output, it is expected to FAIL>
-	runchecktest "EXEC no x" fail $file
+pwd=`dirname $0`
+pwd=`cd $pwd ; pwd`
 
-	<That's it. Exit status $rc is automatically returned by epilogue.inc>
+<bin must be set prior to including prologue.inc. This is the only>
+<requirement placed on the shell script author by prologue.inc>
+bin=$pwd
 
-Supporting files
-================
+<prologue.inc must be included before running any tests>
+. $bin/prologue.inc
 
-strace.sh	Not a test harness, used to support strace testing.
-mkprofile.sh	Not a test harness, used to generate AppArmor profiles.
-prologue.inc	Must be dotted (included) into the test harness. Provides
-		support routines.
-epilogue.inc	Cleanup support, automatically called upon successful or
-		unsuccessful exit
-uservars.inc	Contains variables that may need to be changed per user.
+<variable definitions used by this script?
+file=/bin/true
+okperm=x
+badperm=r
 
-Makefile	Makefile for building or running tests. Use 'make' to build,
-		'make tests' to run.
+# PASS TEST
 
-*.sh		Controlling test harness
-*.c		Test executable.
+<generate a profile allowing x access to /bin/true>
+genprofile $file:$okperm
 
-Disabled tests
-==============
+<run this test (exec) passing /bin/true as argv[1]>
+<check it's output, it is expected to pass>
+runchecktest "EXEC with x" pass $file
+
+# NOLINK PERMTEST
+<generate a new profile allowing only r access to /bin/true>
+<apparmor_parser will automatically be invoked in -r mode>
+genprofile $file:$badperm
+
+<run this test (exec) passing /bin/true as argv[1]>
+<check it's output, it is expected to FAIL>
+runchecktest "EXEC no x" fail $file
+
+<That's it. Exit status $rc is automatically returned by epilogue.inc>
+```
+
+## Supporting files
+
+- strace.sh	Not a test harness, used to support strace testing.
+- mkprofile.sh	Not a test harness, used to generate AppArmor profiles.
+- prologue.inc	Must be dotted (included) into the test harness. Provides
+  support routines.
+- epilogue.inc	Cleanup support, automatically called upon successful or
+  unsuccessful exit
+- uservars.inc	Contains variables that may need to be changed per user.
+
+- Makefile	Makefile for building or running tests. Use 'make' to build,
+  'make tests' to run.
+
+- *.sh		Controlling test harness
+- *.c		Test executable.
+
+## Disabled tests
 
 Symlink mediation (symlink.sh) in AppArmor has been disabled.
 It is too easy to defeat by creating a relative symlink and subsequently
 moving the link.
 
-Current failures
-================
+## Current failures
 
-1) Changehat_misc
+1. Changehat_misc
 
    THIS IS NOT AN ERROR - per se.
-   Two killed messages will be output. 
-   This is not an error, rather a sign that bash noticed the kernel had killed 
-   a process which was attempting to use a bogus MAGIC number.  Alas, there is 
+   Two killed messages will be output.
+   This is not an error, rather a sign that bash noticed the kernel had killed
+   a process which was attempting to use a bogus MAGIC number.  Alas, there is
    no way to get bash to not print this diagnostic
