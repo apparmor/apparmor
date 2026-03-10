@@ -1,5 +1,5 @@
 
-  abi <abi/5.0>,
+  abi <abi/4.0>,
 
   # authd socket
   @{run}/authd.sock rw,

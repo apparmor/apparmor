@@ -1,7 +1,7 @@
 # vim:ft=apparmor
 # Vulkan access requirements
 
-  abi <abi/5.0>,
+  abi <abi/4.0>,
 
   # Mesa provides the default OpenGL implementation
   include <abstractions/mesa>
