@@ -367,7 +367,8 @@ void sd_serialize_permstable(std::ostringstream &buf, vector <aa_perms> &perms_t
 	sd_write_arrayend(buf);
 	sd_write_structend(buf);
 	/* currently only the file dfa makes use of owner conditional accept */
-	if (filedfa && perms_table.size() > 0) {
+	if (filedfa && perms_table.size() > 0 &&
+	    kernel_supports_permstable32_version >= 3) {
 		sd_write_name(buf, "permsv");
 		sd_write_uint32(buf, 3);
 	}
@@ -377,7 +378,8 @@ void sd_serialize_dfa(std::ostringstream &buf, void *dfa, size_t size,
 		      vector <aa_perms> &perms_table, bool filedfa)
 {
 	if (dfa) {
-		if (kernel_supports_permstable32 && perms_table.size() > 0) {
+		if (kernel_supports_permstable32_version >= 2 &&
+		    perms_table.size() > 0) {
 			//fprintf(stderr, "writing perms table %d\n", size);
 			sd_serialize_permstable(buf, perms_table, filedfa);
 		} else {
