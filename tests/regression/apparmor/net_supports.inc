@@ -1,7 +1,7 @@
 # Test parser_supports flag to test how parser is doing internal encoding
 # the features file only gives the option of v7 socket mediation
-# without finegrained af_unix or ip mediation.
-# If the parser doesnt support v7, this forces a rule downgrade.
+# without fine-grained af_unix or ip mediation.
+# If the parser doesn't support v7, this forces a rule downgrade.
 # which we can then error out on.
 parser_supports_v7_socket_encode()
 {
@@ -18,8 +18,8 @@ parser_supports_ubuntu_socket()
 
 # Test parser_supports flag to test how parser is doing internal encoding
 # the features file only gives the option of v8 socket mediation
-# without finegrained af_unix or ip mediation.
-# If the parser doesnt support v8, this forces a rule downgrade.
+# without fine-grained af_unix or ip mediation.
+# If the parser doesn't support v8, this forces a rule downgrade.
 # which we can then error out on.
 parser_supports_v8_socket_encode()
 {
@@ -29,9 +29,9 @@ parser_supports_v8_socket_encode()
 }
 
 # Test parser_supports flag to test how parser is doing internal encoding
-# the features file only gives the option of v8 socket mediation
-# without finegrained af_unix or ip mediation.
-# If the parser doesnt support v8, this forces a rule downgrade.
+# the features file only gives the option of v9 socket mediation
+# without fine-grained af_unix or ip mediation.
+# If the parser doesn't support v9, this forces a rule downgrade.
 # which we can then error out on.
 parser_supports_v9_socket_encode()
 {
@@ -48,8 +48,8 @@ parser_supports_upstream_socket()
 
 # Test parser_supports flag to test how parser is doing internal encoding
 # the features file only gives the option of v7 or older v7 socket mediation
-# without finegrained mediation.
-# If the parser doesnt support v7, this forces a rule downgrade.
+# without fine-grained mediation.
+# If the parser doesn't support v7, this forces a rule downgrade.
 # which we can then error out on.
 parser_supports_v7_unix_encode()
 {
@@ -62,8 +62,8 @@ parser_supports_v7_unix_encode()
 
 # Test parser_supports flag to test how parser is doing internal encoding
 # the features file only gives the option of v9 or older v7 socket mediation
-# without finegrained mediation.
-# If the parser doesnt support v9, this forces a rule downgrade.
+# without fine-grained mediation.
+# If the parser doesn't support v9, this forces a rule downgrade.
 # which we can then error out on.
 parser_supports_v9_unix_encode()
 {
@@ -73,7 +73,7 @@ parser_supports_v9_unix_encode()
 }
 
 # TODO:
-# - add tests for extened_v9_unix rules
+# - add tests for extended_v9_unix rules
 # - add conditional and update current tests for semantic changes under
 #   extended_v9_unix
 #  this conditional can be used to enclose tests older parsers won't
