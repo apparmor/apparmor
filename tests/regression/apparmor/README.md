@@ -222,3 +222,124 @@ moving the link.
    This is not an error, rather a sign that bash noticed the kernel had killed
    a process which was attempting to use a bogus MAGIC number.  Alas, there is
    no way to get bash to not print this diagnostic
+
+## Test helper reference
+
+Each of the `.inc` files provides helper functions for writing tests:
+
+Test `<desc>` is arbitrary quoted argument.
+
+Test `<mode>` is one of:
+
+- `pass` - the test should pass.
+- `fail` - the test should fail.
+- `xfail` - the test should pass but currently fails.
+- `xpass` - the test should fail but currently passes.
+- `signal$N` - the test should be killed by signal `$N`.
+- `xsignal$N` - the test should be killed by signal `$N` but currently does not.
+
+The `<errno_symbol>` is one of the well-known textual values of errno, such as
+`EACCES`.
+
+### `prologue.inc`
+
+- `runchecktest <desc> <mode> [arg1 ... argN]`: run test in foreground and
+  check output against expected mode.
+- `runchecktest_errno <errno_symbol> <desc> <mode> [arg1 ... argN]`: run
+  foreground test and also require a specific errno exit code.
+- `runtestfg <desc> <mode> [arg1 ... argN]`: run test in foreground without
+  checking yet.
+- `checktestfg [post_check_cmd]`: check latest foreground run output and
+  optionally run a callback.
+- `runtestbg <desc> <mode> [arg1 ... argN]`: run test in background and store
+  PID for later verification.
+- `checktestbg [post_check_cmd]`: check latest background run output and
+  optionally run a callback.
+- `settest <testname> [wrapper_template]`: select test executable (and optional
+  wrapper) for subsequent runs.
+- `settest -u <username> <testname> [wrapper_template]`: run selected
+  executable as a temporary user.
+- `genprofile [opt1 ... optN] [profile_token1 ... profile_tokenN]`: generate
+  and load/replace test profile(s).
+- `removeprofile [profile_path]`: unload generated profile (default: current
+  profile).
+- `kernel_features <feature1> [feature2 ... featureN]`: check that all feature
+  paths exist.
+- `kernel_features_istrue <feature1> [feature2 ... featureN]`: check boolean
+  feature files are present and not `no`.
+- `requires_kernel_features <feature1> [feature2 ... featureN]`: skip script if
+  required features are missing.
+- `requires_any_of_kernel_features <feature1> [feature2 ... featureN]`: skip
+  script unless at least one listed feature exists.
+- `requires <checker1> [checker2 ... checkerN]`: skip script if any checker
+  function/command fails.
+- `requires_namespace_interface`: skip script unless namespace interface
+  exists.
+- `requires_query_interface`: skip script unless query interface exists.
+- `parser_supports [parser_opt1 ... parser_optN --] <rule1> [rule2 ... ruleN]`:
+  probe parser support for rules.
+- `requires_parser_support [parser_opt1 ... parser_optN --] <rule1> [rule2 ...
+  ruleN]`: skip script when parser rule probes fail.
+- `fatalerror <msg1> [msg2 ... msgN]`: emit fatal harness error and exit with
+  status `127`.
+- `testfailed`: mark current sub-test as failed and increment failure count.
+
+### `dbus.inc`
+
+- `gendbusprofile [rule1 ... ruleN]`: generate DBus-focused profile with
+  optional extra rule fragments.
+- `set_dbus_var <declaration>`: queue one DBus profile variable declaration for
+  next `gendbusprofile` call.
+- `start_dbus_daemon`: start temporary `dbus-daemon` and export
+  `DBUS_SESSION_BUS_ADDRESS`.
+- `kill_dbus_daemon`: stop temporary `dbus-daemon`.
+- `start_dbus_broker`: start temporary DBus broker and export
+  `DBUS_SESSION_BUS_ADDRESS`.
+- `kill_dbus_broker`: stop and clean up temporary DBus broker.
+- `cleanup_dbus_broker`: remove broker unit files and reload systemd state.
+- `sendsignal`: send standard DBus signal used by DBus tests.
+- `sendmethod`: send standard DBus method call used by DBus tests.
+- `sendmethodreturn`: send unrequested DBus `method_return` reply
+  (negative-path testing).
+- `senderror`: send unrequested DBus `error` reply (negative-path testing).
+- `compare_logs <left_log> <eq|ne> <right_log>`: compare DBus logs and fail
+  sub-test if relation does not match expectation.
+
+### `mount.inc`
+
+- `prop_cleanup`: restore mount propagation state changed by mount test setup.
+
+### `net_supports.inc`
+
+- `parser_supports_v7_socket_encode`: probe parser support for socket-v7 UNIX
+  rule encoding without downgrade/not-enforced warnings.
+- `parser_supports_ubuntu_socket`: compatibility alias for
+  `parser_supports_v7_socket_encode`.
+- `parser_supports_v8_socket_encode`: probe parser support for socket-v8 UNIX
+  rule encoding without downgrade/not-enforced warnings.
+- `parser_supports_v9_socket_encode`: probe parser support for socket-v9 UNIX
+  rule encoding without downgrade/not-enforced warnings.
+- `parser_supports_upstream_socket`: probe parser support for upstream socket
+  rule encoding (v9 preferred, v8 fallback).
+- `parser_supports_v7_unix_encode`: probe parser support for AF\_UNIX-v7 rule
+  encoding without downgrade/not-enforced warnings.
+- `parser_supports_v9_unix_encode`: probe parser support for AF\_UNIX-v9 rule
+  encoding without downgrade/not-enforced warnings.
+- `parser_supports_extended_v9_unix`: probe parser support for extended v9
+  AF\_UNIX rules that older encodings cannot represent.
+- `supports_unix_v7`: check kernel+parser support for AF\_UNIX-v7 mediation.
+- `supports_unix_v9`: check kernel+parser support for AF\_UNIX-v9 mediation.
+- `supports_unix_rules`: check whether AF\_UNIX mediation is available (v9 or
+  v7).
+- `supports_socket_v7`: check kernel+parser support for socket mediation v7.
+- `supports_socket_v8`: check kernel+parser support for socket mediation v8.
+- `supports_socket_v9`: check kernel+parser support for socket mediation v9.
+- `supports_socket_mediation`: check whether socket mediation is available
+  (v9/v8/v7).
+
+### `unix_socket.inc`
+
+- `do_test <addr_type> <test_prog> <l_u_access> <l_b_access> <type> <addr>
+  <p_access> <p_label> <p_addr> <bad_type> <bad_addr> <bad_p_label>
+  <bad_p_addr>`: run socket mediation matrix checks for one address/type
+  scenario.
