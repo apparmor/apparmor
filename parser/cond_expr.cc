@@ -29,20 +29,20 @@ cond_expr::cond_expr(bool result):
 
 cond_expr::cond_expr(const char *var, cond_op op)
 {
-	if (op == BOOLEAN_VALUE) {
+	if (op == cond_op::BOOLEAN_VALUE) {
 		int boolean = str_to_boolean(var);
 		if (boolean == -1) {
 			yyerror("Invalid boolean : '%s' is not true or false",
 				var);
 		}
 		result = boolean;
-	} else if (op == BOOLEAN_OP) {
+	} else if (op == cond_op::BOOLEAN_OP) {
 		variable *ref = symtab::get_boolean_var(var);
 		if (!ref) {
 			yyerror(_("Unset boolean variable %s used in if-expression"), var);
 		}
 		result = ref->boolean;
-	} else if (op == DEFINED_OP) {
+	} else if (op == cond_op::DEFINED_OP) {
 		variable *ref = symtab::get_set_var(var);
 		if (!ref) {
 			result = false;
@@ -87,16 +87,16 @@ template <typename T>
 void cond_expr::compare(cond_op op, const T &lhs, const T &rhs)
 {
 	switch (op) {
-	case GT_OP:
+	case cond_op::GT_OP:
 		result = lhs > rhs;
 		break;
-	case GE_OP:
+	case cond_op::GE_OP:
 		result = lhs >= rhs;
 		break;
-	case LT_OP:
+	case cond_op::LT_OP:
 		result = lhs < rhs;
 		break;
-	case LE_OP:
+	case cond_op::LE_OP:
 		result = lhs <= rhs;
 		break;
 	default:
@@ -127,15 +127,15 @@ cond_expr::cond_expr(const char *lhv, cond_op op, const char *rhv)
 	char *p_lhs = NULL, *p_rhs = NULL;
 	long converted_lhs = 0, converted_rhs = 0;
 
-	if (op == IN_OP) {
+	if (op == cond_op::IN_OP) {
 		/* if lhs is a subset of rhs */
 		result = std::includes(rhs.begin(), rhs.end(),
 				       lhs.begin(), lhs.end());
 		return;
-	} else if (op == EQ_OP) {
+	} else if (op == cond_op::EQ_OP) {
 		result = lhs == rhs;
 		return;
-	} else if (op == NE_OP) {
+	} else if (op == cond_op::NE_OP) {
 		result = lhs != rhs;
 		return;
 	}
