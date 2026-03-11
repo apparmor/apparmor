@@ -1051,7 +1051,7 @@ notfactor:	TOK_NOT notfactor
 
 factor:	TOK_BOOL_VAR
 	{
-		cond_expr *conds = new cond_expr($1, BOOLEAN_OP);
+		cond_expr *conds = new cond_expr($1, cond_op::BOOLEAN_OP);
 		PDEBUG("Matched: boolean expr %s value: %d\n", $1, conds->eval());
 		$$ = conds;
 		free($1);
@@ -1059,7 +1059,7 @@ factor:	TOK_BOOL_VAR
 
 factor:	TOK_DEFINED TOK_SET_VAR
 	{
-		cond_expr *conds = new cond_expr($2, DEFINED_OP);
+		cond_expr *conds = new cond_expr($2, cond_op::DEFINED_OP);
 		PDEBUG("Matched: defined set expr %s value %d\n", $2, conds->eval());
 		$$ = conds;
 		free($2);
@@ -1067,7 +1067,7 @@ factor:	TOK_DEFINED TOK_SET_VAR
 
 factor:	TOK_DEFINED TOK_BOOL_VAR
 	{
-		cond_expr *conds = new cond_expr($2, DEFINED_OP);
+		cond_expr *conds = new cond_expr($2, cond_op::DEFINED_OP);
 		PDEBUG("Matched: defined set expr %s value %d\n", $2, conds->eval());
 		$$ = conds;
 		free($2);
@@ -1080,7 +1080,7 @@ factor:   TOK_OPENPAREN expr TOK_CLOSEPAREN
 
 factor:	id_or_var TOK_EQ_OP id_or_var
 	{
-		cond_expr *conds = new cond_expr($1, EQ_OP, $3);
+		cond_expr *conds = new cond_expr($1, cond_op::EQ_OP, $3);
 		PDEBUG("Matched: equal set expr %s == %s value %d\n", $1, $3, conds->eval());
 		$$ = conds;
 		free($1);
@@ -1089,7 +1089,7 @@ factor:	id_or_var TOK_EQ_OP id_or_var
 
 factor:	id_or_var TOK_NE_OP id_or_var
 	{
-		cond_expr *conds = new cond_expr($1, NE_OP, $3);
+		cond_expr *conds = new cond_expr($1, cond_op::NE_OP, $3);
 		PDEBUG("Matched: not equal set expr %s != %s value %d\n", $1, $3, conds->eval());
 		$$ = conds;
 		free($1);
@@ -1098,7 +1098,7 @@ factor:	id_or_var TOK_NE_OP id_or_var
 
 factor:	id_or_var TOK_IN_OP id_or_var
 	{
-		cond_expr *conds = new cond_expr($1, IN_OP, $3);
+		cond_expr *conds = new cond_expr($1, cond_op::IN_OP, $3);
 		PDEBUG("Matched: in set expr %s in %s value %d\n", $1, $3, conds->eval());
 		$$ = conds;
 		free($1);
@@ -1107,7 +1107,7 @@ factor:	id_or_var TOK_IN_OP id_or_var
 
 factor:	id_or_var TOK_GT id_or_var
 	{
-		cond_expr *conds = new cond_expr($1, GT_OP, $3);
+		cond_expr *conds = new cond_expr($1, cond_op::GT_OP, $3);
 		PDEBUG("Matched: greater set expr %s > %s value %d\n", $1, $3, conds->eval());
 		$$ = conds;
 		free($1);
@@ -1116,7 +1116,7 @@ factor:	id_or_var TOK_GT id_or_var
 
 factor:	id_or_var TOK_GE id_or_var
 	{
-		cond_expr *conds = new cond_expr($1, GE_OP, $3);
+		cond_expr *conds = new cond_expr($1, cond_op::GE_OP, $3);
 		PDEBUG("Matched: greater or equal set expr %s >= %s value %d\n", $1, $3, conds->eval());
 		$$ = conds;
 		free($1);
@@ -1125,7 +1125,7 @@ factor:	id_or_var TOK_GE id_or_var
 
 factor:	id_or_var TOK_LT id_or_var
 	{
-		cond_expr *conds = new cond_expr($1, LT_OP, $3);
+		cond_expr *conds = new cond_expr($1, cond_op::LT_OP, $3);
 		PDEBUG("Matched: less set expr %s < %s value %d\n", $1, $3, conds->eval());
 		$$ = conds;
 		free($1);
@@ -1134,7 +1134,7 @@ factor:	id_or_var TOK_LT id_or_var
 
 factor:	id_or_var TOK_LE id_or_var
 	{
-		cond_expr *conds = new cond_expr($1, LE_OP, $3);
+		cond_expr *conds = new cond_expr($1, cond_op::LE_OP, $3);
 		PDEBUG("Matched: less or equal set expr %s <= %s value %d\n", $1, $3, conds->eval());
 		$$ = conds;
 		free($1);
@@ -1143,7 +1143,7 @@ factor:	id_or_var TOK_LE id_or_var
 
 factor: id_or_var
 	{
-		cond_expr *conds = new cond_expr($1, BOOLEAN_VALUE);
+		cond_expr *conds = new cond_expr($1, cond_op::BOOLEAN_VALUE);
 		PDEBUG("Matched: boolean expr %s value: %d\n", $1, conds->eval());
 		$$ = conds;
 		free($1);

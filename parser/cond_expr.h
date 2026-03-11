@@ -22,7 +22,7 @@
 #include <set>
 #include <string>
 
-typedef enum {
+enum class cond_op {
 	EQ_OP,
 	NE_OP,
 	IN_OP,
@@ -33,7 +33,7 @@ typedef enum {
 	BOOLEAN_OP,
 	DEFINED_OP,
 	BOOLEAN_VALUE,
-} cond_op;
+};
 
 class cond_expr {
 private:
