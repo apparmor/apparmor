@@ -232,7 +232,7 @@ apparmor_parser: $(OBJECTS) $(AAREOBJECTS) $(LIBAPPARMOR_A)
 	$(CXX) $(LDFLAGS) $(EXTRA_CFLAGS) -o $@ $(OBJECTS) $(LIBS) \
 	      ${LEXLIB}  $(AAREOBJECTS) $(AARE_LDFLAGS) $(AALIB)
 
-parser_yacc.c: parser_yacc.y $(STATIC_HDRS) $(DYNAMIC_HDRS)
+parser_yacc.c: parser_yacc.y $(STATIC_HDRS) $(GENERATED_HDRS)
 	$(YACC) $(YFLAGS) -o parser_yacc.c parser_yacc.y
 
 parser_yacc.h: parser_yacc.c
