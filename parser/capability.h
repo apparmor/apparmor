@@ -54,13 +54,34 @@
 #define CAP_CHECKPOINT_RESTORE 40
 #endif
 
-typedef enum capability_flags {
-	CAPFLAGS_CLEAR = 0,
-	CAPFLAG_BASE_FEATURE = 1,
-	CAPFLAG_KERNEL_FEATURE = 2,
-	CAPFLAG_POLICY_FEATURE = 4,
-	CAPFLAG_EXTERNAL_FEATURE = 8,
-} capability_flags;
+enum class capability_flags {
+	CLEAR = 0,
+	BASE_FEATURE = 1,
+	KERNEL_FEATURE = 2,
+	POLICY_FEATURE = 4,
+	EXTERNAL_FEATURE = 8,
+};
+
+inline capability_flags operator|(capability_flags a, capability_flags b)
+{
+	return static_cast<capability_flags>(static_cast<int>(a) | static_cast<int>(b));
+}
+inline capability_flags operator&(capability_flags a, capability_flags b)
+{
+	return static_cast<capability_flags>(static_cast<int>(a) & static_cast<int>(b));
+}
+inline capability_flags operator~(capability_flags a)
+{
+	return static_cast<capability_flags>(~static_cast<int>(a));
+}
+inline capability_flags &operator|=(capability_flags &a, capability_flags b)
+{
+	return a = a | b;
+}
+inline capability_flags &operator&=(capability_flags &a, capability_flags b)
+{
+	return a = a & b;
+}
 
 int name_to_capability(const char *keyword);
 void __debug_capabilities(uint64_t capset, const char *name);

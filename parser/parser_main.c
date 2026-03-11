@@ -1268,7 +1268,7 @@ void reset_parser(const char *filename)
 	reset_include_stack(filename);
 	aa_features_unref(policy_features);
 	policy_features = NULL;
-	clear_cap_flag(CAPFLAG_POLICY_FEATURE);
+	clear_cap_flag(capability_flags::POLICY_FEATURE);
 	delete g_includecache;
 	g_includecache = new IncludeCache_t();
 }
@@ -1916,7 +1916,7 @@ int main(int argc, char *argv[])
 		PERROR(_("Kernel features abi not found"));
 		return 1;
 	}
-	if (!add_cap_feature_mask(kernel_features, CAPFLAG_KERNEL_FEATURE)) {
+	if (!add_cap_feature_mask(kernel_features, capability_flags::KERNEL_FEATURE)) {
 		PERROR(_("Failed to add kernel capabilities to known capabilities set"));
 		return 1;
 	}
