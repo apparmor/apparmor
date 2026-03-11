@@ -34,7 +34,8 @@
 #include <stdint.h>
 
 #include "expr-tree.h"
-extern int prompt_compat_mode;
+enum class prompt_compat_t : int;
+extern prompt_compat_t prompt_compat_mode;
 
 #define DiffEncodeFlag 1
 

@@ -363,7 +363,7 @@ extern int kernel_supports_oob;
 extern int kernel_supports_promptdev;
 extern int kernel_supports_permstable32;
 extern int kernel_supports_permstable32_version;
-extern int prompt_compat_mode;
+extern prompt_compat_t prompt_compat_mode;
 extern int kernel_supports_state32;
 extern int kernel_supports_flags_table;
 extern int conf_verbose;
@@ -380,8 +380,8 @@ extern int read_implies_exec;
 extern IncludeCache_t *g_includecache;
 
 extern void common_warn_once(const char *name, const char *msg, const char **warned_name);
-extern bool prompt_compat_mode_supported(int mode);
-extern int default_prompt_compat_mode();
+extern bool prompt_compat_mode_supported(prompt_compat_t mode);
+extern prompt_compat_t default_prompt_compat_mode();
 extern void print_prompt_compat_mode(FILE *f);
 
 extern void pvwarnf(bool werr, const char *fmt, va_list ap);

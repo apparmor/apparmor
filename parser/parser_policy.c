@@ -245,7 +245,7 @@ int post_process_profile(Profile *profile, int debug_only)
 
 	error = post_process_policy_list(profile->hat_table, debug_only);
 
-	if (prompt_compat_mode == PROMPT_COMPAT_FLAG && profile->uses_prompt_rules)
+	if (prompt_compat_mode == prompt_compat_t::FLAG && profile->uses_prompt_rules)
 		profile->flags.mode = profile_mode::PROMPT;
 
 	return error;

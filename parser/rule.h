@@ -25,10 +25,12 @@
 #include "perms.h"
 #include "policydb.h"
 
-#define PROMPT_COMPAT_UNKNOWN  0
-#define PROMPT_COMPAT_IGNORE  1
-#define PROMPT_COMPAT_PERMSV2 2
-#define PROMPT_COMPAT_FLAG 4
+enum class prompt_compat_t : int {
+	UNKNOWN = 0,
+	IGNORE = 1,
+	PERMSV2 = 2,
+	FLAG = 4,
+};
 
 
 class Profile;
