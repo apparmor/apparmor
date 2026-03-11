@@ -1121,7 +1121,8 @@ bool entry_add_prefix(struct cod_entry *entry, const prefixes &p, const char *&e
 	 * to rule_t
 	 */
 	/* apply rule mode */
-	entry->rule_mode = p.rule_mode;
+	if (p.rule_mode != RULE_UNSPECIFIED)
+		entry->rule_mode = p.rule_mode;
 
 	/* apply owner/other */
 	if (p.owner == 1)
@@ -1129,12 +1130,13 @@ bool entry_add_prefix(struct cod_entry *entry, const prefixes &p, const char *&e
 	else if (p.owner == 2)
 		entry->perms &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
 
-	entry->priority = p.priority;
+	if (p.priority != 0)
+		entry->priority = p.priority;
 
 	/* implied audit modifier */
-	if (p.audit == AUDIT_FORCE && (entry->rule_mode != RULE_DENY))
+	if (p.audit == AUDIT_FORCE && (p.rule_mode != RULE_DENY))
 		entry->audit = AUDIT_FORCE;
-	else if (p.audit != AUDIT_FORCE && (entry->rule_mode == RULE_DENY))
+	else if (p.audit != AUDIT_FORCE && (p.rule_mode == RULE_DENY))
 		entry->audit = AUDIT_FORCE;
 
 	return check_x_qualifier(entry, error);
