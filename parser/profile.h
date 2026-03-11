@@ -66,63 +66,63 @@ public:
 
 extern const char*profile_mode_table[];
 /* use profile_mode_packed to convert to the packed representation */
-enum profile_mode {
-	MODE_UNSPECIFIED = 0,
-	MODE_ENFORCE = 1,
-	MODE_COMPLAIN = 2,
-	MODE_KILL = 3,
-	MODE_UNCONFINED = 4,
-	MODE_PROMPT = 5,
-	MODE_DEFAULT_ALLOW = 6,
-	MODE_CONFLICT = 7	/* greater than MODE_LAST */
+enum class profile_mode : int {
+	UNSPECIFIED = 0,
+	ENFORCE = 1,
+	COMPLAIN = 2,
+	KILL = 3,
+	UNCONFINED = 4,
+	PROMPT = 5,
+	DEFAULT_ALLOW = 6,
+	CONFLICT = 7	/* greater than MODE_LAST */
 };
-#define MODE_LAST MODE_DEFAULT_ALLOW
+static constexpr profile_mode MODE_LAST = profile_mode::DEFAULT_ALLOW;
 
-static inline enum profile_mode operator++(enum profile_mode &mode)
+static inline profile_mode operator++(profile_mode &mode)
 {
-	mode = (enum profile_mode)((int) mode + 1);
+	mode = static_cast<profile_mode>(static_cast<int>(mode) + 1);
 	return mode;
 }
 
-static inline enum profile_mode merge_profile_mode(enum profile_mode l, enum profile_mode r)
+static inline profile_mode merge_profile_mode(profile_mode l, profile_mode r)
 {
-	if (l == r || r == MODE_UNSPECIFIED)
+	if (l == r || r == profile_mode::UNSPECIFIED)
 		return l;
-	else if (l == MODE_UNSPECIFIED)
+	else if (l == profile_mode::UNSPECIFIED)
 		return r;
-	return MODE_CONFLICT;
+	return profile_mode::CONFLICT;
 }
 
-static inline uint32_t profile_mode_packed(enum profile_mode mode)
+static inline uint32_t profile_mode_packed(profile_mode mode)
 {
 	/* until dominance is fixed use unconfined mode for default_allow */
-	if (mode == MODE_DEFAULT_ALLOW)
-		mode = MODE_UNCONFINED;
+	if (mode == profile_mode::DEFAULT_ALLOW)
+		mode = profile_mode::UNCONFINED;
 	/* kernel doesn't have an unspecified mode everything
 	 * shifts down by 1
 	 */
-	if ((uint32_t) mode)
-		return (uint32_t) mode - 1;
+	if (static_cast<uint32_t>(mode))
+		return static_cast<uint32_t>(mode) - 1;
 	/* unspecified defaults to same as enforce */
 	return 0;
 }
 
-static inline void mode_dump(ostream &os, enum profile_mode mode)
+static inline void mode_dump(ostream &os, profile_mode mode)
 {
 	if (mode <= MODE_LAST)
-		os << profile_mode_table[(int) mode];
+		os << profile_mode_table[static_cast<size_t>(mode)];
 	else
 		os << "unknown";
 }
 
-static inline enum profile_mode str_to_mode(const char *str)
+static inline profile_mode str_to_mode(const char *str)
 {
-	for (enum profile_mode i = MODE_ENFORCE; i <= MODE_LAST; ++i) {
-		if (strcmp(profile_mode_table[i], str) == 0)
+	for (profile_mode i = profile_mode::ENFORCE; i <= MODE_LAST; ++i) {
+		if (strcmp(profile_mode_table[static_cast<size_t>(i)], str) == 0)
 			return i;
 	}
 
-	return MODE_UNSPECIFIED;
+	return profile_mode::UNSPECIFIED;
 };
 
 static struct {
@@ -161,7 +161,7 @@ static const char *find_error_name_mapping(int code)
 class flagvals {
 public:
 	int flags;
-	enum profile_mode mode;
+	profile_mode mode;
 	int audit;
 	int path;
 	char *disconnected_path;
@@ -173,7 +173,7 @@ public:
 	void init(void)
 	{
 		flags = 0;
-		mode = MODE_UNSPECIFIED;
+		mode = profile_mode::UNSPECIFIED;
 		audit = 0;
 		path = 0;
 		disconnected_path = NULL;
@@ -190,12 +190,12 @@ public:
 	void init(const char *str)
 	{
 		init();
-		enum profile_mode pmode = str_to_mode(str);
+		profile_mode pmode = str_to_mode(str);
 
 		if (strcmp(str, "debug") == 0) {
 			/* DEBUG2 is left for internal compiler use atm */
 			flags |= FLAG_DEBUG1;
-		} else if (pmode) {
+		} else if (pmode != profile_mode::UNSPECIFIED) {
 			mode = pmode;
 		} else if (strcmp(str, "audit") == 0) {
 			audit = 1;
@@ -282,10 +282,10 @@ public:
 	 */
 	void merge(const flagvals &rhs)
 	{
-		if (merge_profile_mode(mode, rhs.mode) == MODE_CONFLICT)
+		if (merge_profile_mode(mode, rhs.mode) == profile_mode::CONFLICT)
 			yyerror(_("Profile flag '%s' conflicts with '%s'"),
-				profile_mode_table[mode],
-				profile_mode_table[rhs.mode]);
+				profile_mode_table[static_cast<size_t>(mode)],
+				profile_mode_table[static_cast<size_t>(rhs.mode)]);
 		mode = merge_profile_mode(mode, rhs.mode);
 		audit = audit || rhs.audit;
 		path = path | rhs.path;

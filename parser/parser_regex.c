@@ -1113,8 +1113,8 @@ int process_profile_policydb(Profile *prof)
 		goto out;
 
 	/* don't add mediated classes to unconfined profiles */
-	if (prof->flags.mode != MODE_UNCONFINED &&
-	    prof->flags.mode != MODE_DEFAULT_ALLOW) {
+	if (prof->flags.mode != profile_mode::UNCONFINED &&
+	    prof->flags.mode != profile_mode::DEFAULT_ALLOW) {
 		/* note: this activates fs based unix domain sockets mediation on connect */
 		if (kernel_abi_version > 5 &&
 		    !prof->policy.rules->add_rule(mediates_file, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
