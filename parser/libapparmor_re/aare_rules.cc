@@ -97,10 +97,10 @@ bool aare_rules::add_rule_vec(int priority, rule_mode_t mode, perm32_t perms,
 	 */
 	exact_match = 1;
 	for (depth_first_traversal i(tree); i && exact_match; i++) {
-		if ((*i)->is_type(NODE_TYPE_STAR) ||
-		    (*i)->is_type(NODE_TYPE_PLUS) ||
-		    (*i)->is_type(NODE_TYPE_ANYCHAR) ||
-		    (*i)->is_type(NODE_TYPE_NOTCHARSET))
+		if ((*i)->is_type(node_type_t::STAR) ||
+		    (*i)->is_type(node_type_t::PLUS) ||
+		    (*i)->is_type(node_type_t::ANYCHAR) ||
+		    (*i)->is_type(node_type_t::NOTCHARSET))
 			exact_match = 0;
 	}
 

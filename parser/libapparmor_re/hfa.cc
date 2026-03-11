@@ -1531,14 +1531,14 @@ static int pri_update_perm(optflags const &opts, vector<int> &priority, int i,
 	 * Note: this is the last use of priority, it is dropped and not
 	 *       used in the backend.
 	 */
-	if (match->is_type(NODE_TYPE_DENYMATCHFLAG))
+	if (match->is_type(node_type_t::DENYMATCHFLAG))
 		pri += 3;
 	// for exec permission bits and their audit control exact match
 	// has higher priority
-	else if (match->is_type(NODE_TYPE_EXACTMATCHFLAG) &&
+	else if (match->is_type(node_type_t::EXACTMATCHFLAG) &&
 		 (mask & AA_EXEC_BITS))
 		pri += 2;
-	else if (!match->is_type(NODE_TYPE_PROMPTMATCHFLAG))
+	else if (!match->is_type(node_type_t::PROMPTMATCHFLAG))
 		pri += 1;
 	// else prompt +0
 
@@ -1571,7 +1571,7 @@ static int pri_update_perm(optflags const &opts, vector<int> &priority, int i,
 	}
 
 	// the if conditions in order of permission priority
-	if (match->is_type(NODE_TYPE_DENYMATCHFLAG)) {
+	if (match->is_type(node_type_t::DENYMATCHFLAG)) {
 		if (opts.dump & DUMP_DFA_PERMS)
 			cerr << "    " << match << "[" << i << "]=" << priority[i] << " <= " << pri << " deny " << hex << (match->perms & amask) << "/" << (match->audit & amask) << dec << "\n";
 		// deny x never implies mmap so not used here
@@ -1581,7 +1581,7 @@ static int pri_update_perm(optflags const &opts, vector<int> &priority, int i,
 		perms.allow &= ~amask;
 		perms.audit &= ~amask;
 		perms.prompt &= ~amask;
-	} else if (match->is_type(NODE_TYPE_EXACTMATCHFLAG)) {
+	} else if (match->is_type(node_type_t::EXACTMATCHFLAG)) {
 		/* exact match only asserts dominance on the XTYPE */
 		if (opts.dump & DUMP_DFA_PERMS)
 			cerr << "    " << match << "[" << i << "]=" << priority[i] <<  " <= " << pri << " exact " << hex << (match->perms & amask) << "/" << (match->audit & amask) << dec << "\n";
@@ -1601,7 +1601,7 @@ static int pri_update_perm(optflags const &opts, vector<int> &priority, int i,
 		perms.allow |= match->perms & amask;
 		perms.audit |= match->audit & amask;
 		// can't specify exact prompt atm
-	} else if (!match->is_type(NODE_TYPE_PROMPTMATCHFLAG)) {
+	} else if (!match->is_type(node_type_t::PROMPTMATCHFLAG)) {
 		// allow perms, if exact has been encountered will
 		// already be set if overlaps x here, don't conflict,
 		// because exact will override
@@ -1615,7 +1615,7 @@ static int pri_update_perm(optflags const &opts, vector<int> &priority, int i,
 		}
 		perms.allow |= match->perms & amask;
 		perms.audit |= match->audit & amask;
-	} else { // if (match->is_type(NODE_TYPE_PROMPTMATCHFLAG)) {
+	} else { // if (match->is_type(node_type_t::PROMPTMATCHFLAG)) {
 		if (opts.dump & DUMP_DFA_PERMS)
 			cerr << "    " << match << "[" << i << "]=" << priority[i] <<  " <= " << pri << " prompt " << hex << (match->perms & amask) << "/" << (match->audit & amask) << dec << "\n";
 		if (filedfa && xmask && (perms.allow & amask) &&
@@ -1652,7 +1652,7 @@ perms_t::perms_t(optflags const &opts, NodeVec *state, bool filedfa)
 		cerr << "\n";
 	}
 	for (NodeVec::iterator i = state->begin(); i != state->end(); i++) {
-		if (!(*i)->is_type(NODE_TYPE_MATCHFLAG))
+		if (!(*i)->is_type(node_type_t::MATCHFLAG))
 			continue;
 
 		MatchFlag *match = static_cast<MatchFlag *>(*i);
