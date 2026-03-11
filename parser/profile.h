@@ -122,16 +122,58 @@ static const char *find_error_name_mapping(int code)
 	return NULL;
 }
 
-#define FLAG_HAT 1
-#define FLAG_DEBUG1 2
-#define FLAG_DEBUG2 4
-#define FLAG_INTERRUPTIBLE 8
-#define FLAG_PROMPT_COMPAT 0x10
+enum class profile_flag_t : unsigned int {
+	NONE = 0,
+	HAT = 1 << 0,
+	DEBUG1 = 1 << 1,
+	DEBUG2 = 1 << 2,
+	INTERRUPTIBLE = 1 << 3,
+	PROMPT_COMPAT = 1 << 4,
+};
+
+static inline unsigned int profile_flag_bits(profile_flag_t flags)
+{
+	return static_cast<unsigned int>(flags);
+}
+
+static inline profile_flag_t operator|(profile_flag_t lhs, profile_flag_t rhs)
+{
+	return static_cast<profile_flag_t>(profile_flag_bits(lhs) |
+					  profile_flag_bits(rhs));
+}
+
+static inline profile_flag_t operator&(profile_flag_t lhs, profile_flag_t rhs)
+{
+	return static_cast<profile_flag_t>(profile_flag_bits(lhs) &
+					  profile_flag_bits(rhs));
+}
+
+static inline profile_flag_t operator~(profile_flag_t flags)
+{
+	return static_cast<profile_flag_t>(~profile_flag_bits(flags));
+}
+
+static inline profile_flag_t &operator|=(profile_flag_t &lhs, profile_flag_t rhs)
+{
+	lhs = lhs | rhs;
+	return lhs;
+}
+
+static inline profile_flag_t &operator&=(profile_flag_t &lhs, profile_flag_t rhs)
+{
+	lhs = lhs & rhs;
+	return lhs;
+}
+
+static inline bool has_profile_flag(profile_flag_t flags, profile_flag_t flag)
+{
+	return profile_flag_bits(flags & flag) != 0;
+}
 
 /* sigh, used in parse union so needs trivial constructors. */
 class flagvals {
 public:
-	int flags;
+	profile_flag_t flags;
 	profile_mode mode;
 	int audit;
 	int path;
@@ -143,7 +185,7 @@ public:
 	// stupid not constructor constructors
 	void init(void)
 	{
-		flags = 0;
+		flags = profile_flag_t::NONE;
 		mode = profile_mode::UNSPECIFIED;
 		audit = 0;
 		path = 0;
@@ -165,7 +207,7 @@ public:
 
 		if (strcmp(str, "debug") == 0) {
 			/* DEBUG2 is left for internal compiler use atm */
-			flags |= FLAG_DEBUG1;
+			flags |= profile_flag_t::DEBUG1;
 		} else if (pmode != profile_mode::UNSPECIFIED) {
 			mode = pmode;
 		} else if (strcmp(str, "audit") == 0) {
@@ -200,7 +242,7 @@ public:
 			if (error == -1)
 				yyerror("unknown error code specified for error=\'%s\'\n", str + 6);
 		} else if (strcmp(str, "interruptible") == 0) {
-				flags |= FLAG_INTERRUPTIBLE;
+				flags |= profile_flag_t::INTERRUPTIBLE;
 		} else if (strcmp(str, "attach_disconnected.ipc") == 0) {
 			path |= PATH_IPC_ATTACH;
 		} else if (strncmp(str, "attach_disconnected.ipc=", 24) == 0) {
@@ -219,7 +261,7 @@ public:
 		if (audit)
 			os << ", Audit";
 
-		if (flags & FLAG_HAT)
+		if (has_profile_flag(flags, profile_flag_t::HAT))
 			os << ", Hat";
 
 		if (disconnected_path)
@@ -231,7 +273,7 @@ public:
 		if (disconnected_ipc)
 			os << ", attach_disconnected.ipc=" << disconnected_ipc;
 
-		if (flags & FLAG_PROMPT_COMPAT)
+		if (has_profile_flag(flags, profile_flag_t::PROMPT_COMPAT))
 			os << ", prompt_dev";
 
 		os << "\n";
