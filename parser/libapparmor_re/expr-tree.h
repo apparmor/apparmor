@@ -347,7 +347,7 @@ public:
 
 	virtual int eq(const Node *other) const = 0;
 	virtual ostream &dump(ostream &os) const = 0;
-	void dump_syntax_tree(ostream &os);
+	void dump_syntax_tree(ostream &os) const;
 	virtual void normalize(int dir)
 	{
 		if (child[dir])
@@ -974,9 +974,10 @@ public:
 
 
 /* Traverse the syntax tree depth-first in an iterator-like manner. */
-class depth_first_traversal {
-	std::stack<Node *>pos;
-	void push_left(Node *node) {
+template<class node_type>
+class basic_depth_first_traversal {
+	std::stack<node_type *>pos;
+	void push_left(node_type *node) {
 		pos.push(node);
 
 		while (node->is_type(node_type_t::INNER)) {
@@ -985,25 +986,27 @@ class depth_first_traversal {
 		}
 	}
 public:
-	depth_first_traversal(Node *node) { push_left(node); }
-	Node *operator*() { return pos.top(); }
-	Node *operator->() { return pos.top(); }
-	operator  bool() { return !pos.empty(); }
+	basic_depth_first_traversal(node_type *node) { push_left(node); }
+	node_type *operator*() { return pos.top(); }
+	node_type *operator->() { return pos.top(); }
+	operator bool() { return !pos.empty(); }
 	void operator++(int)
 	{
-		Node *last = pos.top();
+		node_type *last = pos.top();
 		pos.pop();
 
 		if (!pos.empty()) {
-			/* no need to dynamic cast, as we just popped a node so
-			 * the top node must be an inner node */
-			InnerNode *node = (InnerNode *) (pos.top());
-			if (node->child[1] && node->child[1] != last) {
+			node_type *node = pos.top();
+			if (node->child[1] &&
+			    node->child[1] != last) {
 				push_left(node->child[1]);
 			}
 		}
 	}
 };
+
+typedef basic_depth_first_traversal<Node> depth_first_traversal;
+typedef basic_depth_first_traversal<const Node> const_depth_first_traversal;
 
 struct node_counts {
 	int charnode;

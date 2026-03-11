@@ -133,9 +133,9 @@ void label_nodes(Node *root)
 /**
  * Text-dump the syntax tree (for debugging).
  */
-void Node::dump_syntax_tree(ostream &os)
+void Node::dump_syntax_tree(ostream &os) const
 {
-	for (depth_first_traversal i(this); i; i++) {
+	for (const_depth_first_traversal i(this); i; i++) {
 		os << i->label << '\t';
 		if ((*i)->child[0] == 0)
 			os << **i << '\t' << (*i)->followpos << endl;
