@@ -292,7 +292,7 @@ suites:
             for V in $SPREAD_PATH/utils/test/test-*.py; do
               Vdash="$(basename "$V" | sed -e 's,^test-,,' -e 's,\.py$,,')"
               Vunder="$(basename "$V" | sed -e 's,^test-,,' -e 's,\.py$,,' -e 's,-,_,g')"
-              if ! grep -xF '    TEST/'"$Vunder"': '"$Vdash" "$SPREAD_PATH"/utils/test/task.yaml; then
+              if ! grep -q -xF '    TEST/'"$Vunder"': '"$Vdash" "$SPREAD_PATH"/utils/test/task.yaml; then
                 echo "utils/test/task.yaml: missing test variant: TEST/$Vunder: $Vdash" >&2
                 fail=1
               fi
