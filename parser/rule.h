@@ -51,14 +51,15 @@ enum class rule_result_t : int {
 //#define rule_cast dynamic_cast
 #define rule_cast static_cast
 
-typedef enum { RULE_FLAG_NONE = 0,
-	       RULE_FLAG_DELETED = 1,	// rule deleted - skip
-	       RULE_FLAG_MERGED = 2,	// rule merged with another rule
-	       RULE_FLAG_EXPANDED = 4,	// variable expanded
-	       RULE_FLAG_SUB = 8,	// rule expanded to subrule(s)
-	       RULE_FLAG_IMPLIED = 16,	// rule not specified in policy but
-					// added because it is implied
-} rule_flags_t;
+enum class rule_flags_t : unsigned int {
+	NONE = 0,
+	DELETED = 1,	// rule deleted - skip
+	MERGED = 2,	// rule merged with another rule
+	EXPANDED = 4,	// variable expanded
+	SUB = 8,	// rule expanded to subrule(s)
+	IMPLIED = 16,	// rule not specified in policy but
+			// added because it is implied
+};
 
 inline rule_flags_t operator|(rule_flags_t a, rule_flags_t b)
 {
@@ -83,7 +84,7 @@ public:
 
 	rule_t *removed_by;
 
-	rule_t(int t): rule_type(t), flags(RULE_FLAG_NONE), removed_by(NULL) { }
+	rule_t(int t): rule_type(t), flags(rule_flags_t::NONE), removed_by(NULL) { }
 	virtual ~rule_t() { };
 
 	bool is_type(int type) { return rule_type == type; }
@@ -91,7 +92,7 @@ public:
 	// rule has been marked as should be skipped by regular processing
 	bool skip()
 	{
-		return (flags & RULE_FLAG_DELETED);
+		return (flags & rule_flags_t::DELETED) != rule_flags_t::NONE;
 	}
 	//virtual bool operator<(rule_t const &rhs)const = 0;
 	virtual std::ostream &dump(std::ostream &os) = 0;
@@ -135,8 +136,8 @@ public:
 		if (skip() || rhs.skip())
 			return false;
 		// default merge is just dedup
-		flags |= RULE_FLAG_MERGED;
-		rhs.flags |= (RULE_FLAG_MERGED | RULE_FLAG_DELETED);
+		flags |= rule_flags_t::MERGED;
+		rhs.flags |= (rule_flags_t::MERGED | rule_flags_t::DELETED);
 		rhs.removed_by = this;
 
 		return true;

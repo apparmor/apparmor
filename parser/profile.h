@@ -500,7 +500,7 @@ public:
 		unsigned int fake_lineno = 1;
 		for (auto i = rule_ents.cbegin(); i != rule_ents.cend(); i++) {
 			if ((*i)->skip()) {
-				if (((*i)->flags & RULE_FLAG_MERGED) && (*i)->removed_by)
+				if (((*i)->flags & rule_flags_t::MERGED) != rule_flags_t::NONE && (*i)->removed_by)
 					fake_lineno += 2;  // merged rules print two lines.
 				continue;
 			}
@@ -510,7 +510,7 @@ public:
 		fake_lineno = 1;
 		for (auto i = rule_ents.cbegin(); i != rule_ents.cend(); i++) {
 			if ((*i)->skip()) {
-				if (((*i)->flags & RULE_FLAG_MERGED) && (*i)->removed_by) {
+				if (((*i)->flags & rule_flags_t::MERGED) != rule_flags_t::NONE && (*i)->removed_by) {
 					auto merged_into = visible_rule_lines.find((*i)->removed_by);
 					std::cout << fake_lineno << ": # The following rule was merged into a rule on line " << merged_into->second << std::endl;
 					fake_lineno++;
