@@ -222,44 +222,69 @@ typedef struct Cases {
 
 ostream &operator<<(ostream &os, Node &node);
 
-#define NODE_TYPE_NODE			0
-#define NODE_TYPE_INNER			(1 << 0)
-#define NODE_TYPE_ONECHILD		(1 << 1)
-#define NODE_TYPE_TWOCHILD		(1 << 2)
-#define NODE_TYPE_LEAF			(1 << 3)
-#define NODE_TYPE_EPS			(1 << 4)
-#define NODE_TYPE_IMPORTANT		(1 << 5)
-#define NODE_TYPE_C			(1 << 6)
-#define NODE_TYPE_CHAR			(1 << 7)
-#define NODE_TYPE_CHARSET		(1 << 8)
-#define NODE_TYPE_NOTCHARSET		(1 << 9)
-#define NODE_TYPE_ANYCHAR		(1 << 10)
-#define NODE_TYPE_STAR			(1 << 11)
-#define NODE_TYPE_OPTIONAL		(1 << 12)
-#define NODE_TYPE_PLUS			(1 << 13)
-#define NODE_TYPE_CAT			(1 << 14)
-#define NODE_TYPE_ALT			(1 << 15)
-#define NODE_TYPE_SHARED		(1 << 16)
-#define NODE_TYPE_ACCEPT		(1 << 17)
-#define NODE_TYPE_MATCHFLAG		(1 << 18)
-#define NODE_TYPE_EXACTMATCHFLAG	(1 << 19)
-#define NODE_TYPE_DENYMATCHFLAG		(1 << 20)
-#define NODE_TYPE_PROMPTMATCHFLAG	(1 << 21)
-#define NODE_TYPE_NULLABLE		(1 << 31)
+enum class node_type_t : uint32_t {
+	NODE = 0,
+	INNER = (1u << 0),
+	ONECHILD = (1u << 1),
+	TWOCHILD = (1u << 2),
+	LEAF = (1u << 3),
+	EPS = (1u << 4),
+	IMPORTANT = (1u << 5),
+	C = (1u << 6),
+	CHAR = (1u << 7),
+	CHARSET = (1u << 8),
+	NOTCHARSET = (1u << 9),
+	ANYCHAR = (1u << 10),
+	STAR = (1u << 11),
+	OPTIONAL = (1u << 12),
+	PLUS = (1u << 13),
+	CAT = (1u << 14),
+	ALT = (1u << 15),
+	SHARED = (1u << 16),
+	ACCEPT = (1u << 17),
+	MATCHFLAG = (1u << 18),
+	EXACTMATCHFLAG = (1u << 19),
+	DENYMATCHFLAG = (1u << 20),
+	PROMPTMATCHFLAG = (1u << 21),
+	NULLABLE = (1u << 31),
+};
+
+constexpr inline node_type_t operator|(node_type_t lhs, node_type_t rhs)
+{
+	return static_cast<node_type_t>(
+		static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs));
+}
+
+constexpr inline node_type_t operator&(node_type_t lhs, node_type_t rhs)
+{
+	return static_cast<node_type_t>(
+		static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs));
+}
+
+inline node_type_t &operator|=(node_type_t &lhs, node_type_t rhs)
+{
+	lhs = lhs | rhs;
+	return lhs;
+}
+
+constexpr inline bool has_type(node_type_t flags, node_type_t type)
+{
+	return static_cast<uint32_t>(flags & type) != 0;
+}
 
 /* An abstract node in the syntax tree. */
 class Node {
 public:
-	Node(): type_flags(NODE_TYPE_NODE), label(0)
+	Node(): type_flags(node_type_t::NODE), label(0)
 	{
 		child[0] = child[1] = 0;
 	}
-	Node(Node *left): type_flags(NODE_TYPE_NODE), label(0)
+	Node(Node *left): type_flags(node_type_t::NODE), label(0)
 	{
 		child[0] = left;
 		child[1] = 0;
 	}
-	Node(Node *left, Node *right): type_flags(NODE_TYPE_NODE), label(0)
+	Node(Node *left, Node *right): type_flags(node_type_t::NODE), label(0)
 	{
 		child[0] = left;
 		child[1] = right;
@@ -331,11 +356,11 @@ public:
 	Node *child[2];
 	/*
 	 * Bitmap that stores supported pointer casts for the Node, composed
-	 * by the NODE_TYPE_* flags. This is used by is_type() as a substitute
+	 * by node_type_t flags. This is used by is_type() as a substitute
 	 * of costly dynamic_cast calls.
 	 */
-	unsigned type_flags;
-	bool is_type(unsigned type) { return type_flags & type; }
+	node_type_t type_flags;
+	bool is_type(node_type_t type) const { return has_type(type_flags, type); }
 
 	unsigned int label;	/* unique number for debug etc */
 	/**
@@ -349,11 +374,11 @@ public:
 
 class InnerNode: public Node {
 public:
-	InnerNode(): Node() { type_flags |= NODE_TYPE_INNER; };
-	InnerNode(Node *left): Node(left) { type_flags |= NODE_TYPE_INNER; };
+	InnerNode(): Node() { type_flags |= node_type_t::INNER; };
+	InnerNode(Node *left): Node(left) { type_flags |= node_type_t::INNER; };
 	InnerNode(Node *left, Node *right): Node(left, right)
 	{
-		type_flags |= NODE_TYPE_INNER;
+		type_flags |= node_type_t::INNER;
 	};
 };
 
@@ -361,7 +386,7 @@ class OneChildNode: public InnerNode {
 public:
 	OneChildNode(Node *left): InnerNode(left)
 	{
-		type_flags |= NODE_TYPE_ONECHILD;
+		type_flags |= node_type_t::ONECHILD;
 	};
 };
 
@@ -369,14 +394,14 @@ class TwoChildNode: public InnerNode {
 public:
 	TwoChildNode(Node *left, Node *right): InnerNode(left, right)
 	{
-		type_flags |= NODE_TYPE_TWOCHILD;
+		type_flags |= node_type_t::TWOCHILD;
 	};
 	int normalize_eps(int dir) override;
 };
 
 class LeafNode: public Node {
 public:
-	LeafNode(): Node() { type_flags |= NODE_TYPE_LEAF; };
+	LeafNode(): Node() { type_flags |= node_type_t::LEAF; };
 	void normalize(int dir __attribute__((unused))) override { return; }
 };
 
@@ -385,7 +410,7 @@ class EpsNode: public LeafNode {
 public:
 	EpsNode(): LeafNode()
 	{
-		type_flags |= (NODE_TYPE_EPS | NODE_TYPE_NULLABLE);
+		type_flags |= (node_type_t::EPS | node_type_t::NULLABLE);
 		label = 0;
 	}
 	void release(void) override
@@ -399,7 +424,7 @@ public:
 	void compute_lastpos() override { }
 	int eq(Node *other) override
 	{
-		if (other->is_type(NODE_TYPE_EPS))
+		if (other->is_type(node_type_t::EPS))
 			return 1;
 		return 0;
 	}
@@ -416,7 +441,7 @@ public:
  */
 class ImportantNode: public LeafNode {
 public:
-	ImportantNode(): LeafNode() { type_flags |= NODE_TYPE_IMPORTANT; }
+	ImportantNode(): LeafNode() { type_flags |= node_type_t::IMPORTANT; }
 	void compute_firstpos() override { firstpos.insert(this); }
 	void compute_lastpos() override { lastpos.insert(this); }
 	virtual void follow(Cases &cases) = 0;
@@ -428,14 +453,14 @@ public:
  */
 class CNode: public ImportantNode {
 public:
-	CNode(): ImportantNode() { type_flags |= NODE_TYPE_C; }
+	CNode(): ImportantNode() { type_flags |= node_type_t::C; }
 	int is_accept(void) override { return false; }
 };
 
 /* Match one specific character (/c/). */
 class CharNode: public CNode {
 public:
-	CharNode(transchar c): c(c) { type_flags |= NODE_TYPE_CHAR; }
+	CharNode(transchar c): c(c) { type_flags |= node_type_t::CHAR; }
 	void follow(Cases &cases) override
 	{
 		NodeSet **x = &cases.cases[c];
@@ -449,7 +474,7 @@ public:
 	}
 	int eq(Node *other) override
 	{
-		if (other->is_type(NODE_TYPE_CHAR)) {
+		if (other->is_type(node_type_t::CHAR)) {
 			CharNode *o = static_cast<CharNode *>(other);
 			return c == o->c;
 		}
@@ -482,7 +507,7 @@ class CharSetNode: public CNode {
 public:
 	CharSetNode(Chars &chars): chars(chars)
 	{
-		type_flags |= NODE_TYPE_CHARSET;
+		type_flags |= node_type_t::CHARSET;
 	}
 	void follow(Cases &cases) override
 	{
@@ -499,7 +524,7 @@ public:
 	}
 	int eq(Node *other) override
 	{
-		if (!other->is_type(NODE_TYPE_CHARSET))
+		if (!other->is_type(node_type_t::CHARSET))
 			return 0;
 
 		CharSetNode *o = static_cast<CharSetNode *>(other);
@@ -547,7 +572,7 @@ class NotCharSetNode: public CNode {
 public:
 	NotCharSetNode(Chars &chars): chars(chars)
 	{
-		type_flags |= NODE_TYPE_NOTCHARSET;
+		type_flags |= node_type_t::NOTCHARSET;
 	}
 	void follow(Cases &cases) override
 	{
@@ -572,7 +597,7 @@ public:
 	}
 	int eq(Node *other) override
 	{
-		if (!other->is_type(NODE_TYPE_NOTCHARSET))
+		if (!other->is_type(node_type_t::NOTCHARSET))
 			return 0;
 
 		NotCharSetNode *o = static_cast<NotCharSetNode *>(other);
@@ -618,7 +643,7 @@ public:
 /* Match any character (/./). */
 class AnyCharNode: public CNode {
 public:
-	AnyCharNode() { type_flags |= NODE_TYPE_ANYCHAR; }
+	AnyCharNode() { type_flags |= node_type_t::ANYCHAR; }
 	void follow(Cases &cases) override
 	{
 		if (!cases.otherwise)
@@ -632,7 +657,7 @@ public:
 	}
 	int eq(Node *other) override
 	{
-		if (other->is_type(NODE_TYPE_ANYCHAR))
+		if (other->is_type(node_type_t::ANYCHAR))
 			return 1;
 		return 0;
 	}
@@ -644,7 +669,7 @@ class StarNode: public OneChildNode {
 public:
 	StarNode(Node *left): OneChildNode(left)
 	{
-		type_flags |= (NODE_TYPE_STAR | NODE_TYPE_NULLABLE);
+		type_flags |= (node_type_t::STAR | node_type_t::NULLABLE);
 	}
 	void compute_firstpos() override { firstpos = child[0]->firstpos; }
 	void compute_lastpos() override { lastpos = child[0]->lastpos; }
@@ -657,7 +682,7 @@ public:
 	}
 	int eq(Node *other) override
 	{
-		if (other->is_type(NODE_TYPE_STAR))
+		if (other->is_type(node_type_t::STAR))
 			return child[0]->eq(other->child[0]);
 		return 0;
 	}
@@ -676,13 +701,13 @@ class OptionalNode: public OneChildNode {
 public:
 	OptionalNode(Node *left): OneChildNode(left)
 	{
-		type_flags |= (NODE_TYPE_OPTIONAL | NODE_TYPE_NULLABLE);
+		type_flags |= (node_type_t::OPTIONAL | node_type_t::NULLABLE);
 	}
 	void compute_firstpos() override { firstpos = child[0]->firstpos; }
 	void compute_lastpos() override { lastpos = child[0]->lastpos; }
 	int eq(Node *other) override
 	{
-		if (other->is_type(NODE_TYPE_OPTIONAL))
+		if (other->is_type(node_type_t::OPTIONAL))
 			return child[0]->eq(other->child[0]);
 		return 0;
 	}
@@ -699,12 +724,12 @@ class PlusNode: public OneChildNode {
 public:
 	PlusNode(Node *left): OneChildNode(left)
 	{
-		type_flags |= NODE_TYPE_PLUS;
+		type_flags |= node_type_t::PLUS;
 	}
 	void compute_nullable() override {
 		// The nullable bit is only ever set so no need for else branch
-		if (child[0]->type_flags & NODE_TYPE_NULLABLE) {
-			type_flags |= NODE_TYPE_NULLABLE;
+		if (has_type(child[0]->type_flags, node_type_t::NULLABLE)) {
+			type_flags |= node_type_t::NULLABLE;
 		}
 	}
 	void compute_firstpos() override { firstpos = child[0]->firstpos; }
@@ -717,7 +742,7 @@ public:
 		}
 	}
 	int eq(Node *other) override {
-		if (other->is_type(NODE_TYPE_PLUS))
+		if (other->is_type(node_type_t::PLUS))
 			return child[0]->eq(other->child[0]);
 		return 0;
 	}
@@ -735,32 +760,32 @@ class CatNode: public TwoChildNode {
 public:
 	CatNode(Node *left, Node *right): TwoChildNode(left, right)
 	{
-		type_flags |= NODE_TYPE_CAT;
+		type_flags |= node_type_t::CAT;
 	}
 	void compute_nullable() override
 	{
 		/*
 		 * To check that both childs are nullable, we can bitwise-AND
 		 * both of the type_flags together and then check if the
-		 * NODE_TYPE_NULLABLE bit is set on the result.
+		 * node_type_t::NULLABLE bit is set on the result.
 		 *
 		 * The nullable bit is only ever set so no need for else branch
 		 */
-		if (child[0]->type_flags & child[1]->type_flags
-				& NODE_TYPE_NULLABLE) {
-			type_flags |= NODE_TYPE_NULLABLE;
+		if (has_type(child[0]->type_flags & child[1]->type_flags,
+			     node_type_t::NULLABLE)) {
+			type_flags |= node_type_t::NULLABLE;
 		}
 	}
 	void compute_firstpos() override
 	{
-		if (child[0]->type_flags & NODE_TYPE_NULLABLE)
+		if (has_type(child[0]->type_flags, node_type_t::NULLABLE))
 			firstpos = child[0]->firstpos + child[1]->firstpos;
 		else
 			firstpos = child[0]->firstpos;
 	}
 	void compute_lastpos() override
 	{
-		if (child[1]->type_flags & NODE_TYPE_NULLABLE)
+		if (has_type(child[1]->type_flags, node_type_t::NULLABLE))
 			lastpos = child[0]->lastpos + child[1]->lastpos;
 		else
 			lastpos = child[1]->lastpos;
@@ -774,7 +799,7 @@ public:
 	}
 	int eq(Node *other) override
 	{
-		if (other->is_type(NODE_TYPE_CAT)) {
+		if (other->is_type(node_type_t::CAT)) {
 			if (!child[0]->eq(other->child[0]))
 				return 0;
 			return child[1]->eq(other->child[1]);
@@ -811,20 +836,20 @@ class AltNode: public TwoChildNode {
 public:
 	AltNode(Node *left, Node *right): TwoChildNode(left, right)
 	{
-		type_flags |= NODE_TYPE_ALT;
+		type_flags |= node_type_t::ALT;
 	}
 	void compute_nullable() override
 	{
 		/*
 		 * To check that either child is nullable, we can bitwise-OR
 		 * both of the type_flags together and then check if the
-		 * NODE_TYPE_NULLABLE bit is set on the result.
+		 * node_type_t::NULLABLE bit is set on the result.
 		 *
 		 * The nullable bit is only ever set so no need for else branch
 		 */
-		if ((child[0]->type_flags | child[1]->type_flags)
-				& NODE_TYPE_NULLABLE) {
-			type_flags |= NODE_TYPE_NULLABLE;
+		if (has_type(child[0]->type_flags | child[1]->type_flags,
+			     node_type_t::NULLABLE)) {
+			type_flags |= node_type_t::NULLABLE;
 		}
 	}
 	void compute_lastpos() override
@@ -837,7 +862,7 @@ public:
 	}
 	int eq(Node *other) override
 	{
-		if (other->is_type(NODE_TYPE_ALT)) {
+		if (other->is_type(node_type_t::ALT)) {
 			if (!child[0]->eq(other->child[0]))
 				return 0;
 			return child[1]->eq(other->child[1]);
@@ -874,7 +899,7 @@ class SharedNode: public ImportantNode {
 public:
 	SharedNode()
 	{
-		type_flags |= NODE_TYPE_SHARED;
+		type_flags |= node_type_t::SHARED;
 	}
 	void release(void) override
 	{
@@ -898,7 +923,7 @@ public:
  */
 class AcceptNode: public SharedNode {
 public:
-	AcceptNode() { type_flags |= NODE_TYPE_ACCEPT; }
+	AcceptNode() { type_flags |= node_type_t::ACCEPT; }
 	int is_accept(void) override { return true; }
 };
 
@@ -906,7 +931,7 @@ class MatchFlag: public AcceptNode {
 public:
 	MatchFlag(int priority, perm32_t perms, perm32_t audit): priority(priority), perms(perms), audit(audit)
 	{
-		type_flags |= NODE_TYPE_MATCHFLAG;
+		type_flags |= node_type_t::MATCHFLAG;
 	}
 	
 	ostream &dump(ostream &os) override { return os << "< 0x" << std::hex << perms << std::dec << '>'; }
@@ -920,7 +945,7 @@ class ExactMatchFlag: public MatchFlag {
 public:
 	ExactMatchFlag(int priority, perm32_t perms, perm32_t audit): MatchFlag(priority, perms, audit)
 	{
-		type_flags |= NODE_TYPE_EXACTMATCHFLAG;
+		type_flags |= node_type_t::EXACTMATCHFLAG;
 	}
 };
 
@@ -928,7 +953,7 @@ class DenyMatchFlag: public MatchFlag {
 public:
 	DenyMatchFlag(int priority, perm32_t perms, perm32_t quiet): MatchFlag(priority, perms, quiet)
 	{
-		type_flags |= NODE_TYPE_DENYMATCHFLAG;
+		type_flags |= node_type_t::DENYMATCHFLAG;
 	}
 };
 
@@ -936,7 +961,7 @@ class PromptMatchFlag: public MatchFlag {
 public:
 	PromptMatchFlag(int priority, perm32_t prompt, perm32_t audit): MatchFlag(priority, prompt, audit)
 	{
-		type_flags |= NODE_TYPE_PROMPTMATCHFLAG;
+		type_flags |= node_type_t::PROMPTMATCHFLAG;
 	}
 };
 
@@ -947,7 +972,7 @@ class depth_first_traversal {
 	void push_left(Node *node) {
 		pos.push(node);
 
-		while (node->is_type(NODE_TYPE_INNER)) {
+		while (node->is_type(node_type_t::INNER)) {
 			pos.push(node->child[0]);
 			node = node->child[0];
 		}
