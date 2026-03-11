@@ -123,7 +123,7 @@ void symtab::dump(bool do_expanded)
 void symtab::expand_variables()
 {
 	for (auto var : my_symtab) {
-		if (var.second.type != sd_boolean)
+		if (var.second.type != var_type::sd_boolean)
 			var.second.expand_variable();
 	}
 }
@@ -136,7 +136,7 @@ variable *symtab::get_set_var(const char *name)
 	if (!var) {
 		goto out;
 	}
-	if (var->type != sd_set) {
+	if (var->type != var_type::sd_set) {
 		PERROR("Variable %s is not a set variable\n", var_name);
 		var = nullptr;
 		goto out;
@@ -154,7 +154,7 @@ variable *symtab::get_boolean_var(const char *name)
 	if (!var) {
 		goto out;
 	}
-	if (var->type != sd_boolean) {
+	if (var->type != var_type::sd_boolean) {
 		PERROR("Variable %s is not a boolean variable\n", var_name);
 		var = nullptr;
 		goto out;
