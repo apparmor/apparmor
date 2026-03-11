@@ -156,9 +156,10 @@ Profile *merge_policy(Profile *a, Profile *b)
 	}
 	b->entries = NULL;
 
-	if (merge_profile_mode(a->flags.mode, b->flags.mode) == MODE_CONFLICT) {
+	if (merge_profile_mode(a->flags.mode, b->flags.mode) == profile_mode::CONFLICT) {
 		PERROR("ASSERT: policy merge with different modes 0x%x != 0x%x\n",
-		       a->flags.mode, b->flags.mode);
+		       static_cast<unsigned int>(a->flags.mode),
+		       static_cast<unsigned int>(b->flags.mode));
 		exit(1);
 	}
 
@@ -245,7 +246,7 @@ int post_process_profile(Profile *profile, int debug_only)
 	error = post_process_policy_list(profile->hat_table, debug_only);
 
 	if (prompt_compat_mode == PROMPT_COMPAT_FLAG && profile->uses_prompt_rules)
-		profile->flags.mode = MODE_PROMPT;
+		profile->flags.mode = profile_mode::PROMPT;
 
 	return error;
 }

@@ -442,7 +442,7 @@ profile_base: TOK_ID opt_id_or_var opt_cond_list identities flags TOK_OPEN
 			/* newer abis encode force complain as part of the
 			 * header
 			 */
-			prof->flags.mode = MODE_COMPLAIN;
+			prof->flags.mode = profile_mode::COMPLAIN;
 
 		prof->post_parse_profile();
 		prof->flags.debug(cerr);
