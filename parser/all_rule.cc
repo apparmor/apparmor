@@ -142,14 +142,14 @@ void all_rule::add_implied_rules(Profile &prof)
 		if (prefix->owner)
 			yyerror(_("owner prefix not allowed on capability rules"));
 
-		if (rule_mode == RULE_DENY && audit == AUDIT_FORCE) {
+		if (rule_mode == RULE_DENY && audit == audit_t::FORCE) {
 			prof.caps.deny |= 0xffffffffffffffff;
 		} else if (rule_mode == RULE_DENY) {
 			prof.caps.deny |= 0xffffffffffffffff;
 			prof.caps.quiet |= 0xffffffffffffffff;
 		} else {
 			prof.caps.allow |= 0xffffffffffffffff;
-			if (audit != AUDIT_UNSPECIFIED)
+			if (audit != audit_t::UNSPECIFIED)
 				prof.caps.audit |= 0xffffffffffffffff;
 		}
 	}

@@ -607,7 +607,7 @@ ostream &mnt_rule::dump(ostream &os)
 		os << " -> " << trans;
 
 
-	os << " " << "(0x" << hex << perms << "/0x" << (audit != AUDIT_UNSPECIFIED ? perms : 0) << ")";
+	os << " " << "(0x" << hex << perms << "/0x" << (audit != audit_t::UNSPECIFIED ? perms : 0) << ")";
 
 	/* Show merge information if rule was merged */
 	if (saved && saved != perms) {
@@ -812,7 +812,7 @@ rule_result_t mnt_rule::gen_policy_remount(Profile &prof, int &count,
 	} else {
 		/* dependent on full expansion of any data match perms */
 		tmpperms = perms;
-		tmpaudit = audit == AUDIT_FORCE ? perms : 0;
+		tmpaudit = audit == audit_t::FORCE ? perms : 0;
 	}
 	/* match for up to but not including data
 	 * if a data match is required this only has AA_MATCH_CONT perms
@@ -831,7 +831,7 @@ rule_result_t mnt_rule::gen_policy_remount(Profile &prof, int &count,
 			goto fail;
 		vec[4] = optsbuf.c_str();
 		if (!prof.policy.rules->add_rule_vec(priority, rule_mode, perms,
-						     (audit == AUDIT_FORCE ? perms : 0),
+						     (audit == audit_t::FORCE ? perms : 0),
 						     5, vec, parseopts, false))
 			goto fail;
 		count++;
@@ -877,7 +877,7 @@ rule_result_t mnt_rule::gen_policy_bind_mount(Profile &prof, int &count,
 		goto fail;
 	vec[3] = flagsbuf;
 	if (!prof.policy.rules->add_rule_vec(priority, rule_mode, perms,
-					     audit == AUDIT_FORCE ? perms : 0,
+					     audit == audit_t::FORCE ? perms : 0,
 					     4, vec,
 					     parseopts, false))
 		goto fail;
@@ -935,7 +935,7 @@ rule_result_t mnt_rule::gen_policy_change_mount_type(Profile &prof, int &count,
 		goto fail;
 	vec[3] = flagsbuf;
 	if (!prof.policy.rules->add_rule_vec(priority, rule_mode, perms,
-					     audit == AUDIT_FORCE ? perms : 0,
+					     audit == audit_t::FORCE ? perms : 0,
 					     4, vec,
 					     parseopts, false))
 		goto fail;
@@ -983,7 +983,7 @@ rule_result_t mnt_rule::gen_policy_move_mount(Profile &prof, int &count,
 		goto fail;
 	vec[3] = flagsbuf;
 	if (!prof.policy.rules->add_rule_vec(priority, rule_mode, perms,
-					     audit == AUDIT_FORCE ? perms : 0,
+					     audit == audit_t::FORCE ? perms : 0,
 					     4, vec,
 					     parseopts, false))
 		goto fail;
@@ -1036,7 +1036,7 @@ rule_result_t mnt_rule::gen_policy_new_mount(Profile &prof, int &count,
 		tmpaudit = 0;
 	} else {
 		tmpperms = perms;
-		tmpaudit = audit == AUDIT_FORCE ? perms : 0;
+		tmpaudit = audit == audit_t::FORCE ? perms : 0;
 	}
 	/* rule for match without required data || data MATCH_CONT */
 	if (!prof.policy.rules->add_rule_vec(priority, rule_mode, tmpperms,
@@ -1052,7 +1052,7 @@ rule_result_t mnt_rule::gen_policy_new_mount(Profile &prof, int &count,
 			goto fail;
 		vec[4] = optsbuf.c_str();
 		if (!prof.policy.rules->add_rule_vec(priority, rule_mode, perms,
-						     audit == AUDIT_FORCE ? perms : 0,
+						     audit == audit_t::FORCE ? perms : 0,
 						     5, vec, parseopts, false))
 			goto fail;
 		count++;
@@ -1144,7 +1144,7 @@ rule_result_t mnt_rule::gen_policy_re(Profile &prof)
 			goto fail;
 		vec[0] = mntbuf.c_str();
 		if (!prof.policy.rules->add_rule_vec(priority, rule_mode, perms,
-					(audit == AUDIT_FORCE ? perms : 0), 1, vec,
+					(audit == audit_t::FORCE ? perms : 0), 1, vec,
 					parseopts, false))
 			goto fail;
 		count++;
@@ -1159,7 +1159,7 @@ rule_result_t mnt_rule::gen_policy_re(Profile &prof)
 			goto fail;
 		vec[1] = devbuf.c_str();
 		if (!prof.policy.rules->add_rule_vec(priority, rule_mode, perms,
-					(audit == AUDIT_FORCE ? perms : 0), 2, vec,
+					(audit == audit_t::FORCE ? perms : 0), 2, vec,
 					parseopts, false))
 			goto fail;
 		count++;

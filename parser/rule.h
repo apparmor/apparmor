@@ -159,7 +159,7 @@ std::ostream &operator<<(std::ostream &os, rule_t &rule);
 typedef std::list<rule_t *> RuleList;
 
 /* Not classes so they can be used in the bison front end */
-typedef enum { AUDIT_UNSPECIFIED, AUDIT_FORCE, AUDIT_QUIET } audit_t;
+enum class audit_t { UNSPECIFIED, FORCE, QUIET };
 typedef enum { RULE_UNSPECIFIED, RULE_ALLOW, RULE_DENY, RULE_PROMPT } rule_mode_t;
 typedef enum { OWNER_UNSPECIFIED, OWNER_SPECIFIED, OWNER_NOT } owner_t;
 
@@ -184,10 +184,10 @@ public:
 		if (priority != 0)
 			os << "priority=" << priority << " ";
 		switch (audit) {
-		case AUDIT_FORCE:
+		case audit_t::FORCE:
 			os << "audit";
 			break;
-		case AUDIT_QUIET:
+		case audit_t::QUIET:
 			os << "quiet";
 			break;
 		default:
@@ -273,7 +273,7 @@ public:
 	{
 		/* Must construct prefix here see note on prefixes */
 		priority = 0;
-		audit = AUDIT_UNSPECIFIED;
+		audit = audit_t::UNSPECIFIED;
 		rule_mode = RULE_UNSPECIFIED;
 		owner = OWNER_UNSPECIFIED;
 	};
@@ -297,8 +297,8 @@ public:
 		priority = p.priority;
 
 		/* audit conflicts */
-		if (p.audit != AUDIT_UNSPECIFIED) {
-			if (audit != AUDIT_UNSPECIFIED &&
+		if (p.audit != audit_t::UNSPECIFIED) {
+			if (audit != audit_t::UNSPECIFIED &&
 			    audit != p.audit) {
 				error = "conflicting audit prefix";
 				return false;
@@ -328,12 +328,12 @@ public:
 
 		/* TODO: MOVE this ! */
 		/* does the prefix imply a modifier */
-		if (p.rule_mode == RULE_DENY && p.audit == AUDIT_FORCE) {
+		if (p.rule_mode == RULE_DENY && p.audit == audit_t::FORCE) {
 			rule_mode = RULE_DENY;
 		} else if (p.rule_mode == RULE_DENY) {
 			rule_mode = RULE_DENY;
-			audit = AUDIT_FORCE;
-		} else if (p.audit != AUDIT_UNSPECIFIED) {
+			audit = audit_t::FORCE;
+		} else if (p.audit != audit_t::UNSPECIFIED) {
 			audit = p.audit;
 		}
 

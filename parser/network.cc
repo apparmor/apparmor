@@ -730,7 +730,7 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 		/* AA_CONT_MATCH mapping (cond_perms) only applies to perms, not audit */
 		if (!prof.policy.rules->add_rule(buf.c_str(), priority,
 						 rule_mode, cond_perms,
-						 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
+						 dedup_perms_rule_t::audit == audit_t::FORCE ? map_perms(perms) : 0,
 						 parseopts))
 			return false;
 
@@ -744,7 +744,7 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 			buf = oss.str();
 			if (!prof.policy.rules->add_rule(buf.c_str(), priority,
 							 rule_mode, cond_perms,
-							 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
+							 dedup_perms_rule_t::audit == audit_t::FORCE ? map_perms(perms) : 0,
 							 parseopts))
 				return false;
 		}
@@ -771,7 +771,7 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 		buf = buffer.str();
 		if (!prof.policy.rules->add_rule(buf.c_str(), priority,
 				rule_mode, map_perms(perms),
-				dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
+				dedup_perms_rule_t::audit == audit_t::FORCE ? map_perms(perms) : 0,
 				parseopts))
 			return false;
 		return true;
@@ -782,7 +782,7 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 	if (perms & AA_NET_CREATE) {
 		if (!prof.policy.rules->add_rule(buf.c_str(), priority,
 					   rule_mode, map_perms(perms & AA_NET_CREATE) | (AA_CONT_MATCH << 1),
-						 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms & AA_NET_CREATE) : 0,
+						 dedup_perms_rule_t::audit == audit_t::FORCE ? map_perms(perms & AA_NET_CREATE) : 0,
 						 parseopts))
 			return false;
 	}
@@ -849,7 +849,7 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 				buf = listen_buffer.str();
 				if (!prof.policy.rules->add_rule(buf.c_str(), priority,
 								 rule_mode, map_perms(perms),
-								 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
+								 dedup_perms_rule_t::audit == audit_t::FORCE ? map_perms(perms) : 0,
 								 parseopts))
 					return false;
 			}
@@ -869,7 +869,7 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 				buf = opt_buffer.str();
 				if (!prof.policy.rules->add_rule(buf.c_str(), priority,
 								 rule_mode, map_perms(perms),
-								 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
+								 dedup_perms_rule_t::audit == audit_t::FORCE ? map_perms(perms) : 0,
 								 parseopts))
 					return false;
 			}
@@ -951,21 +951,21 @@ void network_rule::update_compat_net(void)
 				/* setting mask instead of a bit */
 				if (rule_mode == RULE_DENY) {
 					deny[entry.family] |= entry.type;
-					if (dedup_perms_rule_t::audit != AUDIT_FORCE)
+					if (dedup_perms_rule_t::audit != audit_t::FORCE)
 						quiet[entry.family] |= entry.type;
 				} else {
 					allow[entry.family] |= entry.type;
-					if (dedup_perms_rule_t::audit == AUDIT_FORCE)
+					if (dedup_perms_rule_t::audit == audit_t::FORCE)
 						audit[entry.family] |= entry.type;
 				}
 			} else {
 				if (rule_mode == RULE_DENY) {
 					deny[entry.family] |= 1 << entry.type;
-					if (dedup_perms_rule_t::audit != AUDIT_FORCE)
+					if (dedup_perms_rule_t::audit != audit_t::FORCE)
 						quiet[entry.family] |= 1 << entry.type;
 				} else {
 					allow[entry.family] |= 1 << entry.type;
-					if (dedup_perms_rule_t::audit == AUDIT_FORCE)
+					if (dedup_perms_rule_t::audit == audit_t::FORCE)
 						audit[entry.family] |= 1 << entry.type;
 				}
 			}

@@ -332,7 +332,7 @@ rule_result_t signal_rule::gen_policy_re(Profile &prof)
 	if (perms & (AA_MAY_SEND | AA_MAY_RECEIVE)) {
 		if (!prof.policy.rules->add_rule(buf.c_str(), priority,
 					rule_mode,
-					perms, audit == AUDIT_FORCE ? perms : 0,
+					perms, audit == audit_t::FORCE ? perms : 0,
 					parseopts))
 			goto fail;
 	}
