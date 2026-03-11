@@ -233,6 +233,9 @@ class ReadLog:
             return
 
         elif self.op_type(e) == 'file':
+            if not e['name']:  # missing filename -> ignore event
+                return
+
             # Map c (create) and d (delete) to w (logging is more detailed than the profile language)
             dmask = e['denied_mask']
             dmask = dmask.replace('c', 'w')
