@@ -146,7 +146,7 @@ rule_result_t ptrace_rule::gen_policy_re(Profile &prof)
 	if (perms & AA_VALID_PTRACE_PERMS) {
 		if (!prof.policy.rules->add_rule(buf.c_str(), priority,
 					rule_mode, perms,
-					audit == AUDIT_FORCE ? perms : 0,
+					audit == audit_t::FORCE ? perms : 0,
 					parseopts))
 			goto fail;
 	}

@@ -687,8 +687,8 @@ opt_priority: { $$ = 0; }
 		$$ = tmp;
 	}
 
-opt_audit_flag: { /* nothing */ $$ = AUDIT_UNSPECIFIED; }
-	| TOK_AUDIT { $$ = AUDIT_FORCE; };
+opt_audit_flag: { /* nothing */ $$ = audit_t::UNSPECIFIED; }
+	| TOK_AUDIT { $$ = audit_t::FORCE; };
 
 opt_owner_flag: { /* nothing */ $$ = OWNER_UNSPECIFIED; }
 	| TOK_OWNER { $$ = OWNER_SPECIFIED; };
@@ -745,7 +745,7 @@ rules: rules opt_prefix block
 			yyerror(_("priority is not allowed on rule blocks"));
 		}
 		PDEBUG("matched: %s%s%s%sblock\n",
-		       $2.audit == AUDIT_FORCE ? "audit " : "",
+		       $2.audit == audit_t::FORCE ? "audit " : "",
 		       $2.rule_mode == RULE_DENY ? "deny " : "",
 		       $2.rule_mode == RULE_PROMPT ? "prompt " : "",
 		       $2.owner == OWNER_SPECIFIED ? "owner " : "");
@@ -816,12 +816,12 @@ rules:	rules opt_prefix change_profile
 			yyerror(_("Assert: `change_profile' returned NULL."));
 		if ($2.owner != OWNER_UNSPECIFIED)
 			yyerror(_("owner conditional not allowed on unix rules"));
-		if (($2.rule_mode == RULE_DENY) && $2.audit == AUDIT_FORCE) {
+		if (($2.rule_mode == RULE_DENY) && $2.audit == audit_t::FORCE) {
 			$3->rule_mode = RULE_DENY;
 		} else if ($2.rule_mode == RULE_DENY) {
 			$3->rule_mode = RULE_DENY;
-			$3->audit = AUDIT_FORCE;
-		} else if ($2.audit != AUDIT_UNSPECIFIED) {
+			$3->audit = audit_t::FORCE;
+		} else if ($2.audit != audit_t::UNSPECIFIED) {
 			$3->audit = $2.audit;
 		}
 		add_entry_to_policy($1, $3);
@@ -833,14 +833,14 @@ rules:  rules opt_prefix capability
 		if ($2.owner != OWNER_UNSPECIFIED)
 			yyerror(_("owner conditional not allowed on capability rules"));
 
-		if ($2.rule_mode == RULE_DENY && $2.audit == AUDIT_FORCE) {
+		if ($2.rule_mode == RULE_DENY && $2.audit == audit_t::FORCE) {
 			$1->caps.deny |= $3;
 		} else if ($2.rule_mode == RULE_DENY) {
 			$1->caps.deny |= $3;
 			$1->caps.quiet |= $3;
 		} else {
 			$1->caps.allow |= $3;
-			if ($2.audit != AUDIT_UNSPECIFIED)
+			if ($2.audit != audit_t::UNSPECIFIED)
 				$1->caps.audit |= $3;
 		}
 

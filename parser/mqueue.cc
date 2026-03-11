@@ -247,7 +247,7 @@ rule_result_t mqueue_rule::gen_policy_re(Profile &prof)
 						priority,
 						rule_mode,
 						map_mqueue_perms(perms),
-						audit == AUDIT_FORCE ? map_mqueue_perms(perms) : 0, 1,
+						audit == audit_t::FORCE ? map_mqueue_perms(perms) : 0, 1,
 						vec, parseopts, false))
 				goto fail;
 
@@ -259,7 +259,7 @@ rule_result_t mqueue_rule::gen_policy_re(Profile &prof)
 						priority,
 						rule_mode,
 						map_mqueue_perms(perms & AA_MQUEUE_CREATE_PERMS),
-						audit == AUDIT_FORCE ? map_mqueue_perms(perms & AA_MQUEUE_CREATE_PERMS) : 0, 1,
+						audit == audit_t::FORCE ? map_mqueue_perms(perms & AA_MQUEUE_CREATE_PERMS) : 0, 1,
 						vec, parseopts, false))
 				goto fail;
 
@@ -267,7 +267,7 @@ rule_result_t mqueue_rule::gen_policy_re(Profile &prof)
 			if (!prof.policy.rules->add_rule_vec(priority,
 						rule_mode,
 						map_mqueue_perms(perms),
-						audit == AUDIT_FORCE ? map_mqueue_perms(perms) : 0,
+						audit == audit_t::FORCE ? map_mqueue_perms(perms) : 0,
 						size, vec, parseopts, false))
 				goto fail;
 		}
@@ -304,7 +304,7 @@ rule_result_t mqueue_rule::gen_policy_re(Profile &prof)
 			    !prof.policy.rules->add_rule_vec(priority,
 						rule_mode,
 						map_mqueue_perms(perms),
-						audit == AUDIT_FORCE ? map_mqueue_perms(perms) : 0, 1,
+						audit == audit_t::FORCE ? map_mqueue_perms(perms) : 0, 1,
 						vec, parseopts, false))
 				goto fail;
 
@@ -316,7 +316,7 @@ rule_result_t mqueue_rule::gen_policy_re(Profile &prof)
 						priority,
 						rule_mode,
 						map_mqueue_perms(perms & AA_MQUEUE_CREATE_PERMS),
-						audit == AUDIT_FORCE ? map_mqueue_perms(perms & AA_MQUEUE_CREATE_PERMS) : 0, 1,
+						audit == audit_t::FORCE ? map_mqueue_perms(perms & AA_MQUEUE_CREATE_PERMS) : 0, 1,
 						vec, parseopts, false))
 				goto fail;
 
@@ -324,7 +324,7 @@ rule_result_t mqueue_rule::gen_policy_re(Profile &prof)
 			if (!prof.policy.rules->add_rule_vec(priority,
 						rule_mode,
 						map_mqueue_perms(perms),
-						audit == AUDIT_FORCE ? map_mqueue_perms(perms) : 0,
+						audit == audit_t::FORCE ? map_mqueue_perms(perms) : 0,
 						size, vec, parseopts, false))
 				goto fail;
 		}

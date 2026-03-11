@@ -201,7 +201,7 @@ void unix_rule::downgrade_rule(Profile &prof) {
 		mask = 1 << sock_type_n;
 	if (rule_mode != RULE_DENY) {
 		prof.net.allow[AF_UNIX] |= mask;
-		if (audit == AUDIT_FORCE)
+		if (audit == audit_t::FORCE)
 			prof.net.audit[AF_UNIX] |= mask;
 		const char *error;
 		network_rule *netv8 = new network_rule(perms, AF_UNIX, sock_type_n);
@@ -540,7 +540,7 @@ rule_result_t unix_rule::gen_policy_re(Profile &prof)
 		if (!prof.policy.rules->add_rule(buf.c_str(), priority,
 						 rule_mode,
 						 map_perms(AA_NET_CREATE),
-						 map_perms(audit == AUDIT_FORCE ? AA_NET_CREATE : 0),
+						 map_perms(audit == audit_t::FORCE ? AA_NET_CREATE : 0),
 						 parseopts))
 			goto fail;
 		mask &= ~AA_NET_CREATE;
@@ -566,7 +566,7 @@ rule_result_t unix_rule::gen_policy_re(Profile &prof)
 		if (!prof.policy.rules->add_rule(buf.c_str(), priority,
 						 rule_mode,
 						 map_perms(AA_NET_BIND),
-						 map_perms(audit == AUDIT_FORCE ? AA_NET_BIND : 0),
+						 map_perms(audit == audit_t::FORCE ? AA_NET_BIND : 0),
 						 parseopts))
 			goto fail;
 		/* clear if auto, else generic need to generate addr below */
@@ -592,7 +592,7 @@ rule_result_t unix_rule::gen_policy_re(Profile &prof)
 			if (!prof.policy.rules->add_rule(buf.c_str(), priority,
 							 rule_mode,
 							 map_perms(mask & local_mask),
-							 map_perms(audit == AUDIT_FORCE ? mask & local_mask : 0),
+							 map_perms(audit == audit_t::FORCE ? mask & local_mask : 0),
 							 parseopts))
 				goto fail;
 		}
@@ -608,7 +608,7 @@ rule_result_t unix_rule::gen_policy_re(Profile &prof)
 							 priority,
 							 rule_mode,
 							 map_perms(AA_NET_LISTEN),
-							 map_perms(audit == AUDIT_FORCE ? AA_NET_LISTEN : 0),
+							 map_perms(audit == audit_t::FORCE ? AA_NET_LISTEN : 0),
 							 parseopts))
 				goto fail;
 		}
@@ -623,7 +623,7 @@ rule_result_t unix_rule::gen_policy_re(Profile &prof)
 						priority,
 						rule_mode,
 						map_perms(mask & AA_NET_OPT),
-						map_perms(audit == AUDIT_FORCE ?
+						map_perms(audit == audit_t::FORCE ?
 							  AA_NET_OPT : 0),
 						parseopts))
 				goto fail;
@@ -645,7 +645,7 @@ rule_result_t unix_rule::gen_policy_re(Profile &prof)
 		buf = buffer.str();
 		if (!prof.policy.rules->add_rule(buf.c_str(), priority,
 				rule_mode, map_perms(perms & AA_PEER_NET_PERMS),
-				map_perms(audit == AUDIT_FORCE ? perms & AA_PEER_NET_PERMS : 0),
+				map_perms(audit == audit_t::FORCE ? perms & AA_PEER_NET_PERMS : 0),
 				parseopts))
 			goto fail;
 	}

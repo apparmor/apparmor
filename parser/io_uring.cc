@@ -134,7 +134,7 @@ rule_result_t io_uring_rule::gen_policy_re(Profile &prof)
 	if (perms & AA_VALID_IO_URING_PERMS) {
 		if (!prof.policy.rules->add_rule(buf.c_str(), priority,
 					rule_mode, perms,
-					audit == AUDIT_FORCE ? perms : 0,
+					audit == audit_t::FORCE ? perms : 0,
 					parseopts))
 			goto fail;
 		/* add a mediates_io_uring rule for every rule added. It
@@ -149,7 +149,7 @@ rule_result_t io_uring_rule::gen_policy_re(Profile &prof)
 			buf = buffer.str(); /* update buf to have label */
 			if (!prof.policy.rules->add_rule(buf.c_str(),
 					priority, rule_mode,
-					perms, audit == AUDIT_FORCE ? perms : 0,
+					perms, audit == audit_t::FORCE ? perms : 0,
 					parseopts))
 				goto fail;
 		}

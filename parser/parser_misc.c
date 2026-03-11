@@ -979,7 +979,7 @@ struct cod_entry *new_entry(char *id, perm32_t perms, char *link_id)
 	entry->name = id;
 	entry->link_name = link_id;
 	entry->perms = perms;
-	entry->audit = AUDIT_UNSPECIFIED;
+	entry->audit = audit_t::UNSPECIFIED;
 	entry->rule_mode = RULE_UNSPECIFIED;
 
 	entry->pattern_type = pattern_t::Invalid;
@@ -1118,10 +1118,10 @@ bool entry_add_prefix(struct cod_entry *entry, const prefixes &p, const char *&e
 	entry->priority = p.priority;
 
 	/* implied audit modifier */
-	if (p.audit == AUDIT_FORCE && (entry->rule_mode != RULE_DENY))
-		entry->audit = AUDIT_FORCE;
-	else if (p.audit != AUDIT_FORCE && (entry->rule_mode == RULE_DENY))
-		entry->audit = AUDIT_FORCE;
+	if (p.audit == audit_t::FORCE && (entry->rule_mode != RULE_DENY))
+		entry->audit = audit_t::FORCE;
+	else if (p.audit != audit_t::FORCE && (entry->rule_mode == RULE_DENY))
+		entry->audit = audit_t::FORCE;
 
 	return check_x_qualifier(entry, error);
 }
