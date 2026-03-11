@@ -97,7 +97,7 @@ ostream &operator<<(ostream &os, const NodeSet &state)
 	return os;
 }
 
-ostream &operator<<(ostream &os, Node &node)
+ostream &operator<<(ostream &os, const Node &node)
 {
 	node.dump(os);
 	return os;
