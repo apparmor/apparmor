@@ -22,14 +22,14 @@
 #include <string>
 #include "parser.h"
 
-enum var_type {
+enum class var_type {
 	sd_boolean,
 	sd_set,
 };
 
 class variable {
 public:
-	enum var_type type;
+	var_type type;
 	std::string var_name;
 	int boolean;
 	std::set<std::string> values;

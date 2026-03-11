@@ -23,7 +23,7 @@
 #include "symtab.h"
 
 variable::variable(const char *var_name, struct value_list *values):
-	type(sd_set),
+	type(var_type::sd_set),
 	var_name(var_name),
 	boolean(false) /* not used */
 {
@@ -39,7 +39,7 @@ variable::variable(const char *var_name, struct value_list *values):
 }
 
 variable::variable(const char *var_name, const char *value):
-	type(sd_set),
+	type(var_type::sd_set),
 	var_name(var_name),
 	boolean(false) /* not used */
 {
@@ -48,7 +48,7 @@ variable::variable(const char *var_name, const char *value):
 }
 
 variable::variable(const char *var_name, int boolean):
-	type(sd_boolean),
+	type(var_type::sd_boolean),
 	var_name(var_name),
 	boolean(boolean)
 {
@@ -142,7 +142,7 @@ int variable::add_set_value(struct value_list *values)
 	struct value_list *entry = NULL;
 	PDEBUG("Matched: additive assignment for (%s)\n", var_name.c_str());
 
-	if (type != sd_set) {
+	if (type != var_type::sd_set) {
 		PERROR("Variable %s is not a set variable\n", var_name.c_str());
 		return 2;
 	}
@@ -331,7 +331,7 @@ int variable::expand_variable()
 	char *name = NULL;
 	int rc = 0;
 
-	if (type == sd_boolean) {
+	if (type == var_type::sd_boolean) {
 		PERROR("Referenced variable %s is a boolean used in set context\n",
 		       var_name.c_str());
 		return 2;
@@ -399,11 +399,11 @@ void variable::dump_set_values(std::set<std::string> values)
 void variable::dump(bool do_expanded)
 {
 	switch(type) {
-	case sd_boolean:
+	case var_type::sd_boolean:
 		printf("$%s = %s\n", var_name.c_str(),
 		       boolean ?  "true" : "false");
 		break;
-	case sd_set:
+	case var_type::sd_set:
 		printf("@%s =", var_name.c_str());
 		if (do_expanded) {
 			if (expanded.empty()) {
