@@ -451,7 +451,7 @@ public:
 	ImportantNode(): LeafNode() { type_flags |= node_type_t::IMPORTANT; }
 	void compute_firstpos() override { firstpos.insert(this); }
 	void compute_lastpos() override { lastpos.insert(this); }
-	virtual void follow(Cases &cases) = 0;
+	virtual void follow(Cases &cases) const = 0;
 	virtual int is_accept(void) const = 0;
 };
 
@@ -468,7 +468,7 @@ public:
 class CharNode: public CNode {
 public:
 	CharNode(transchar c): c(c) { type_flags |= node_type_t::CHAR; }
-	void follow(Cases &cases) override
+	void follow(Cases &cases) const override
 	{
 		NodeSet **x = &cases.cases[c];
 		if (!*x) {
@@ -516,9 +516,9 @@ public:
 	{
 		type_flags |= node_type_t::CHARSET;
 	}
-	void follow(Cases &cases) override
+	void follow(Cases &cases) const override
 	{
-		for (Chars::iterator i = chars.begin(); i != chars.end(); i++) {
+		for (Chars::const_iterator i = chars.begin(); i != chars.end(); i++) {
 			NodeSet **x = &cases.cases[*i];
 			if (!*x) {
 				if (cases.otherwise && i->c >= 0)
@@ -581,11 +581,11 @@ public:
 	{
 		type_flags |= node_type_t::NOTCHARSET;
 	}
-	void follow(Cases &cases) override
+	void follow(Cases &cases) const override
 	{
 		if (!cases.otherwise)
 			cases.otherwise = new NodeSet;
-		for (Chars::iterator j = chars.begin(); j != chars.end(); j++) {
+		for (Chars::const_iterator j = chars.begin(); j != chars.end(); j++) {
 			NodeSet **x = &cases.cases[*j];
 			if (!*x)
 				*x = new NodeSet(*cases.otherwise);
@@ -651,7 +651,7 @@ public:
 class AnyCharNode: public CNode {
 public:
 	AnyCharNode() { type_flags |= node_type_t::ANYCHAR; }
-	void follow(Cases &cases) override
+	void follow(Cases &cases) const override
 	{
 		if (!cases.otherwise)
 			cases.otherwise = new NodeSet;
@@ -915,7 +915,7 @@ public:
 		 */
 	}
 
-	void follow(Cases &cases __attribute__ ((unused))) override
+	void follow(Cases &cases __attribute__ ((unused))) const override
 	{
 		/* Nothing to follow. */
 	}
