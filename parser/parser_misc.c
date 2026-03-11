@@ -1111,9 +1111,9 @@ bool entry_add_prefix(struct cod_entry *entry, const prefixes &p, const char *&e
 		entry->rule_mode = p.rule_mode;
 
 	/* apply owner/other */
-	if (p.owner == 1)
+	if (p.owner == OWNER_SPECIFIED)
 		entry->perms &= (AA_USER_PERMS | AA_SHARED_PERMS);
-	else if (p.owner == 2)
+	else if (p.owner == OWNER_NOT)
 		entry->perms &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
 
 	if (p.priority != 0)
