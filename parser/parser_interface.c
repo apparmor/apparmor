@@ -159,21 +159,21 @@ int load_profile(int option, aa_kernel_interface *kernel_interface,
 
 
 
-enum sd_code {
-	SD_U8,
-	SD_U16,
-	SD_U32,
-	SD_U64,
-	SD_NAME,		/* same as string except it is items name */
-	SD_STRING,
-	SD_BLOB,
-	SD_STRUCT,
-	SD_STRUCTEND,
-	SD_LIST,
-	SD_LISTEND,
-	SD_ARRAY,
-	SD_ARRAYEND,
-	SD_OFFSET
+enum class sd_code : u8 {
+	U8,
+	U16,
+	U32,
+	U64,
+	NAME,		/* same as string except it is items name */
+	STRING,
+	BLOB,
+	STRUCT,
+	STRUCTEND,
+	LIST,
+	LISTEND,
+	ARRAY,
+	ARRAYEND,
+	OFFSET
 };
 
 const char *sd_code_names[] = {
@@ -199,6 +199,11 @@ static inline void sd_write8(std::ostringstream &buf, u8 b)
 	buf.write((const char *) &b, 1);
 }
 
+static inline void sd_write_code(std::ostringstream &buf, sd_code code)
+{
+	sd_write8(buf, static_cast<u8>(code));
+}
+
 static inline void sd_write16(std::ostringstream &buf, u16 b)
 {
 	u16 tmp;
@@ -222,25 +227,25 @@ static inline void sd_write64(std::ostringstream &buf, u64 b)
 
 static inline void sd_write_uint8(std::ostringstream &buf, u8 b)
 {
-	sd_write8(buf, SD_U8);
+	sd_write_code(buf, sd_code::U8);
 	sd_write8(buf, b);
 }
 
 static inline void sd_write_uint16(std::ostringstream &buf, u16 b)
 {
-	sd_write8(buf, SD_U16);
+	sd_write_code(buf, sd_code::U16);
 	sd_write16(buf, b);
 }
 
 static inline void sd_write_uint32(std::ostringstream &buf, u32 b)
 {
-	sd_write8(buf, SD_U32);
+	sd_write_code(buf, sd_code::U32);
 	sd_write32(buf, b);
 }
 
 static inline void sd_write_uint64(std::ostringstream &buf, u64 b)
 {
-	sd_write8(buf, SD_U64);
+	sd_write_code(buf, sd_code::U64);
 	sd_write64(buf, b);
 }
 
@@ -248,7 +253,7 @@ static inline void sd_write_name(std::ostringstream &buf, const char *name)
 {
 	PDEBUG("Writing name '%s'\n", name ? name : "(null)");
 	if (name) {
-		sd_write8(buf, SD_NAME);
+		sd_write_code(buf, sd_code::NAME);
 		sd_write16(buf, strlen(name) + 1);
 		buf.write(name, strlen(name) + 1);
 	}
@@ -257,7 +262,7 @@ static inline void sd_write_name(std::ostringstream &buf, const char *name)
 static inline void sd_write_blob(std::ostringstream &buf, void *b, int buf_size, char *name)
 {
 	sd_write_name(buf, name);
-	sd_write8(buf, SD_BLOB);
+	sd_write_code(buf, sd_code::BLOB);
 	sd_write32(buf, buf_size);
 	buf.write((const char *) b, buf_size);
 }
@@ -271,7 +276,7 @@ static inline void sd_write_aligned_blob(std::ostringstream &buf, void *b, int b
 	sd_write_name(buf, name);
 	/* pad calculation MUST come after name is written */
 	size_t pad = align64(buf.tellp() + ((std::streamoff) 5l)) - (buf.tellp() + ((std::streamoff) 5l));
-	sd_write8(buf, SD_BLOB);
+	sd_write_code(buf, sd_code::BLOB);
 	sd_write32(buf, b_size + pad);
 	buf.write(zeros, pad);
 	buf.write((const char *) b, b_size);
@@ -280,7 +285,7 @@ static inline void sd_write_aligned_blob(std::ostringstream &buf, void *b, int b
 static void sd_write_strn(std::ostringstream &buf, const char *b, int size, const char *name)
 {
 	sd_write_name(buf, name);
-	sd_write8(buf, SD_STRING);
+	sd_write_code(buf, sd_code::STRING);
 	sd_write16(buf, size);
 	buf.write(b, size);
 }
@@ -293,35 +298,35 @@ static inline void sd_write_string(std::ostringstream &buf, const char *b, const
 static inline void sd_write_struct(std::ostringstream &buf, const char *name)
 {
 	sd_write_name(buf, name);
-	sd_write8(buf, SD_STRUCT);
+	sd_write_code(buf, sd_code::STRUCT);
 }
 
 static inline void sd_write_structend(std::ostringstream &buf)
 {
-	sd_write8(buf, SD_STRUCTEND);
+	sd_write_code(buf, sd_code::STRUCTEND);
 }
 
 static inline void sd_write_array(std::ostringstream &buf, const char *name, int size)
 {
 	sd_write_name(buf, name);
-	sd_write8(buf, SD_ARRAY);
+	sd_write_code(buf, sd_code::ARRAY);
 	sd_write16(buf, size);
 }
 
 static inline void sd_write_arrayend(std::ostringstream &buf)
 {
-	sd_write8(buf, SD_ARRAYEND);
+	sd_write_code(buf, sd_code::ARRAYEND);
 }
 
 static inline void sd_write_list(std::ostringstream &buf, const char *name)
 {
 	sd_write_name(buf, name);
-	sd_write8(buf, SD_LIST);
+	sd_write_code(buf, sd_code::LIST);
 }
 
 static inline void sd_write_listend(std::ostringstream &buf)
 {
-	sd_write8(buf, SD_LISTEND);
+	sd_write_code(buf, sd_code::LISTEND);
 }
 
 void sd_serialize_identity(std::ostringstream &buf, struct value_list* l)
