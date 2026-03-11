@@ -42,17 +42,17 @@ void mqueue_rule::validate_qname(void)
 {
 	if (qname[0] == '/') {
 		// TODO full syntax check of name
-		if (qtype == mqueue_sysv)
+		if (qtype == mqueue_type::sysv)
 			yyerror("mqueue type=sysv invalid name '%s', sysv "
 				"message queues must be identified by a "
 				"positive integer.\n", qname);
-		qtype = mqueue_posix; // implied by name
+		qtype = mqueue_type::posix; // implied by name
 	} else if (is_all_digits(qname)) {
-		if (qtype == mqueue_posix)
+		if (qtype == mqueue_type::posix)
 			yyerror("mqueue type=posix invalid name '%s', posix "
 				"message queues names must begin with a /\n",
 				qname);
-		qtype = mqueue_sysv; // implied
+		qtype = mqueue_type::sysv; // implied
 	} else {
 		yyerror("mqueue invalid name '%s', message queue names must begin with a / or be a positive integer.\n", qname);
 	}
@@ -73,9 +73,9 @@ void mqueue_rule::move_conditionals(struct cond_entry *conds)
 			char *tmp = NULL;
 			move_conditional_value("mqueue", &tmp, cond_ent);
 			if (strcmp(tmp, "posix") == 0)
-				qtype = mqueue_posix;
+				qtype = mqueue_type::posix;
 			else if (strcmp(tmp, "sysv") == 0)
-				qtype = mqueue_sysv;
+				qtype = mqueue_type::sysv;
 			else
 				yyerror("mqueue invalid type='%s'\n", tmp);
 			free(tmp);
@@ -90,7 +90,7 @@ mqueue_rule::mqueue_rule(perm32_t perms_p, struct cond_entry *conds, char *qname
 	// mqueue uses multiple classes, arbitrary choice to represent group
 	// withing the AST
 	perms_rule_t(AA_CLASS_POSIX_MQUEUE),
-	qtype(mqueue_unspecified), qname(qname_p), label(NULL)
+	qtype(mqueue_type::unspecified), qname(qname_p), label(NULL)
 {
 	move_conditionals(conds);
 	free_cond_list(conds);
@@ -100,9 +100,9 @@ mqueue_rule::mqueue_rule(perm32_t perms_p, struct cond_entry *conds, char *qname
 	if (perms_p) {
 		// do we want to allow perms to imply type like we do for
 		// qname?
-		if (qtype == mqueue_posix && (perms_p & ~AA_VALID_POSIX_MQ_PERMS)) {
+		if (qtype == mqueue_type::posix && (perms_p & ~AA_VALID_POSIX_MQ_PERMS)) {
 			yyerror("perms contains invalid permissions for mqueue type=posix\n");
-		} else if (qtype == mqueue_sysv && (perms_p & ~AA_VALID_SYSV_MQ_PERMS)) {
+		} else if (qtype == mqueue_type::sysv && (perms_p & ~AA_VALID_SYSV_MQ_PERMS)) {
 			yyerror("perms contains invalid permissions for mqueue type=sysv\n");
 		} else if (perms_p & ~AA_VALID_MQUEUE_PERMS) {
 			yyerror("perms contains invalid permissions for mqueue\n");
@@ -140,9 +140,9 @@ ostream &mqueue_rule::dump(ostream &os)
 
 	// do we want to always put type out or leave it implied if there
 	// is a qname
-	if (qtype == mqueue_posix)
+	if (qtype == mqueue_type::posix)
 		os << " type=posix";
-	else if (qtype == mqueue_sysv)
+	else if (qtype == mqueue_type::sysv)
 		os << " type=sysv";
 
 	if (perms != AA_VALID_MQUEUE_PERMS) {
@@ -183,11 +183,11 @@ int mqueue_rule::expand_variables(void)
 /* TODO: this is not right, need separate warning for each type */
 void mqueue_rule::warn_once(const char *name)
 {
-	if (qtype == mqueue_unspecified)
+	if (qtype == mqueue_type::unspecified)
 		rule_t::warn_once(name, "mqueue rules not enforced");
-	else if (qtype == mqueue_posix)
+	else if (qtype == mqueue_type::posix)
 		rule_t::warn_once(name, "mqueue type=posix rules not enforced");
-	else if (qtype == mqueue_sysv)
+	else if (qtype == mqueue_type::sysv)
 		rule_t::warn_once(name, "mqueue type=sysv rules not enforced");
 }
 
@@ -199,13 +199,13 @@ rule_result_t mqueue_rule::gen_policy_re(Profile &prof)
 	const char *vec[size];
 
 
-	if (qtype == mqueue_posix && !features_supports_posix_mqueue) {
+	if (qtype == mqueue_type::posix && !features_supports_posix_mqueue) {
 		warn_once(prof.name);
 		return rule_result_t::NOT_SUPPORTED;
-	} else if (qtype == mqueue_sysv && !features_supports_sysv_mqueue) {
+	} else if (qtype == mqueue_type::sysv && !features_supports_sysv_mqueue) {
 		warn_once(prof.name);
 		return rule_result_t::NOT_SUPPORTED;
-	} else if (qtype == mqueue_unspecified &&
+	} else if (qtype == mqueue_type::unspecified &&
 		   !(features_supports_posix_mqueue ||
 		     features_supports_sysv_mqueue)) {
 		warn_once(prof.name);
@@ -219,7 +219,7 @@ rule_result_t mqueue_rule::gen_policy_re(Profile &prof)
 	//buffer << "(" << "\\x" << std::setfill('0') << std::setw(2) << std::hex << AA_CLASS_LABEL << "|)"; //is this required?
 
 	// posix and generic
-	if (qtype != mqueue_sysv) {
+	if (qtype != mqueue_type::sysv) {
 		std::ostringstream buffer;
 		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << AA_CLASS_POSIX_MQUEUE;
 		buf.assign(buffer.str());
@@ -273,7 +273,7 @@ rule_result_t mqueue_rule::gen_policy_re(Profile &prof)
 		}
 	}
 	// sysv and generic
-	if (qtype != mqueue_posix) {
+	if (qtype != mqueue_type::posix) {
 		std::ostringstream buffer;
 		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << AA_CLASS_SYSV_MQUEUE;
 

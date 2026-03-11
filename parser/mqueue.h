@@ -78,11 +78,11 @@
 // warning getting into overlap area
 
 /* Type of mqueue - can be explicit or implied by rule id/path */
-typedef enum mqueue_type {
-	mqueue_unspecified,
-	mqueue_posix,
-	mqueue_sysv
-} mqueue_type;
+enum class mqueue_type {
+	unspecified,
+	posix,
+	sysv,
+};
 
 static inline uint32_t map_mqueue_perms(uint32_t mask)
 {
@@ -125,7 +125,7 @@ public:
 		if (res)
 			return res;
 		mqueue_rule const &trhs = rule_cast<mqueue_rule const &>(rhs);
-		res = qtype - trhs.qtype;
+		res = static_cast<int>(qtype) - static_cast<int>(trhs.qtype);
 		if (res)
 			return res;
 		res = null_strcmp(qname, trhs.qname);
