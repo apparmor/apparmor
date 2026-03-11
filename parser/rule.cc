@@ -28,14 +28,14 @@ const char *aa_class_table[] = {
 	"rlimit",
 	"domain",
 	"mount",
-	"unknown8", // XXX: "ns_domain"?
+	"ns_domain",
 	"ptrace",
 	"signal",
 	"xmatch",
 	"env",
 	"argv",
 	"network",
-	"unknown15", // XXX: "network_v9"?
+	"network_v9",
 	"label",
 	"mqueue", // XXX: "mqueue_posix"?
 	"mqueue", // XXX: "mqueue_sysv"?
