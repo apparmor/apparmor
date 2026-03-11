@@ -108,7 +108,7 @@ public:
 
 	bool valid_prefix(const prefixes &p, const char *&error) override {
 		// not yet, but soon
-		if (p.owner) {
+		if (p.owner != owner_t::UNSPECIFIED) {
 			error = _("owner prefix not allowed on mqueue rules");
 			return false;
 		}

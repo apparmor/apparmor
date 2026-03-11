@@ -139,7 +139,7 @@ void all_rule::add_implied_rules(Profile &prof)
 	}
 	// caps
 	{
-		if (prefix->owner)
+		if (prefix->owner != owner_t::UNSPECIFIED)
 			yyerror(_("owner prefix not allowed on capability rules"));
 
 		if (rule_mode == RULE_DENY && audit == audit_t::FORCE) {

@@ -51,7 +51,7 @@ public:
 		// priority is partially supported for unix rules
 		// rules that get downgraded to just network socket
 		// won't support them but the fine grained do.
-		if (p.owner) {
+		if (p.owner != owner_t::UNSPECIFIED) {
 			error = "owner prefix not allowed on unix rules";
 			return false;
 		}

@@ -38,7 +38,7 @@ public:
 	};
 
 	bool valid_prefix(const prefixes &p, const char *&error) override {
-		if (p.owner) {
+		if (p.owner != owner_t::UNSPECIFIED) {
 			error = _("owner prefix not allowed on io_uring rules");
 			return false;
 		}

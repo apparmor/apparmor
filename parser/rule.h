@@ -161,7 +161,7 @@ typedef std::list<rule_t *> RuleList;
 /* Not classes so they can be used in the bison front end */
 enum class audit_t { UNSPECIFIED, FORCE, QUIET };
 typedef enum { RULE_UNSPECIFIED, RULE_ALLOW, RULE_DENY, RULE_PROMPT } rule_mode_t;
-typedef enum { OWNER_UNSPECIFIED, OWNER_SPECIFIED, OWNER_NOT } owner_t;
+enum class owner_t { UNSPECIFIED, SPECIFIED, NOT };
 
 
 /* NOTE: we can not have a constructor for class prefixes. This is
@@ -221,13 +221,13 @@ public:
 		}
 
 		switch (owner) {
-		case OWNER_SPECIFIED:
+		case owner_t::SPECIFIED:
 			if (output)
 				os << " ";
 			os << "owner";
 			output = true;
 			break;
-		case OWNER_NOT:
+		case owner_t::NOT:
 			if (output)
 				os << " ";
 			os << "!owner";
@@ -275,7 +275,7 @@ public:
 		priority = 0;
 		audit = audit_t::UNSPECIFIED;
 		rule_mode = RULE_UNSPECIFIED;
-		owner = OWNER_UNSPECIFIED;
+		owner = owner_t::UNSPECIFIED;
 	};
 
 	virtual bool valid_prefix(const prefixes &p, const char *&error) = 0;
@@ -317,8 +317,8 @@ public:
 		}
 
 		/* owner !owner conflicts */
-		if (p.owner) {
-			if (owner != OWNER_UNSPECIFIED &&
+		if (p.owner != owner_t::UNSPECIFIED) {
+			if (owner != owner_t::UNSPECIFIED &&
 			    owner != p.owner) {
 				error = "conflicting owner prefix";
 				return false;

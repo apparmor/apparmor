@@ -202,7 +202,7 @@ public:
 			error = _("priority prefix not allowed on network rules");
 			return false;
 		}
-		if (p.owner) {
+		if (p.owner != owner_t::UNSPECIFIED) {
 			error = _("owner prefix not allowed on network rules");
 			return false;
 		}
