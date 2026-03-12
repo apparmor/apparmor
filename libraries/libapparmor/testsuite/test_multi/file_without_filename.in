@@ -1,0 +1,1 @@
+Mar 03 07:48:21 examplehost.internal kernel: audit: type=1400 audit(1772549301.213:78826): apparmor="DENIED" operation="open" class="file" profile="firefox" pid=16417 comm="vaapitest" requested_mask="wr" denied_mask="wr" fsuid=1000 ouid=0
