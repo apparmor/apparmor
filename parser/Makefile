@@ -110,7 +110,7 @@ STATIC_HDRS = af_rule.h af_unix.h capability.h common_optarg.h dbus.h \
        file_cache.h immunix.h lib.h mount.h network.h parser.h \
        parser_include.h parser_version.h policy_cache.h policydb.h \
        profile.h ptrace.h rule.h signal.h userns.h mqueue.h io_uring.h \
-       common_flags.h bignum.h all_rule.h
+       common_flags.h all_rule.h
 
 SPECIAL_HDRS = parser_yacc.h unit_test.h base_cap_names.h
 GENERATED_HDRS = af_names.h generated_af_names.h \
