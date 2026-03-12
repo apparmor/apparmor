@@ -158,37 +158,37 @@ requiring signal passing)
 pwd=`dirname $0`
 pwd=`cd $pwd ; pwd`
 
-<bin must be set prior to including prologue.inc. This is the only>
-<requirement placed on the shell script author by prologue.inc>
+# bin must be set prior to including prologue.inc. This is the only
+# requirement placed on the shell script author by prologue.inc
 bin=$pwd
 
-<prologue.inc must be included before running any tests>
-. $bin/prologue.inc
+# prologue.inc must be included before running any tests
+. "$bin/prologue.inc"
 
-<variable definitions used by this script?
+# variable definitions used by this script?
 file=/bin/true
 okperm=x
 badperm=r
 
 # PASS TEST
 
-<generate a profile allowing x access to /bin/true>
+# generate a profile allowing x access to /bin/true
 genprofile $file:$okperm
 
-<run this test (exec) passing /bin/true as argv[1]>
-<check it's output, it is expected to pass>
+# run this test (exec) passing /bin/true as argv[1]
+# check it's output, it is expected to pass
 runchecktest "EXEC with x" pass $file
 
 # NOLINK PERMTEST
-<generate a new profile allowing only r access to /bin/true>
-<apparmor_parser will automatically be invoked in -r mode>
+# generate a new profile allowing only r access to /bin/true
+# apparmor_parser will automatically be invoked in -r mode
 genprofile $file:$badperm
 
-<run this test (exec) passing /bin/true as argv[1]>
-<check it's output, it is expected to FAIL>
+# run this test (exec) passing /bin/true as argv[1]
+# check it's output, it is expected to FAIL
 runchecktest "EXEC no x" fail $file
 
-<That's it. Exit status $rc is automatically returned by epilogue.inc>
+# That's it. Exit status $rc is automatically returned by epilogue.inc
 ```
 
 ## Supporting files
