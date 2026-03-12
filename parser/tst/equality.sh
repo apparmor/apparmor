@@ -636,6 +636,34 @@ for audit in "" "audit" ; do
 	done
 done
 
+# owner block prefixes must not clobber inner file rule modes
+# block rules currently do not support priority at the block level
+# once that is added combinations with priority at the block level should
+# be added
+verify_binary_equality "'$p1'x'$p2' owner block preserves prompt mode on file rules" \
+		"/t { $p1 prompt owner /foo r, }" \
+		"/t { owner { $p2 prompt /foo r, } }"
+
+verify_binary_equality "'$p1'x'$p2' owner block preserves deny mode on file rules" \
+		"/t { $p1 deny owner /foo r, }" \
+		"/t { owner { $p2 deny /foo r, } }"
+
+verify_binary_equality "'$p1'x'$p2' owner block preserves prompt mode on link rules" \
+		"/t { $p1 prompt owner link /a -> /b, }" \
+		"/t { owner { $p2 prompt link /a -> /b, } }"
+
+verify_binary_equality "'$p1'x'$p2' owner block preserves deny mode on link rules" \
+		"/t { $p1 deny owner link /a -> /b, }" \
+		"/t { owner { $p2 deny link /a -> /b, } }"
+
+# owner block prefixes must not clobber explicit inner priorities
+# only run this once since this check carries its own explicit priority
+if [ -z "$p1" ] && [ -z "$p2" ]; then
+	verify_binary_equality "owner block preserves explicit inner priority on file rules" \
+			"/t { priority=1 owner /* r, audit deny owner /foo r, }" \
+			"/t { owner { priority=1 /* r, audit deny /foo r, } }"
+fi
+
 #Test rule overlap for x most specific match
 for perm1 in "ux" "Ux" "px" "Px" "cx" "Cx" "ix" "pux" "Pux" \
 	     "pix" "Pix" "cux" "Cux" "cix" "Cix" "px -> b" \
