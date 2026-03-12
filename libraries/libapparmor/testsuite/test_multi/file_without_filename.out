@@ -1,0 +1,15 @@
+START
+File: file_without_filename.in
+Event type: AA_RECORD_DENIED
+Audit ID: 1772549301.213:78826
+Operation: open
+Mask: wr
+Denied Mask: wr
+fsuid: 1000
+ouid: 0
+Profile: firefox
+Command: vaapitest
+PID: 16417
+Class: file
+Epoch: 1772549301
+Audit subid: 78826
