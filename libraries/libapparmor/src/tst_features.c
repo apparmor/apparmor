@@ -18,6 +18,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 #include "private.h"
 
@@ -256,6 +257,23 @@ static int test_features_supports_prefixing() {
 	return rc;
 }
 
+static int test_features_new_from_string_too_large(void)
+{
+	char large[STRING_SIZE];
+	aa_features *features = (aa_features *)0x1;
+	int retval;
+	int rc = 0;
+
+	memset(large, 'x', sizeof(large));
+	errno = 0;
+	retval = aa_features_new_from_string(&features, large, sizeof(large));
+	MY_TEST(retval == -1, "oversized features should fail with -1");
+	MY_TEST(errno == ENOBUFS, "oversized features should set ENOBUFS");
+	MY_TEST(features == NULL, "oversized features should not create object");
+
+	return rc;
+}
+
 int main(void)
 {
 	int retval, rc = 0;
@@ -269,6 +287,10 @@ int main(void)
 		rc = retval;
 
 	retval = test_features_supports_prefixing();
+	if (retval)
+		rc = retval;
+
+	retval = test_features_new_from_string_too_large();
 	if (retval)
 		rc = retval;
 
