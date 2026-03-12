@@ -38,7 +38,6 @@
 #include "libapparmor_re/apparmor_re.h"
 #include "libapparmor_re/aare_rules.h"
 #include "rule.h"
-#include "bignum.h"
 #include "common_flags.h"
 
 #include <string>
@@ -439,7 +438,6 @@ extern pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 extern bool build_list_val_expr(std::string& buffer, struct value_list *list);
 extern bool convert_entry(std::string& buffer, char *entry);
 extern int clear_and_convert_entry(std::string& buffer, char *entry);
-extern bool convert_range(std::string& buffer, bignum start, bignum end);
 extern int process_regex(Profile *prof);
 extern int post_process_entry(struct cod_entry *entry);
 
