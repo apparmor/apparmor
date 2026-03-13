@@ -51,7 +51,7 @@ const char *aa_class_table[] = {
 	"prctl",
 	"unknown29",
 	"netv9_skb",
-	"X"
+	"X",
 	"dbus",
 	NULL
 };
