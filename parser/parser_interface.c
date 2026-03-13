@@ -517,7 +517,7 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 
 	sd_write_struct(buf, "flags");
 	/* used to be flags.debug, but that's no longer supported */
-	sd_write_uint32(buf, profile->flags.flags);
+	sd_write_uint32(buf, profile_flag_bits(profile->flags.flags));
 	sd_write_uint32(buf, profile_mode_packed(profile->flags.mode));
 	sd_write_uint32(buf, profile->flags.audit);
 	sd_write_structend(buf);

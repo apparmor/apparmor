@@ -280,7 +280,8 @@ void post_process_rule_entries(Profile *prof)
 static int profile_add_hat_rules(Profile *prof)
 {
 	/* don't add hat rules if not hat or profile doesn't have hats */
-	if (!(prof->flags.flags & FLAG_HAT) && prof->hat_table.empty())
+	if (!has_profile_flag(prof->flags.flags, profile_flag_t::HAT) &&
+	    prof->hat_table.empty())
 		return 0;
 
 	if (!add_proc_access(prof, CHANGEHAT_PATH))
@@ -292,11 +293,11 @@ static int profile_add_hat_rules(Profile *prof)
 void Profile::post_parse_profile(void)
 {
 	/* semantic check stuff that can't be done in parse, like flags */
-	if (flags.flags & FLAG_INTERRUPTIBLE) {
+	if (has_profile_flag(flags.flags, profile_flag_t::INTERRUPTIBLE)) {
 		if (!features_supports_flag_interruptible) {
 			warn_once(name, "flag interruptible not supported. Ignoring");
 			/* TODO: don't clear in parse data, only at encode */
-			flags.flags &= ~FLAG_INTERRUPTIBLE;
+			flags.flags &= ~profile_flag_t::INTERRUPTIBLE;
 		}
 	}
 	if (flags.signal) {

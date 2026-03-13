@@ -470,7 +470,7 @@ profile:  opt_profile_flag profile_base
 			yyerror(_("Profile names must begin with a '/', namespace or keyword 'profile' or 'hat'."));
 
 		if ($1 == 2)
-			prof->flags.flags |= FLAG_HAT;
+			prof->flags.flags |= profile_flag_t::HAT;
 		$$ = prof;
 	};
 
@@ -496,7 +496,7 @@ hat: hat_start profile_base
 		if ($2->xattrs.list)
 			yyerror("hat profiles can't use xattrs matches");
 
-		prof->flags.flags |= FLAG_HAT;
+		prof->flags.flags |= profile_flag_t::HAT;
 		$$ = prof;
 	};
 
