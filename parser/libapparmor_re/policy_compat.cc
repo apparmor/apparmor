@@ -31,7 +31,8 @@
 
 #include "policy_compat.h"
 #include "../perms.h"
-extern int prompt_compat_mode;
+enum class prompt_compat_t : int;
+extern prompt_compat_t prompt_compat_mode;
 
 
 /* remap old accept table embedded permissions to separate permission table */

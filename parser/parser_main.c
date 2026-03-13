@@ -880,13 +880,13 @@ static int process_arg(int c, char *optarg)
 		break;
 	case ARG_PROMPT_COMPAT:
 		if (strcmp(optarg, "permsv2") == 0) {
-			prompt_compat_mode = PROMPT_COMPAT_PERMSV2;
+			prompt_compat_mode = prompt_compat_t::PERMSV2;
 		} else if (strcmp(optarg, "default") == 0) {
 			prompt_compat_mode = default_prompt_compat_mode();
 		} else if (strcmp(optarg, "ignore") == 0) {
-			prompt_compat_mode = PROMPT_COMPAT_IGNORE;
+			prompt_compat_mode = prompt_compat_t::IGNORE;
 		} else if (strcmp(optarg, "flag") == 0) {
-			prompt_compat_mode = PROMPT_COMPAT_FLAG;
+			prompt_compat_mode = prompt_compat_t::FLAG;
 		} else {
 			PERROR("%s: Invalid --prompt-compat option '%s'\n",
 			       progname, optarg);
@@ -1863,7 +1863,7 @@ static bool get_kernel_features(struct aa_features **features)
 	}
 
 	/* set default prompt_compat_mode to the best that is supported */
-	if (prompt_compat_mode == PROMPT_COMPAT_UNKNOWN) {
+	if (prompt_compat_mode == prompt_compat_t::UNKNOWN) {
 		prompt_compat_mode = default_prompt_compat_mode();
 	}
 	if (!kernel_supports_diff_encode)

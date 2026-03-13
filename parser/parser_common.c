@@ -96,7 +96,7 @@ int kernel_supports_oob = 0;		/* out of band transitions */
 int kernel_supports_promptdev = 0;	/* prompt via audit perms */
 int kernel_supports_permstable32 = 0;	/* extended permissions */
 int kernel_supports_permstable32_version = -1;	/* extended permissions (-1 absent, 1..n version) */
-int prompt_compat_mode = PROMPT_COMPAT_UNKNOWN;
+prompt_compat_t prompt_compat_mode = prompt_compat_t::UNKNOWN;
 int kernel_supports_state32 = 0;	/* 32 bit state table entries */
 int kernel_supports_flags_table = 0;	/* state flags stored in table */
 int features_supports_identity_names = 0;	/* kernel supports identity names */
@@ -183,44 +183,44 @@ void common_warn_once(const char *name, const char *msg, const char **warned_nam
 		exit(1);
 }
 
-bool prompt_compat_mode_supported(int mode)
+bool prompt_compat_mode_supported(prompt_compat_t mode)
 {
-	if (mode == PROMPT_COMPAT_PERMSV2 &&
+	if (mode == prompt_compat_t::PERMSV2 &&
 	    kernel_supports_permstable32_version >= 2)
 		return true;
-	else if (mode == PROMPT_COMPAT_FLAG &&
+	else if (mode == prompt_compat_t::FLAG &&
 		 kernel_supports_permstable32)
 		return true;
-	else if (mode == PROMPT_COMPAT_IGNORE)
+	else if (mode == prompt_compat_t::IGNORE)
 		return true;
 
 	return false;
 }
 
-int default_prompt_compat_mode()
+prompt_compat_t default_prompt_compat_mode()
 {
-	if (prompt_compat_mode_supported(PROMPT_COMPAT_PERMSV2))
-		return PROMPT_COMPAT_PERMSV2;
-	if (prompt_compat_mode_supported(PROMPT_COMPAT_FLAG))
-		return PROMPT_COMPAT_FLAG;
-	if (prompt_compat_mode_supported(PROMPT_COMPAT_IGNORE))
-		return PROMPT_COMPAT_IGNORE;
-	return PROMPT_COMPAT_IGNORE;
+	if (prompt_compat_mode_supported(prompt_compat_t::PERMSV2))
+		return prompt_compat_t::PERMSV2;
+	if (prompt_compat_mode_supported(prompt_compat_t::FLAG))
+		return prompt_compat_t::FLAG;
+	if (prompt_compat_mode_supported(prompt_compat_t::IGNORE))
+		return prompt_compat_t::IGNORE;
+	return prompt_compat_t::IGNORE;
 }
 
 void print_prompt_compat_mode(FILE *f)
 {
 	switch (prompt_compat_mode) {
-	case PROMPT_COMPAT_IGNORE:
+	case prompt_compat_t::IGNORE:
 		fprintf(f, "ignore");
 		break;
-	case PROMPT_COMPAT_FLAG:
+	case prompt_compat_t::FLAG:
 		fprintf(f, "flag");
 		break;
-	case PROMPT_COMPAT_PERMSV2:
+	case prompt_compat_t::PERMSV2:
 		fprintf(f, "permsv2");
 		break;
 	default:
-		fprintf(f, "Unknown prompt compat mode '%d'", prompt_compat_mode);
+		fprintf(f, "Unknown prompt compat mode '%d'", static_cast<int>(prompt_compat_mode));
 	}
 }
