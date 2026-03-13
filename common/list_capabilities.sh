@@ -2,7 +2,7 @@
 
 # =====================
 # generate list of capabilities based on
-# /usr/include/linux/capabilities.h for use in multiple locations in
+# /usr/include/linux/capability.h for use in multiple locations in
 # the source tree
 # =====================
 
