@@ -12,6 +12,8 @@
 # vim: ft=apparmor
 # for https://wiki.dovecot.org/Replication
 
+abi <abi/4.0>,
+
 include <tunables/dovecot>
 include <tunables/global>
 

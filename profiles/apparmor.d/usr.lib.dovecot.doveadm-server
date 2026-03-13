@@ -9,6 +9,8 @@
 # ------------------------------------------------------------------
 # vim: ft=apparmor
 
+abi <abi/4.0>,
+
 include <tunables/global>
 
 profile dovecot-doveadm-server /usr/lib*/dovecot/doveadm-server flags=(attach_disconnected) {

@@ -154,11 +154,12 @@ check-logprof: test-dependencies
 
 .PHONY: check-abstractions.d
 check-abstractions.d:
-	@echo "*** Checking if all abstractions (with a few exceptions) contain 'include if exists <abstractions/*.d>'"
+	@echo "*** Checking if all abstractions (with a few exceptions) contain 'include if exists <abstractions/*.d>' and 'abi <abi/4.0>,'"
 	$(Q)for file in $$(find ${ABSTRACTIONS_SOURCE} ${EXTRAS_ABSTRACTIONS_SOURCE} -maxdepth 1 -type f) ; do \
 		case "$${file}" in */ubuntu-browsers | */ubuntu-helpers) continue ;; esac ; \
 		include="include if exists <abstractions/$$(basename $${file}).d>" ; \
 		grep -q "^  $${include}\$$" $${file} || { echo "$${file} does not contain '$${include}'"; exit 1; } ; \
+		grep -q "^ *abi <abi/4.0>," $${file} || { echo "$${file} does not contain 'abi <abi/4.0>,'"; exit 1; } ; \
 	done
 
 .PHONY: check-tunables.d
@@ -172,9 +173,10 @@ check-tunables.d:
 
 .PHONY: check-local
 check-local:
-	@echo "*** Checking if all profiles contain 'include if exists <local/*>'"
+	@echo "*** Checking if all profiles contain 'include if exists <local/*>' and 'abi <abi/4.0>,'"
 	$(Q)for file in $$(find ${PROFILES_SOURCE} ${EXTRAS_SOURCE} -maxdepth 1 -type f) ; do \
 		case "$${file}" in */README) continue ;; esac ; \
 		include="include if exists <local/$$(basename $${file})>" ; \
 		grep -q "^  *$${include}\$$" $${file} || { echo "$${file} does not contain '$${include}'"; exit 1; } ; \
+		grep -q "^ *abi <abi/4.0>," $${file} || { echo "$${file} does not contain 'abi <abi/4.0>,'"; exit 1; } ; \
 	done
