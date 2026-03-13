@@ -1122,8 +1122,9 @@ int main(int argc, char **argv)
 	 * have policy associated.
 	 */
 	ret = get_profiles(fp, &profiles, &nprofiles);
-	if (ret == AA_EXIT_NO_POLICY) {
+	if (ret == AA_EXIT_NO_POLICY && !opt_json) {
 		eprintf(_("No policy loaded into the kernel\n"));
+		goto out;
 	} else if (ret != 0 && !opt_json) {
 		eprintf(_("Failed to retrieve profiles from kernel: %d....\n"), ret);
 		goto out;
