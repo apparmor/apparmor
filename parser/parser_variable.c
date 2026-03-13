@@ -153,7 +153,7 @@ int process_profile_variables(Profile *prof)
 	/* escape profile name elements that could be interpreted as
 	 * regular expressions.
 	 */
-	error = symtab::add_var(PROFILE_NAME_VARIABLE, escape_re(prof->get_name(false)).c_str());
+	error = global_symtab.add_var(PROFILE_NAME_VARIABLE, escape_re(prof->get_name(false)).c_str());
 	if (error)
 		goto out;
 
@@ -164,13 +164,13 @@ int process_profile_variables(Profile *prof)
 		 * the attachment.
 		 */
 		/* need to take into account alias, but not yet */
-		saved_attach_path = symtab::delete_var(PROFILE_ATTACH_VAR);
-		error = symtab::add_var(PROFILE_ATTACH_VAR, (const char*) prof->attachment);
+		saved_attach_path = global_symtab.delete_var(PROFILE_ATTACH_VAR);
+		error = global_symtab.add_var(PROFILE_ATTACH_VAR, (const char*) prof->attachment);
 		if (error)
 			goto cleanup_name;
 		/* update to use kernel vars if available */
-		saved_exec_path = symtab::delete_var(PROFILE_EXEC_VAR);
-		error = symtab::add_var(PROFILE_EXEC_VAR, (const char*) prof->attachment);
+		saved_exec_path = global_symtab.delete_var(PROFILE_EXEC_VAR);
+		error = global_symtab.add_var(PROFILE_EXEC_VAR, (const char*) prof->attachment);
 		if (error)
 			goto cleanup_attach;
 	}
@@ -186,20 +186,20 @@ cleanup:
 	 * don't support that yet.
 	 */
 	if (prof->attachment) {
-		tmp = symtab::delete_var(PROFILE_EXEC_VAR);
+		tmp = global_symtab.delete_var(PROFILE_EXEC_VAR);
 		delete tmp;
 		if (saved_exec_path)
-			symtab::add_var(*saved_exec_path);
+			global_symtab.add_var(*saved_exec_path);
 	}
 cleanup_attach:
 	if (prof->attachment) {
-		tmp = symtab::delete_var(PROFILE_ATTACH_VAR);
+		tmp = global_symtab.delete_var(PROFILE_ATTACH_VAR);
 		delete tmp;
 		if (saved_attach_path)
-			symtab::add_var(*saved_attach_path);
+			global_symtab.add_var(*saved_attach_path);
 	}
 cleanup_name:
-	tmp = symtab::delete_var(PROFILE_NAME_VARIABLE);
+	tmp = global_symtab.delete_var(PROFILE_NAME_VARIABLE);
 	delete tmp;
 	delete saved_exec_path;
 	delete saved_attach_path;

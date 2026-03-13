@@ -164,4 +164,4 @@ out:
 	return var;
 }
 
-std::unordered_map<std::string, variable> symtab::my_symtab;
+symtab global_symtab;

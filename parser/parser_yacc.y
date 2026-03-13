@@ -522,7 +522,7 @@ varassign:	TOK_SET_VAR assign_op valuelist
 	{
 		int err;
 		if ($2 == TOK_ADD_ASSIGN) {
-			err = symtab::add_set_value($1, $3);
+			err = global_symtab.add_set_value($1, $3);
 			if (err) {
 				yyerror(_("variable %s was not previously declared, but is being assigned additional values"), $1);
 			}
@@ -530,11 +530,11 @@ varassign:	TOK_SET_VAR assign_op valuelist
 			autofree char *var_name = variable::process_var($1);
 			if (!var_name)
 				yyerror(_("invalid variable name '%s'"), $1);
-			variable *old = symtab::delete_var(var_name);
+			variable *old = global_symtab.delete_var(var_name);
 			delete old;
-			err = symtab::add_var($1, $3);
+			err = global_symtab.add_var($1, $3);
 		} else { /* TOK_EQUALS | TOK_COND_ASSIGN */
-			err = symtab::add_var($1, $3);
+			err = global_symtab.add_var($1, $3);
 			if ($2 == TOK_EQUALS && err) {
 				yyerror(_("variable %s was previously declared"), $1);
 				/* FIXME: it'd be handy to report the previous location */
@@ -554,10 +554,10 @@ varassign:	TOK_BOOL_VAR assign_op expr
 			autofree char *var_name = variable::process_var($1);
 			if (!var_name)
 				yyerror(_("invalid variable name '%s'"), $1);
-			variable *old = symtab::delete_var(var_name);
+			variable *old = global_symtab.delete_var(var_name);
 			delete old;
 		}
-		err = symtab::add_var($1, boolean);
+		err = global_symtab.add_var($1, boolean);
 		if ($2 == TOK_EQUALS && err) {
 			yyerror(_("variable %s was previously declared"), $1);
 			/* FIXME: it'd be handy to report the previous location */

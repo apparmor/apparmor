@@ -103,12 +103,13 @@ SRCS = parser_common.c parser_include.c parser_interface.c parser_lex.c \
        parser_alias.c common_optarg.c lib.c network.cc \
        mount.cc dbus.cc profile.cc rule.cc signal.cc ptrace.cc \
        af_rule.cc af_unix.cc policy_cache.c default_features.c userns.cc \
-       mqueue.cc io_uring.cc all_rule.cc cond_expr.cc variable.cc symtab.cc
+       mqueue.cc io_uring.cc all_rule.cc cond_expr.cc variable.cc symtab.cc \
+       profilelist.cc
 STATIC_HDRS = af_rule.h af_unix.h capability.h common_optarg.h dbus.h \
        file_cache.h immunix.h lib.h mount.h network.h parser.h \
        parser_include.h parser_version.h policy_cache.h policydb.h \
        profile.h ptrace.h rule.h signal.h userns.h mqueue.h io_uring.h \
-       common_flags.h all_rule.h cond_expr.h variable.h symtab.h
+       common_flags.h all_rule.h cond_expr.h variable.h symtab.h profilelist.h
 
 SPECIAL_HDRS = parser_yacc.h unit_test.h base_cap_names.h
 GENERATED_HDRS = af_names.h generated_af_names.h \
@@ -323,6 +324,9 @@ af_unix.o: af_unix.cc $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
 profile.o: profile.cc $(HDRS)
+	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+
+profilelist.o: profilelist.cc $(HDRS)
 	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
 
 rule.o: rule.cc $(HDRS)
