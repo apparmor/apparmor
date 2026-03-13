@@ -690,9 +690,9 @@ opt_priority: { $$ = 0; }
 opt_audit_flag: { /* nothing */ $$ = audit_t::UNSPECIFIED; }
 	| TOK_AUDIT { $$ = audit_t::FORCE; };
 
-opt_owner_flag: { /* nothing */ $$ = OWNER_UNSPECIFIED; }
-	| TOK_OWNER { $$ = OWNER_SPECIFIED; };
-	| TOK_OTHER { $$ = OWNER_NOT; };
+opt_owner_flag: { /* nothing */ $$ = owner_t::UNSPECIFIED; }
+	| TOK_OWNER { $$ = owner_t::SPECIFIED; };
+	| TOK_OTHER { $$ = owner_t::NOT; };
 
 opt_rule_mode: { /* nothing */ $$ = RULE_UNSPECIFIED; }
 	| TOK_ALLOW { $$ = RULE_ALLOW; }
@@ -748,7 +748,7 @@ rules: rules opt_prefix block
 		       $2.audit == audit_t::FORCE ? "audit " : "",
 		       $2.rule_mode == RULE_DENY ? "deny " : "",
 		       $2.rule_mode == RULE_PROMPT ? "prompt " : "",
-		       $2.owner == OWNER_SPECIFIED ? "owner " : "");
+		       $2.owner == owner_t::SPECIFIED ? "owner " : "");
 		list_for_each_safe($3->entries, entry, tmp) {
 			const char *error;
 			entry->next = NULL;
@@ -814,7 +814,7 @@ rules:	rules opt_prefix change_profile
 		PDEBUG("rules change_profile: (%s)\n", $3->name);
 		if (!$3)
 			yyerror(_("Assert: `change_profile' returned NULL."));
-		if ($2.owner != OWNER_UNSPECIFIED)
+		if ($2.owner != owner_t::UNSPECIFIED)
 			yyerror(_("owner conditional not allowed on unix rules"));
 		if (($2.rule_mode == RULE_DENY) && $2.audit == audit_t::FORCE) {
 			$3->rule_mode = RULE_DENY;
@@ -830,7 +830,7 @@ rules:	rules opt_prefix change_profile
 
 rules:  rules opt_prefix capability
 	{
-		if ($2.owner != OWNER_UNSPECIFIED)
+		if ($2.owner != owner_t::UNSPECIFIED)
 			yyerror(_("owner conditional not allowed on capability rules"));
 
 		if ($2.rule_mode == RULE_DENY && $2.audit == audit_t::FORCE) {

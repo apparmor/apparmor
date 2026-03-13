@@ -45,7 +45,7 @@ public:
 	rule_result_t gen_policy_re(Profile &prof) override;
 
 	bool valid_prefix(const prefixes &p, const char *&error) override {
-		if (p.owner != OWNER_UNSPECIFIED) {
+		if (p.owner != owner_t::UNSPECIFIED) {
 			error = "owner prefix not allowed on ptrace rules";
 			return false;
 		}

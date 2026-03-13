@@ -47,7 +47,7 @@ public:
 		free(peer_label);
 	};
 	bool valid_prefix(const prefixes &p, const char *&error) override {
-		if (p.owner != OWNER_UNSPECIFIED) {
+		if (p.owner != owner_t::UNSPECIFIED) {
 			error = "owner prefix not allowed on signal rules";
 			return false;
 		}
