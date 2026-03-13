@@ -309,7 +309,7 @@ class capability_lookup {
 		if (map_entry == this->int_cap_map.end()) {
 			return false;
 		} else {
-			return map_entry->second.flags & CAPFLAG_KERNEL_FEATURE;
+			return (map_entry->second.flags & capability_flags::KERNEL_FEATURE) != capability_flags::CLEAR;
 		}
 	}
 
@@ -332,9 +332,9 @@ class capability_lookup {
 				/* TODO: make warn to error config */
 				return add_cap_result::ALREADY_EXISTS;
 			}
-			if (ent->flags & flag)
+			if ((ent->flags & flag) != capability_flags::CLEAR)
 				return add_cap_result::ALREADY_EXISTS;
-			ent->flags = (capability_flags) (ent->flags | flag);
+			ent->flags |= flag;
 			return add_cap_result::FLAG_ADDED;
 		} else {
 			struct capability_table new_entry;
@@ -361,7 +361,7 @@ class capability_lookup {
 	{
 		for (auto it = this->cap_table.begin(); it != this->cap_table.end(); it++) {
 			PDEBUG("Clearing capability flag for capability \"%s\"\n",  it->name);
-			it->flags = (capability_flags) (it->flags & ~flags);
+			it->flags &= ~flags;
 		}
 	}
 };

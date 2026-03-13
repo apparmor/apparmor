@@ -376,7 +376,7 @@ af_names.h: generated_af_names.h base_af_names.h
 	fi
 
 generated_cap_names.h: /usr/include/linux/capability.h
-	../common/list_capabilities.sh | LC_ALL=C sed -n -e "s/[ \\t]\\?CAP_\\([A-Z0-9_]\\+\\)/\{\"\\L\\1\", \\UCAP_\\1, NO_BACKMAP_CAP, CAPFLAG_BASE_FEATURE\},\\n/pg" > $@
+	../common/list_capabilities.sh | LC_ALL=C sed -n -e "s/[ \\t]\\?CAP_\\([A-Z0-9_]\\+\\)/\{\"\\L\\1\\E\", CAP_\\1, NO_BACKMAP_CAP, capability_flags::BASE_FEATURE\},\\n/pg" > $@
 
 cap_names.h: generated_cap_names.h base_cap_names.h
 	@LC_ALL=C sed -e 's/\([^,]*,[^,]*,\) CAP_[A-Z0-9_]\+,/\1 NO_BACKMAP_CAP,/g' base_cap_names.h | diff -u - generated_cap_names.h | grep '^\+[^+]' ; \

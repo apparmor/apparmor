@@ -360,7 +360,7 @@ list:	 preamble
 			}
 		}
 		if (!add_cap_feature_mask(policy_features,
-					  CAPFLAG_POLICY_FEATURE))
+					  capability_flags::POLICY_FEATURE))
 			yyerror(_("Failed to add policy capabilities to known capabilities set"));
 		set_supported_features();
 
