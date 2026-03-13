@@ -44,7 +44,14 @@
 #define AA_CLASS_DISPLAY_LSM	20
 #define AA_CLASS_NS		21
 #define AA_CLASS_IO_URING	22
-
+/* 23 unallocated */
+#define AA_CLASS_PGID		24
+#define AA_CLASS_SID		25
+#define AA_CLASS_SCHED		26
+#define AA_CLASS_IOPRI		27
+#define AA_CLASS_PRCTL		28
+/* 29 unallocated */
+#define AA_CLASS_NETV9_SKB	30
 #define AA_CLASS_X		31
 /* defined in libapparmor's apparmor.h #define AA_CLASS_DBUS 32 */
 

@@ -44,14 +44,14 @@ const char *aa_class_table[] = {
 	"userns",
 	"io_uring",
 	"unknown23",
-	"unknown24",
-	"unknown25",
-	"unknown26",
-	"unknown27",
-	"unknown28",
+	"pgid",
+	"sid",
+	"scheduler",
+	"iopriority",
+	"prctl",
 	"unknown29",
-	"unknown30",
-	"X",
+	"netv9_skb",
+	"X"
 	"dbus",
 	NULL
 };
