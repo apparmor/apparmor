@@ -578,8 +578,8 @@ static perm32_t parse_sub_perms(const char *str_perms, const char *perms_desc aa
 		perm32_t tperms = 0;
 
 reeval:
-		switch (thisc) {
-		case COD_READ_CHAR:
+		switch (static_cast<cod_t>(thisc)) {
+		case cod_t::READ:
 			if (read_implies_exec) {
 				PDEBUG("Parsing perms: found %s READ imply X\n", perms_desc);
 				perms |= AA_MAY_READ | AA_OLD_EXEC_MMAP;
@@ -589,31 +589,31 @@ reeval:
 			}
 			break;
 
-		case COD_WRITE_CHAR:
+		case cod_t::WRITE:
 			PDEBUG("Parsing perms: found %s WRITE\n", perms_desc);
 			if ((perms & AA_MAY_APPEND) && !(perms & AA_MAY_WRITE))
 				yyerror(_("Conflict 'a' and 'w' perms are mutually exclusive."));
 			perms |= AA_MAY_WRITE | AA_MAY_APPEND;
 			break;
 
-		case COD_APPEND_CHAR:
+		case cod_t::APPEND:
 			PDEBUG("Parsing perms: found %s APPEND\n", perms_desc);
 			if (perms & AA_MAY_WRITE)
 				yyerror(_("Conflict 'a' and 'w' perms are mutually exclusive."));
 			perms |= AA_MAY_APPEND;
 			break;
 
-		case COD_LINK_CHAR:
+		case cod_t::LINK:
 			PDEBUG("Parsing perms: found %s LINK\n", perms_desc);
 			perms |= AA_OLD_MAY_LINK;
 			break;
 
-		case COD_LOCK_CHAR:
+		case cod_t::LOCK:
 			PDEBUG("Parsing perms: found %s LOCK\n", perms_desc);
 			perms |= AA_OLD_MAY_LOCK;
 			break;
 
-		case COD_INHERIT_CHAR:
+		case cod_t::INHERIT:
 			PDEBUG("Parsing perms: found INHERIT\n");
 			if (perms & AA_EXEC_MODIFIERS) {
 				yyerror(_("Exec qualifier 'i' invalid, conflicting qualifier already specified"));
@@ -625,13 +625,13 @@ reeval:
 			}
 			break;
 
-		case COD_UNSAFE_UNCONFINED_CHAR:
+		case cod_t::UNSAFE_UNCONFINED:
 			tperms = AA_EXEC_UNSAFE;
 			pwarn(WARN_DANGEROUS, _("Unconfined exec qualifier (%c%c) allows some dangerous environment variables "
 				"to be passed to the unconfined process; 'man 5 apparmor.d' for details.\n"),
-			      COD_UNSAFE_UNCONFINED_CHAR, COD_EXEC_CHAR);
+			      cod_char_value(cod_t::UNSAFE_UNCONFINED), cod_char_value(cod_t::EXEC));
 			/* fall through */
-		case COD_UNCONFINED_CHAR:
+		case cod_t::UNCONFINED:
 			tperms |= AA_EXEC_UNCONFINED | AA_MAY_EXEC;
 			PDEBUG("Parsing perms: found UNCONFINED\n");
 			if (IS_DIFF_QUAL(perms, tperms)) {
@@ -646,20 +646,20 @@ reeval:
 			tperms = 0;
 			break;
 
-		case COD_UNSAFE_PROFILE_CHAR:
-		case COD_UNSAFE_LOCAL_CHAR:
+		case cod_t::UNSAFE_PROFILE:
+		case cod_t::UNSAFE_LOCAL:
 			tperms = AA_EXEC_UNSAFE;
 			/* fall through */
-		case COD_PROFILE_CHAR:
-		case COD_LOCAL_CHAR:
-			if (tolower(thisc) == COD_UNSAFE_PROFILE_CHAR)
+		case cod_t::PROFILE:
+		case cod_t::LOCAL:
+			if (tolower(thisc) == cod_char_value(cod_t::UNSAFE_PROFILE))
 				tperms |= AA_EXEC_PROFILE | AA_MAY_EXEC;
 			else
 			{
 				tperms |= AA_EXEC_LOCAL | AA_MAY_EXEC;
 			}
 			PDEBUG("Parsing perms: found PROFILE\n");
-			if (tolower(next) == COD_INHERIT_CHAR) {
+			if (tolower(next) == cod_char_value(cod_t::INHERIT)) {
 				tperms |= AA_EXEC_INHERIT;
 				if (IS_DIFF_QUAL(perms, tperms)) {
 					yyerror(_("Exec qualifier '%c%c' invalid, conflicting qualifier already specified"), thisc, next);
@@ -667,7 +667,7 @@ reeval:
 					perms |= tperms;
 					p += 2;		/* skip x */
 				}
-			} else if (tolower(next) == COD_UNSAFE_UNCONFINED_CHAR) {
+			} else if (tolower(next) == cod_char_value(cod_t::UNSAFE_UNCONFINED)) {
 				tperms |= AA_EXEC_PUX;
 				if (IS_DIFF_QUAL(perms, tperms)) {
 					yyerror(_("Exec qualifier '%c%c' invalid, conflicting qualifier already specified"), thisc, next);
@@ -687,12 +687,12 @@ reeval:
 			tperms = 0;
 			break;
 
-		case COD_MMAP_CHAR:
+		case cod_t::MMAP:
 			PDEBUG("Parsing perms: found %s MMAP\n", perms_desc);
 			perms |= AA_OLD_EXEC_MMAP;
 			break;
 
-		case COD_EXEC_CHAR:
+		case cod_t::EXEC:
 			/* thisc is valid for deny rules, and named transitions
 			 * but invalid for regular x transitions
 			 * sort it out later.
@@ -704,14 +704,14 @@ reeval:
 
 		default:
 			lower = tolower(thisc);
-			switch (lower) {
-			case COD_READ_CHAR:
-			case COD_WRITE_CHAR:
-			case COD_APPEND_CHAR:
-			case COD_LINK_CHAR:
-			case COD_INHERIT_CHAR:
-			case COD_MMAP_CHAR:
-			case COD_EXEC_CHAR:
+			switch (static_cast<cod_t>(lower)) {
+			case cod_t::READ:
+			case cod_t::WRITE:
+			case cod_t::APPEND:
+			case cod_t::LINK:
+			case cod_t::INHERIT:
+			case cod_t::MMAP:
+			case cod_t::EXEC:
 				PDEBUG("Parsing perms: found invalid upper case char %c\n", thisc);
 				warn_uppercase();
 				thisc = lower;
@@ -760,13 +760,13 @@ static int parse_X_sub_perms(const char *X, const char *str_perms, perm32_t *res
 		char lower;
 
 reeval:
-		switch (current) {
-		case COD_READ_CHAR:
+		switch (static_cast<cod_t>(current)) {
+		case cod_t::READ:
 			PDEBUG("Parsing %s perms: found %s READ\n", X, perms_desc);
 			perms |= AA_DBUS_RECEIVE;
 			break;
 
-		case COD_WRITE_CHAR:
+		case cod_t::WRITE:
 			PDEBUG("Parsing %s perms: found %s WRITE\n", X,
 			       perms_desc);
 			perms |= AA_DBUS_SEND;
@@ -776,9 +776,9 @@ reeval:
 
 		default:
 			lower = tolower(current);
-			switch (lower) {
-			case COD_READ_CHAR:
-			case COD_WRITE_CHAR:
+			switch (static_cast<cod_t>(lower)) {
+			case cod_t::READ:
+			case cod_t::WRITE:
 				PDEBUG("Parsing %s perms: found invalid upper case char %c\n",
 				       X, current);
 				warn_uppercase();
@@ -1040,19 +1040,19 @@ void free_cod_entries(struct cod_entry *list)
 static void debug_base_perm_mask(int mask)
 {
 	if (HAS_MAY_READ(mask))
-		printf("%c", COD_READ_CHAR);
+		printf("%c", cod_char_value(cod_t::READ));
 	if (HAS_MAY_WRITE(mask))
-		printf("%c", COD_WRITE_CHAR);
+		printf("%c", cod_char_value(cod_t::WRITE));
 	if (HAS_MAY_APPEND(mask))
-		printf("%c", COD_APPEND_CHAR);
+		printf("%c", cod_char_value(cod_t::APPEND));
 	if (HAS_MAY_LINK(mask))
-		printf("%c", COD_LINK_CHAR);
+		printf("%c", cod_char_value(cod_t::LINK));
 	if (HAS_MAY_LOCK(mask))
-		printf("%c", COD_LOCK_CHAR);
+		printf("%c", cod_char_value(cod_t::LOCK));
 	if (HAS_EXEC_MMAP(mask))
-		printf("%c", COD_MMAP_CHAR);
+		printf("%c", cod_char_value(cod_t::MMAP));
 	if (HAS_MAY_EXEC(mask))
-		printf("%c", COD_EXEC_CHAR);
+		printf("%c", cod_char_value(cod_t::EXEC));
 }
 
 void debug_cod_entries(struct cod_entry *list)
