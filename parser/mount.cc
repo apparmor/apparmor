@@ -521,7 +521,7 @@ mnt_rule::mnt_rule(struct cond_entry *src_conds, char *device_p,
 				process_one_option(entry, tmpflags,
 						   tmpinv_flags);
 				/* throw away tmpinv_flags, only needed in
-				 * consistancy check
+				 * consistency check
 				 */
 				if (perms_p & AA_DUMMY_REMOUNT)
 					tmpflags |= MS_REMOUNT;
