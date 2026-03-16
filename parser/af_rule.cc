@@ -34,10 +34,10 @@
 
 /* need to move this table to stl */
 static struct supported_cond supported_conds[] = {
-	{ "type", true, false, false, cond_side::local_cond },
-	{ "protocol", false, false, false, cond_side::local_cond },
-	{ "label", true, false, false, cond_side::peer_cond },
-	{ NULL, false, false, false, cond_side::local_cond },	/* eol sentinel */
+	{ "type", true, cond_comp::EQ, false, cond_side::local_cond },
+	{ "protocol", false, cond_comp::EQ, false, cond_side::local_cond },
+	{ "label", true, cond_comp::EQ, false, cond_side::peer_cond },
+	{ NULL, false, cond_comp::NONE, false, cond_side::local_cond },	/* eol sentinel */
 };
 
 bool af_rule::cond_check(struct supported_cond *conds, struct cond_entry *ent,
@@ -53,8 +53,8 @@ bool af_rule::cond_check(struct supported_cond *conds, struct cond_entry *ent,
 			yyerror("%s rule: '%s' conditional is only valid in the peer expression\n", rname, ent->name);
 		if (peer && (i->side == cond_side::local_cond))
 			yyerror("%s rule: '%s' conditional is not allowed in the peer expression\n", rname, ent->name);
-		if (!ent->eq && !i->in)
-			yyerror("%s rule: keyword 'in' is not allowed in '%s' socket conditional\n", rname, ent->name);
+		if (ent->comp != i->supported_conds)
+			yyerror("%s rule: operator used is not allowed in '%s' socket conditional\n", rname, ent->name);
 		if (list_len(ent->vals) > 1 && !i->multivalue)
 			yyerror("%s rule: conditional '%s' only supports a single value\n", rname, ent->name);
 		return true;

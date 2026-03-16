@@ -404,9 +404,9 @@ void network_rule::move_conditionals(struct cond_entry *conds, ip_conds &ip_cond
 	struct cond_entry *cond_ent;
 
 	list_for_each(conds, cond_ent) {
-		/* for now disallow keyword 'in' (list) */
-		if (!cond_ent->eq)
-			yyerror("keyword \"in\" is not allowed in network rules\n");
+		/* for now allow only '=' */
+		if (cond_ent->comp != cond_comp::EQ)
+			yyerror("only \"=\" allowed in conditions of network rules\n");
 		if (strcmp(cond_ent->name, "ip") == 0) {
 			move_conditional_value("network", &ip_cond.sip, cond_ent);
 			if (!parse_address(ip_cond))

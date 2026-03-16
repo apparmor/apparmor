@@ -116,9 +116,15 @@ struct value_list {
 
 int cmp_value_list(value_list *lhs, value_list *rhs);
 
+enum class cond_comp {
+	NONE,
+	EQ,
+	IN,
+};
+
 struct cond_entry {
 	char *name;
-	int eq;			/* where equals was used in specifying list */
+	cond_comp comp; /* '=' or 'in' was used in specifying list */
 	struct value_list *vals;
 
 	struct cond_entry *next;
@@ -449,7 +455,7 @@ extern int is_blacklisted(const char *name, const char *path);
 extern struct value_list *new_value_list(char *value);
 extern void free_value_list(struct value_list *list);
 extern void print_value_list(struct value_list *list, std::ostream &os);
-extern struct cond_entry *new_cond_entry(char *name, int eq, struct value_list *list);
+extern struct cond_entry *new_cond_entry(char *name, cond_comp comp, struct value_list *list);
 extern void move_conditional_value(const char *rulename, char **dst_ptr,
 				   struct cond_entry *cond_ent);
 extern void free_cond_entry(struct cond_entry *ent);

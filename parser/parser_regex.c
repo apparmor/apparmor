@@ -450,7 +450,7 @@ const char *local_name(const char *name)
  */
 char *get_xattr_value(struct cond_entry *entry)
 {
-	if (!entry->eq)
+	if (entry->comp != cond_comp::EQ)
 		return NULL;
 	if (!entry->vals)
 		return NULL;
