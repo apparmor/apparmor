@@ -120,6 +120,7 @@ enum class cond_comp {
 	NONE,
 	EQ,
 	IN,
+	SET,
 };
 
 struct cond_entry {
