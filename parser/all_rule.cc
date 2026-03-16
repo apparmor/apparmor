@@ -117,7 +117,7 @@ void all_rule::add_implied_rules(Profile &prof)
 		prefixes ix_prefix;
 
 		// TODO:
-		// need a better way to make sure the prefix is intialized
+		// need a better way to make sure the prefix is initialized
 		// without a constructor or copy constructor
 		ix_prefix.priority = prefix->priority -1;
 		ix_prefix.audit = prefix->audit;
