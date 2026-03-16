@@ -16,7 +16,7 @@
  *   Ltd.
  */
 /*
- * This is a set of functions to provide convertion from old style permission
+ * This is a set of functions to provide conversion from old style permission
  * mappings, to new style kernel mappings. It is based on the kernel to
  * as the kernel needs this for backwards compatibility. This allows the
  * userspace to convert to the new permission mapping without reworking
@@ -209,7 +209,7 @@ struct aa_perms compute_perms_entry(uint32_t accept1, uint32_t accept2,
 		perms.allow |= AA_CONT_MATCH;
 
 	/*
-	 * This mapping is convulated due to history.
+	 * This mapping is convoluted due to history.
 	 * v1-v4: only file perms, which are handled by compute_fperms
 	 * v5: added policydb which dropped user conditional to gain new
 	 *     perm bits, but had to map around the xbits because the
