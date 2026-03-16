@@ -1320,6 +1320,20 @@ cond: TOK_CONDID TOK_EQUALS TOK_VALUE
 		$$ = ent;
 	}
 
+cond: TOK_CONDID TOK_OVERRIDE_ASSIGN TOK_VALUE
+	{
+		struct cond_entry *ent;
+		struct value_list *value = new_value_list($3);
+		if (!value)
+			yyerror(_("Memory allocation error."));
+		ent = new_cond_entry($1, cond_comp::SET, value);
+		if (!ent) {
+			free_value_list(value);
+			yyerror(_("Memory allocation error."));
+		}
+		$$ = ent;
+	}
+
 cond: TOK_CONDID TOK_EQUALS TOK_OPENPAREN valuelist TOK_CLOSEPAREN
 	{
 		struct cond_entry *ent = new_cond_entry($1, cond_comp::EQ, $4);
@@ -1333,6 +1347,15 @@ cond: TOK_CONDID TOK_EQUALS TOK_OPENPAREN valuelist TOK_CLOSEPAREN
 cond: TOK_CONDID TOK_IN TOK_OPENPAREN valuelist TOK_CLOSEPAREN
 	{
 		struct cond_entry *ent = new_cond_entry($1, cond_comp::IN, $4);
+
+		if (!ent)
+			yyerror(_("Memory allocation error."));
+		$$ = ent;
+	}
+
+cond: TOK_CONDID TOK_OVERRIDE_ASSIGN TOK_OPENPAREN valuelist TOK_CLOSEPAREN
+	{
+		struct cond_entry *ent = new_cond_entry($1, cond_comp::SET, $4);
 
 		if (!ent)
 			yyerror(_("Memory allocation error."));
