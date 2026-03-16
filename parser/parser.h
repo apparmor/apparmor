@@ -164,11 +164,6 @@ struct alt_name {
 	struct alt_name *next;
 };
 
-struct sd_hat {
-	char *hat_name;
-	unsigned int hat_magic;
-};
-
 struct var_string {
 	char *prefix;
 	char *var;
