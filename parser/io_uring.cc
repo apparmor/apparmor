@@ -30,9 +30,9 @@ void io_uring_rule::move_conditionals(struct cond_entry *conds)
 	struct cond_entry *cond_ent;
 
 	list_for_each(conds, cond_ent) {
-		/* disallow keyword 'in' (list) */
-		if (!cond_ent->eq)
-			yyerror("keyword \"in\" is not allowed in io_uring rules\n");
+		/* for now allow only '=' */
+		if (cond_ent->comp != cond_comp::EQ)
+			yyerror("only \"=\" allowed in conditions of io_uring rules\n");
 
 		if (list_len(cond_ent->vals) > 1)
 			yyerror("io_uring conditional \"%s\" only supports a single value\n",
