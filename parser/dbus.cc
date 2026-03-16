@@ -40,9 +40,9 @@ void dbus_rule::move_conditionals(struct cond_entry *conds)
 	struct cond_entry *cond_ent;
 
 	list_for_each(conds, cond_ent) {
-		/* for now disallow keyword 'in' (list) */
-		if (!cond_ent->eq)
-			yyerror("keyword \"in\" is not allowed in dbus rules\n");
+		/* for now allow only '=' */
+		if (cond_ent->comp != cond_comp::EQ)
+			yyerror("only \"=\" allowed in conditions of dbus rules\n");
 		if (list_len(cond_ent->vals) > 1)
 			yyerror("dbus conditional \"%s\" only supports a single value\n",
 				cond_ent->name);

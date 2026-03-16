@@ -405,6 +405,9 @@ static struct value_list *extract_fstype(struct cond_entry **conds)
 	struct cond_entry *entry, *tmp, *prev = NULL;
 
 	list_for_each_safe(*conds, entry, tmp) {
+		if (entry->comp != cond_comp::EQ && entry->comp != cond_comp::IN)
+			yyerror("only \"=\" and 'in' allowed in conditions of mount rules\n");
+
 		if (strcmp(entry->name, "fstype") == 0 ||
 		    strcmp(entry->name, "vfstype") == 0) {
 			PDEBUG("  extracting fstype\n");
@@ -420,17 +423,20 @@ static struct value_list *extract_fstype(struct cond_entry **conds)
 	return list;
 }
 
-static struct cond_entry *extract_options(struct cond_entry **conds, int eq)
+static struct cond_entry *extract_options(struct cond_entry **conds, cond_comp comp)
 {
 	struct cond_entry *list = NULL, *entry, *tmp, *prev = NULL;
 
 	list_for_each_safe(*conds, entry, tmp) {
+		if (entry->comp != cond_comp::EQ && entry->comp != cond_comp::IN)
+			yyerror("only \"=\" and 'in' allowed in conditions of mount rules\n");
+
 		if ((strcmp(entry->name, "options") == 0 ||
 		     strcmp(entry->name, "option") == 0) &&
-		    entry->eq == eq) {
+		    entry->comp == comp) {
 			list_remove_at(*conds, prev, entry);
-			PDEBUG("  extracting %s %s\n", entry->name, entry->eq ? 
-"=" : "in");
+			PDEBUG("  extracting %s %s\n",
+			       entry->name, entry->comp == cond_comp::EQ ? "=" : " in ");
 			list_append(entry, list);
 			list = entry;
 		} else
@@ -445,7 +451,8 @@ static void perror_conds(const char *rule, struct cond_entry *conds)
 	struct cond_entry *entry;
 
 	list_for_each(conds, entry) {
-		PERROR(  "unsupported %s condition '%s%s(...)'\n", rule, entry->name, entry->eq ? "=" : " in ");
+		PERROR(  "unsupported %s condition '%s%s(...)'\n",
+			 rule, entry->name, entry->comp == cond_comp::EQ ? "=" : " in ");
 	}
 }
 
@@ -469,7 +476,8 @@ static void process_one_option(struct cond_entry *&opts, unsigned int &flags,
 	entry->vals = NULL;
 	/* fail if there are any unknown optional flags */
 	if (opts) {
-		PERROR("  unsupported multiple 'mount options %s(...)'\n", entry->eq ? "=" : " in ");
+		PERROR("  unsupported multiple 'mount options %s(...)'\n",
+		       entry->comp == cond_comp::EQ ? "=" : " in ");
 		exit(1);
 	}
 	free_cond_entry(entry);
@@ -493,7 +501,7 @@ mnt_rule::mnt_rule(struct cond_entry *src_conds, char *device_p,
 
 	if (src_conds) {
 		/* move options in () to local list */
-		struct cond_entry *opts_in = extract_options(&src_conds, 0);
+		struct cond_entry *opts_in = extract_options(&src_conds, cond_comp::IN);
 
 		if (opts_in) {
 			unsigned int tmpflags = 0, tmpinv_flags = 0;
@@ -512,7 +520,7 @@ mnt_rule::mnt_rule(struct cond_entry *src_conds, char *device_p,
 		}
 
 		/* move options=() to opts list */
-		struct cond_entry *opts_eq = extract_options(&src_conds, 1);
+		struct cond_entry *opts_eq = extract_options(&src_conds, cond_comp::EQ);
 		if (opts_eq) {
 			unsigned int tmpflags = 0, tmpinv_flags = 0;
 			struct cond_entry *entry;
