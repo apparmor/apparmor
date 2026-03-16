@@ -236,7 +236,7 @@ public:
 };
 
 /*
- * ProtoState - NodeSet and ancillery information used to create a state
+ * ProtoState - NodeSet and ancillary information used to create a state
  */
 class ProtoState {
 public:
