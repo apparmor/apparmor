@@ -109,7 +109,7 @@ public:
 	virtual void add_implied_rules(Profile &prof __attribute__ ((unused))) { };
 
 	// currently only called post parse
-	// needs to change to being interatively called during parse
+	// needs to change to being iteratively called during parse
 	// to support expansion in include names and profile names
 	virtual int expand_variables(void) = 0;
 
@@ -170,7 +170,7 @@ enum class owner_t { UNSPECIFIED, SPECIFIED, NOT };
  * because it will break bison, and we would need to transition to
  * the C++ bison bindings. Instead get around this by using a
  * special rule class that inherits prefixes and handles the
- * contruction
+ * construction
  */
 class prefixes {
 public:
@@ -391,9 +391,9 @@ public:
 
 	/* inherit cmp */
 
-	/* we do not inherit operator< from so class_rules children
-	 * can in herit the generic one that redirects to cmp()
-	 * that does get overriden
+	/* we do not inherit operator< so class_rule children
+	 * can inherit the generic one that redirects to cmp()
+	 * that does get overridden
 	 */
 	bool operator<(rule_t const &rhs) const override {
 		return cmp(rhs) < 0;
@@ -432,7 +432,7 @@ public:
 		return true;
 	};
 
-	/* defaut perms, override/mask off if none default used */
+	/* default perms, override/mask off if none default used */
 	ostream &dump(ostream &os) override {
 		class_rule_t::dump(os);
 
@@ -464,7 +464,7 @@ public:
 
 	// inherit default merge which does dedup
 
-	/* defaut perms, override/mask off if none default used */
+	/* default perms, override/mask off if none default used */
 	ostream &dump(ostream &os) override {
 		class_rule_t::dump(os);
 
