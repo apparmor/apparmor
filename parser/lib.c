@@ -78,7 +78,7 @@ static int chrtoi(char c, int base)
  * strntol - convert a sequence of characters as a hex number
  * @str: pointer to a string of character to convert
  * @endptr: RETURNS: if not NULL, the first char after converted chars.
- * @base: base of convertion
+ * @base: base of conversion
  * @maxval: maximum value. don't consume next char if value will exceed @maxval
  * @n: maximum number of characters to consume doing the conversion
  *
