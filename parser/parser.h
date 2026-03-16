@@ -164,12 +164,6 @@ struct alt_name {
 	struct alt_name *next;
 };
 
-struct var_string {
-	char *prefix;
-	char *var;
-	char *suffix;
-};
-
 enum class cod_t : char {
 	READ = 'r',
 	WRITE = 'w',
