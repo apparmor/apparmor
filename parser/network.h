@@ -80,9 +80,13 @@
 #define CMD_LISTEN	2
 #define CMD_OPT		4
 
-#define NONE_SIZE	0
-#define IPV4_SIZE	1
-#define IPV6_SIZE	2
+enum class net_ip_size : unsigned char {
+	NONE = 0,
+	IPV4 = 1,
+	IPV6 = 2,
+};
+
+extern void write_net_ip_size(std::ostringstream &o, net_ip_size size);
 
 struct network_tuple {
 	const char *family_name;
