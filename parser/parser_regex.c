@@ -507,7 +507,7 @@ static bool process_profile_name_xmatch(Profile *prof)
 		aare_rules *rules = new aare_rules();
 		if (!rules)
 			return false;
-		if (!rules->add_rule(tbuf.c_str(), 0, RULE_ALLOW,
+		if (!rules->add_rule(tbuf.c_str(), 0, rule_mode_t::ALLOW,
 				     AA_MAY_EXEC, 0, parseopts)) {
 			delete rules;
 			return false;
@@ -522,7 +522,7 @@ static bool process_profile_name_xmatch(Profile *prof)
 								glob_default,
 								tbuf, &len);
 				if (!rules->add_rule(tbuf.c_str(), 0,
-						RULE_ALLOW, AA_MAY_EXEC,
+						rule_mode_t::ALLOW, AA_MAY_EXEC,
 						0, parseopts)) {
 					delete rules;
 					return false;
@@ -636,7 +636,7 @@ static bool process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry)
 	 * than link in the entry.
 	 * TODO: split link and change_profile entries earlier
 	 */
-	if (entry->rule_mode == RULE_DENY) {
+	if (entry->rule_mode == rule_mode_t::DENY) {
 		if ((entry->perms & ~AA_LINK_BITS) &&
 		    !is_change_profile_perms(entry->perms) &&
 		    !dfarules->add_rule(tbuf.c_str(), entry->priority,
@@ -926,11 +926,11 @@ bool post_process_policydb_net(Profile *prof)
 		    prof->net.quiet[af]) {
 			if (!gen_af_rules(prof, af, prof->net.allow[af],
 					  prof->net.audit[af],
-					  { RULE_ALLOW}))
+					  { rule_mode_t::ALLOW}))
 				return false;
 			if (!gen_af_rules(prof, af, prof->net.deny[af],
 					  prof->net.quiet[af],
-					  { RULE_DENY}))
+					  { rule_mode_t::DENY}))
 				return false;
 		}
 	}
@@ -999,7 +999,7 @@ int process_profile_policydb(Profile *prof)
 	 * to be supported
 	 */
 	if (features_supports_userns &&
-	    !prof->policy.rules->add_rule(mediates_ns, perms_onclass_mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+	    !prof->policy.rules->add_rule(mediates_ns, perms_onclass_mediates_priority, rule_mode_t::ALLOW, AA_MAY_READ, 0, parseopts))
 		goto out;
 
 	/* don't add mediated classes to unconfined profiles */
@@ -1007,22 +1007,22 @@ int process_profile_policydb(Profile *prof)
 	    prof->flags.mode != profile_mode::DEFAULT_ALLOW) {
 		/* note: this activates fs based unix domain sockets mediation on connect */
 		if (kernel_abi_version > 5 &&
-		    !prof->policy.rules->add_rule(mediates_file, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_file, mediates_priority, rule_mode_t::ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_mount &&
-		    !prof->policy.rules->add_rule(mediates_mount, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_mount, mediates_priority, rule_mode_t::ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_dbus &&
-		    !prof->policy.rules->add_rule(mediates_dbus, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_dbus, mediates_priority, rule_mode_t::ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_signal &&
-		    !prof->policy.rules->add_rule(mediates_signal, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_signal, mediates_priority, rule_mode_t::ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_ptrace &&
-		    !prof->policy.rules->add_rule(mediates_ptrace, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_ptrace, mediates_priority, rule_mode_t::ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_networkv8 &&
-		    !prof->policy.rules->add_rule(mediates_netv8, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_netv8, mediates_priority, rule_mode_t::ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		/* v9 requires net and unix to be done together to avoid
 		 * the problem that happend with v7/v8 unix/net
@@ -1030,31 +1030,31 @@ int process_profile_policydb(Profile *prof)
 		if (features_supports_unixv9 &&
 		    (!prof->policy.rules->add_rule(mediates_netv9,
 						   mediates_priority,
-						   RULE_ALLOW, AA_MAY_READ,
+						   rule_mode_t::ALLOW, AA_MAY_READ,
 						   0, parseopts) ||
 		     !prof->policy.rules->add_rule(mediates_net_unixv9,
 						   mediates_priority,
-						   RULE_ALLOW,  AA_MAY_READ,
+						   rule_mode_t::ALLOW,  AA_MAY_READ,
 						   0, parseopts)))
 			goto out;
 		else if (features_supports_unixv7 &&
 		    (!prof->policy.rules->add_rule(mediates_socket_net,
 						   mediates_priority,
-						   RULE_ALLOW, AA_MAY_READ,
+						   rule_mode_t::ALLOW, AA_MAY_READ,
 						   0, parseopts) ||
 		     !prof->policy.rules->add_rule(mediates_net_unixv7,
 						   mediates_priority,
-						   RULE_ALLOW,  AA_MAY_READ,
+						   rule_mode_t::ALLOW,  AA_MAY_READ,
 						   0, parseopts)))
 			goto out;
 		if (features_supports_posix_mqueue &&
-		    !prof->policy.rules->add_rule(mediates_posix_mqueue, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_posix_mqueue, mediates_priority, rule_mode_t::ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_sysv_mqueue &&
-		    !prof->policy.rules->add_rule(mediates_sysv_mqueue, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_sysv_mqueue, mediates_priority, rule_mode_t::ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		if (features_supports_io_uring &&
-		    !prof->policy.rules->add_rule(mediates_io_uring, perms_onclass_mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
+		    !prof->policy.rules->add_rule(mediates_io_uring, perms_onclass_mediates_priority, rule_mode_t::ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 	}
 

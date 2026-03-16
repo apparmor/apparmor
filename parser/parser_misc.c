@@ -980,7 +980,7 @@ struct cod_entry *new_entry(char *id, perm32_t perms, char *link_id)
 	entry->link_name = link_id;
 	entry->perms = perms;
 	entry->audit = audit_t::UNSPECIFIED;
-	entry->rule_mode = RULE_UNSPECIFIED;
+	entry->rule_mode = rule_mode_t::UNSPECIFIED;
 
 	entry->pattern_type = pattern_t::Invalid;
 	entry->pat.regex = NULL;
@@ -1086,11 +1086,11 @@ void debug_cod_entries(struct cod_entry *list)
 bool check_x_qualifier(struct cod_entry *entry, const char *&error)
 {
 	if (entry->perms & AA_EXEC_BITS) {
-		if ((entry->rule_mode == RULE_DENY) &&
+		if ((entry->rule_mode == rule_mode_t::DENY) &&
 		    (entry->perms & ALL_AA_EXEC_TYPE)) {
 			error = _("Invalid perms, in deny rules 'x' must not be preceded by exec qualifier 'i', 'p', or 'u'");
 			return false;
-		} else if ((entry->rule_mode != RULE_DENY) &&
+		} else if ((entry->rule_mode != rule_mode_t::DENY) &&
 			   !(entry->perms & ALL_AA_EXEC_TYPE)) {
 			error = _("Invalid perms, 'x' must be preceded by exec qualifier 'i', 'p', or 'u'");
 			return false;
@@ -1107,7 +1107,7 @@ bool entry_add_prefix(struct cod_entry *entry, const prefixes &p, const char *&e
 	 * to rule_t
 	 */
 	/* apply rule mode */
-	if (p.rule_mode != RULE_UNSPECIFIED)
+	if (p.rule_mode != rule_mode_t::UNSPECIFIED)
 		entry->rule_mode = p.rule_mode;
 
 	/* apply owner/other */
@@ -1120,9 +1120,9 @@ bool entry_add_prefix(struct cod_entry *entry, const prefixes &p, const char *&e
 		entry->priority = p.priority;
 
 	/* implied audit modifier */
-	if (p.audit == audit_t::FORCE && (p.rule_mode != RULE_DENY))
+	if (p.audit == audit_t::FORCE && (p.rule_mode != rule_mode_t::DENY))
 		entry->audit = audit_t::FORCE;
-	else if (p.audit != audit_t::FORCE && (p.rule_mode == RULE_DENY))
+	else if (p.audit != audit_t::FORCE && (p.rule_mode == rule_mode_t::DENY))
 		entry->audit = audit_t::FORCE;
 
 	return check_x_qualifier(entry, error);

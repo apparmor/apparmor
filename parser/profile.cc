@@ -123,7 +123,7 @@ void add_entry_to_policy(Profile *prof, struct cod_entry *entry)
 {
 	entry->next = prof->entries;
 	prof->entries = entry;
-	if (entry->rule_mode == RULE_PROMPT)
+	if (entry->rule_mode == rule_mode_t::PROMPT)
 		prof->uses_prompt_rules = true;
 }
 

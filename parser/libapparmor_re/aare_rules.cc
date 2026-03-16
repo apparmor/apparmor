@@ -125,9 +125,9 @@ bool aare_rules::add_rule_vec(int priority, rule_mode_t mode, perm32_t perms,
 		tree->dump(cerr);
 		// TODO: split out from prefixes class
 		cerr << " priority=" << priority;
-		if (mode == RULE_DENY)
+		if (mode == rule_mode_t::DENY)
 			cerr << " deny";
-		else if (mode == RULE_PROMPT)
+		else if (mode == rule_mode_t::PROMPT)
 			cerr << " prompt";
 		cerr << " (0x" << hex << perms <<"/" << audit << dec << ")";
 		accept->dump(cerr);

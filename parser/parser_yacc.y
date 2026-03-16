@@ -694,10 +694,10 @@ opt_owner_flag: { /* nothing */ $$ = owner_t::UNSPECIFIED; }
 	| TOK_OWNER { $$ = owner_t::SPECIFIED; };
 	| TOK_OTHER { $$ = owner_t::NOT; };
 
-opt_rule_mode: { /* nothing */ $$ = RULE_UNSPECIFIED; }
-	| TOK_ALLOW { $$ = RULE_ALLOW; }
-	| TOK_DENY { $$ = RULE_DENY; }
-	| TOK_PROMPT { $$ = RULE_PROMPT; }
+opt_rule_mode: { /* nothing */ $$ = rule_mode_t::UNSPECIFIED; }
+	| TOK_ALLOW { $$ = rule_mode_t::ALLOW; }
+	| TOK_DENY { $$ = rule_mode_t::DENY; }
+	| TOK_PROMPT { $$ = rule_mode_t::PROMPT; }
 
 opt_prefix: opt_priority opt_audit_flag opt_rule_mode opt_owner_flag
 	{
@@ -746,8 +746,8 @@ rules: rules opt_prefix block
 		}
 		PDEBUG("matched: %s%s%s%sblock\n",
 		       $2.audit == audit_t::FORCE ? "audit " : "",
-		       $2.rule_mode == RULE_DENY ? "deny " : "",
-		       $2.rule_mode == RULE_PROMPT ? "prompt " : "",
+		       $2.rule_mode == rule_mode_t::DENY ? "deny " : "",
+		       $2.rule_mode == rule_mode_t::PROMPT ? "prompt " : "",
 		       $2.owner == owner_t::SPECIFIED ? "owner " : "");
 		list_for_each_safe($3->entries, entry, tmp) {
 			const char *error;
@@ -816,10 +816,10 @@ rules:	rules opt_prefix change_profile
 			yyerror(_("Assert: `change_profile' returned NULL."));
 		if ($2.owner != owner_t::UNSPECIFIED)
 			yyerror(_("owner conditional not allowed on unix rules"));
-		if (($2.rule_mode == RULE_DENY) && $2.audit == audit_t::FORCE) {
-			$3->rule_mode = RULE_DENY;
-		} else if ($2.rule_mode == RULE_DENY) {
-			$3->rule_mode = RULE_DENY;
+		if (($2.rule_mode == rule_mode_t::DENY) && $2.audit == audit_t::FORCE) {
+			$3->rule_mode = rule_mode_t::DENY;
+		} else if ($2.rule_mode == rule_mode_t::DENY) {
+			$3->rule_mode = rule_mode_t::DENY;
 			$3->audit = audit_t::FORCE;
 		} else if ($2.audit != audit_t::UNSPECIFIED) {
 			$3->audit = $2.audit;
@@ -833,9 +833,9 @@ rules:  rules opt_prefix capability
 		if ($2.owner != owner_t::UNSPECIFIED)
 			yyerror(_("owner conditional not allowed on capability rules"));
 
-		if ($2.rule_mode == RULE_DENY && $2.audit == audit_t::FORCE) {
+		if ($2.rule_mode == rule_mode_t::DENY && $2.audit == audit_t::FORCE) {
 			$1->caps.deny |= $3;
-		} else if ($2.rule_mode == RULE_DENY) {
+		} else if ($2.rule_mode == rule_mode_t::DENY) {
 			$1->caps.deny |= $3;
 			$1->caps.quiet |= $3;
 		} else {
