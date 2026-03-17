@@ -15,9 +15,16 @@ abi <abi/5.0>,
   network inet    stream,
   network inet6   stream,
 
+  dbus (send)
+      bus=session
+      path=/org/freedesktop/DBus
+      interface=org.freedesktop.DBus
+      member=ListActivatableNames
+      peer=(name=org.freedesktop.DBus, label=unconfined),
+
   dbus (bind)
        bus=session
-       name=com.transmissionbt.Transmission,
+       name=com.transmissionbt.{t,T}ransmission,
   dbus (bind)
        bus=session
        name=com.transmissionbt.transmission_*,
@@ -119,6 +126,25 @@ abi <abi/5.0>,
        path=/org/gtk/vfs/mounttracker
        interface=org.gtk.vfs.MountTracker
        member={ListMountableInfo,ListMounts2,LookupMount},
+  dbus (send)
+      bus=session
+      path=/org/freedesktop/portal/desktop
+      interface=org.freedesktop.DBus.Properties
+      member=Get
+      peer=(name=org.freedesktop.portal.Desktop),
+  dbus (send)
+      bus=session
+      interface=org.freedesktop.portal.Settings
+      member=ReadAll,
+  dbus (send)
+      bus=session
+      interface=org.freedesktop.portal.Inhibit
+      member=CreateMonitor,
+  dbus (send)
+      bus=session
+      interface=org.a11y.Bus
+      member=GetAddress
+      peer=(name=org.a11y.Bus),
 
   @{PROC}/sys/kernel/random/uuid r,
 
@@ -147,6 +173,19 @@ abi <abi/5.0>,
   owner @{HOME}/@{XDG_DOWNLOAD_DIR}/    r,
   owner @{HOME}/@{XDG_DOWNLOAD_DIR}/**  rw,
 
+  # gst-plugin-scanner related accesses
+  /usr/lib/@{multiarch}/gstreamer1.0/gstreamer-1.0/gst-plugin-scanner mrix,
+  owner @{HOME}/.cache/gstreamer-1.0/{,*} rw,
+
+  # gst-plugin-scanner tries to probe various things including display devices
+  # etc so allow those that are harmless but deny the rest
+  /dev/{,urandom,null} r,
+  /sys/ r,
+  /sys/{bus,class}/ r,
+  /sys/class/drm/ r,
+  deny /dev/dri/{,**} r,
+
+  /dev/pts/[0-9]* rw,
   # exclude these for now
   deny /usr/share/thumbnailers/ r,
   deny @{HOME}/.local/share/gvfs-metadata/** r,
