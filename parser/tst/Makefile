@@ -48,7 +48,7 @@ parser_sanity-no-gen: clean $(PARSER)
 	$(Q)LANG=C APPARMOR_PARSER="$(PARSER)" ${PROVE} ${PROVE_ARG} ${TESTS}
 
 caching: $(PARSER)
-	LANG=C ./caching.py -p "$(PARSER)" $(PYTEST_ARG)
+	LANG=C pytest -n auto caching.py --parser "$(PARSER)" $(PYTEST_ARG)
 
 minimize: $(PARSER)
 	LANG=C APPARMOR_PARSER="$(PARSER) $(PARSER_ARGS)" ./minimize.sh
