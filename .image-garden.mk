@@ -38,6 +38,7 @@ packages:
 - python3-gi
 - python3-notify2
 - python3-psutil
+- python3-pytest-xdist
 - python3-setuptools
 - python3-tk
 - python3-ttkthemes
@@ -87,6 +88,7 @@ packages:
 - python3-flake8
 - python3-notify2
 - python3-psutil
+- python3-pytest-xdist
 - python3-setuptools
 - python3-setuptools
 - python3-tk
@@ -126,6 +128,7 @@ packages:
 - python3-flake8
 - python3-gobject-base
 - python3-notify2
+- python3-pytest-xdist
 - python3-tkinter
 - socat
 - swig
