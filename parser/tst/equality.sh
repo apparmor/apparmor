@@ -1285,12 +1285,12 @@ test_parser_variables()
 			       "profile a /t/* { /{foo,bar} rw, }"
 
 	# test true/false in expr
-	verify_binary_equality "profile a /t/* {
-			       	       if true { /bar rw, } }" \
+	verify_binary_equality "if true expression keeps rule" \
+			       "profile a /t/* { if true { /bar rw, } }" \
 			       "profile a /t/* { /bar rw, }"
 
-	verify_binary_inequality "profile a /t/* {
-			       	       if false { /bar rw, } }" \
+	verify_binary_inequality "if false expression drops rule" \
+			       "profile a /t/* { if false { /bar rw, } }" \
 			       "profile a /t/* { /bar rw, }"
 
 	# test var being assigned value of an expression
