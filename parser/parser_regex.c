@@ -37,9 +37,9 @@
 #include "policydb.h"
 #include "rule.h"
 
-enum error_type {
-	e_no_error,
-	e_parse_error,
+enum class error_type {
+	no_error,
+	parse_error,
 };
 
 
@@ -96,10 +96,10 @@ static error_type append_glob(std::string &pcre, int glob,
 		break;
 	default:
 		PERROR(_("%s: Invalid glob type %d\n"), progname, glob);
-		return e_parse_error;
+		return error_type::parse_error;
 		break;
 	}
-	return e_no_error;
+	return error_type::no_error;
 }
 
 /* converts the apparmor regex in aare and appends pcre regex output
@@ -113,7 +113,7 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 
 	int ret = 1;
 	/* flag to indicate input error */
-	enum error_type error;
+	error_type error;
 
 	const char *sptr;
 	pattern_t ptype;
@@ -123,7 +123,7 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 	int incharclass = 0;	/* flag to indicate [ ] context */
 	int grouping_count[MAX_ALT_DEPTH] = {0};
 
-	error = e_no_error;
+	error = error_type::no_error;
 	ptype = pattern_t::Basic;	/* assume no regex */
 
 	sptr = aare;
@@ -135,7 +135,7 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 		/* anchor beginning of regular expression */
 		pcre.append("^");
 
-	while (error == e_no_error && *sptr) {
+	while (error == error_type::no_error && *sptr) {
 		switch (*sptr) {
 
 		case '\\':
@@ -236,7 +236,7 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 					break;
 				default:
 					PERROR(_("%s: Invalid glob type %d\n"), progname, glob);
-					error = e_parse_error;
+					error = error_type::parse_error;
 					break;
 				}
 			}
@@ -260,7 +260,7 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 				pcre.append("\\]");
 			} else {
 				if (incharclass == 0) {
-					error = e_parse_error;
+					error = error_type::parse_error;
 					PERROR(_("%s: Regex grouping error: Invalid close ], no matching open [ detected\n"), progname);
 				}
 				incharclass = 0;
@@ -280,7 +280,7 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 					update_re_pos(sptr - aare);
 					ingrouping++;
 					if (ingrouping >= MAX_ALT_DEPTH) {
-						error = e_parse_error;
+						error = error_type::parse_error;
 						PERROR(_("%s: Regex grouping error: Exceeded maximum nesting of {}\n"), progname);
 
 					} else {
@@ -302,13 +302,13 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 					pcre.append("}");
 				} else {
 					if (grouping_count[ingrouping] == 0) {
-						error = e_parse_error;
+						error = error_type::parse_error;
 						PERROR(_("%s: Regex grouping error: Invalid number of items between {}\n"), progname);
 
 					}
 					ingrouping--;
 					if (ingrouping < 0) {
-						error = e_parse_error;
+						error = error_type::parse_error;
 						PERROR(_("%s: Regex grouping error: Invalid close }, no matching open { detected\n"), progname);
 						ingrouping = 0;
 					}
@@ -395,27 +395,27 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 
 		bEscape = false;
 		++sptr;
-	}		/* while error == e_no_error && *sptr) */
+	}		/* while error == error_type::no_error && *sptr) */
 
 	if (ingrouping > 0 || incharclass) {
-		error = e_parse_error;
+		error = error_type::parse_error;
 
 		PERROR(_("%s: Regex grouping error: Unclosed grouping or character class, expecting close }\n"),
 		       progname);
 	}
 
-	if ((error == e_no_error) && bEscape) {
+	if ((error == error_type::no_error) && bEscape) {
 		/* trailing backslash quote */
-		error = e_parse_error;
+		error = error_type::parse_error;
 		PERROR(_("%s: Regex error: trailing '\\' escape character\n"),
 		       progname);
 	}
 	/* anchor end and terminate pattern string */
-	if ((error == e_no_error) && anchor) {
+	if ((error == error_type::no_error) && anchor) {
 		pcre.append("$");
 	}
 	/* check error  again, as above STORE may have set it */
-	if (error != e_no_error) {
+	if (error != error_type::no_error) {
 		PERROR(_("%s: Unable to parse input line '%s'\n"),
 		       progname, aare);
 
