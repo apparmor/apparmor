@@ -1025,7 +1025,7 @@ int process_profile_policydb(Profile *prof)
 		    !prof->policy.rules->add_rule(mediates_netv8, mediates_priority, RULE_ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		/* v9 requires net and unix to be done together to avoid
-		 * the problem that happend with v7/v8 unix/net
+		 * the problem that happened with v7/v8 unix/net
 		 */
 		if (features_supports_unixv9 &&
 		    (!prof->policy.rules->add_rule(mediates_netv9,

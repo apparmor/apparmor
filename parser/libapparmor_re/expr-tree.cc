@@ -171,7 +171,7 @@ void Node::dump_syntax_tree(ostream &os) const
  * Note: This is written iteratively for a given node (the top node stays
  *       fixed and the children are rotated) instead of recursively.
  *       For a given node under examination rotate over nodes from
- *       dir to !dir.   Until no dir direction node meets the criterial.
+ *       dir to !dir.   Until no dir direction node meets the criteria.
  *       Then recurse to the children (which will have a different node type)
  *       to make sure they are normalized.
  *       Normalization of a child node is guaranteed to not affect the

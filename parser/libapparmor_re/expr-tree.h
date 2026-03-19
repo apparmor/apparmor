@@ -63,11 +63,11 @@
  *
  * eg.
  * you need to allow an arbitrary data match (.*) followed by an arbitrary
- * string match ([^\x00]*), and make an acceptance dission based
+ * string match ([^\x00]*), and make an acceptance decision based
  * on both matches.
  *
  * One way to do this is to chain the two matches in a single state
- * machine. However without an out of band transition, the matche pattern
+ * machine. However without an out of band transition, the match pattern
  * for the data match (.*) could also consume the input for the string match.
  * To ensure the data pattern match cannot consume characters for the second
  * match a special character is used. This prevents state machine
@@ -86,7 +86,7 @@
  * match pattern.
  *
  * Out of band transitions are specified using negative integers
- * (-1..-32k). They llow for different transitions if needed (currently
+ * (-1..-32k). They allow for different transitions if needed (currently
  * only -1 is used).
  *
  * Negative integers were chosen to represent out of band transitions
@@ -772,7 +772,7 @@ public:
 	void compute_nullable() override
 	{
 		/*
-		 * To check that both childs are nullable, we can bitwise-AND
+		 * To check that both children are nullable, we can bitwise-AND
 		 * both of the type_flags together and then check if the
 		 * node_type_t::NULLABLE bit is set on the result.
 		 *

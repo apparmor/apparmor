@@ -361,7 +361,7 @@ public:
 		}
 
 
-		/* if we move to dupping disconnected_path will need to have
+		/* if we move to duplicating disconnected_path it will need to have
 		 * an assignment and copy constructor and a destructor
 		 */
 	}

@@ -294,7 +294,7 @@ do {						\
 #define cpu_to_le32(x) ((u32)(htole32 ((u32) x)))
 #define cpu_to_le64(x) ((u64)(htole64 ((u64) x)))
 
-/* The encoding for kernal abi > 5 is
+/* The encoding for kernel abi > 5 is
  * 28-31: reserved
  * 20-27: policy version
  * 12-19: policy abi version

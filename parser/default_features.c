@@ -11,7 +11,7 @@
  *               create and network.
  *
  * default_features_abi: is the feature abi used when policy is not tagged
- *                       with an abi and no featuere-abi was specified to the
+ *                       with an abi and no feature-abi was specified to the
  *                       parser.
  */
 
@@ -122,7 +122,7 @@ v5 {yes\
 ";
 
 
-/************************** deafult_features_abi ***************************/
+/************************** default_features_abi ***************************/
 
 const char *default_features_abi =
 "query {label {multi_transaction {yes\
