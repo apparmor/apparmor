@@ -27,14 +27,14 @@
 
 #define AF_ANY -1
 
-enum cond_side { local_cond, peer_cond, either_cond };
+enum class cond_side { local_cond, peer_cond, either_cond };
 
 struct supported_cond {
 	const char *name;
 	bool supported;
 	bool in;
 	bool multivalue;
-	enum cond_side side ;
+	cond_side side;
 };
 
 class af_rule: public perms_rule_t {

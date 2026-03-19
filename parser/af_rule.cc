@@ -34,10 +34,10 @@
 
 /* need to move this table to stl */
 static struct supported_cond supported_conds[] = {
-	{ "type", true, false, false, local_cond },
-	{ "protocol", false, false, false, local_cond },
-	{ "label", true, false, false, peer_cond },
-	{ NULL, false, false, false, local_cond },	/* eol sentinel */
+	{ "type", true, false, false, cond_side::local_cond },
+	{ "protocol", false, false, false, cond_side::local_cond },
+	{ "label", true, false, false, cond_side::peer_cond },
+	{ NULL, false, false, false, cond_side::local_cond },	/* eol sentinel */
 };
 
 bool af_rule::cond_check(struct supported_cond *conds, struct cond_entry *ent,
@@ -49,9 +49,9 @@ bool af_rule::cond_check(struct supported_cond *conds, struct cond_entry *ent,
 			continue;
 		if (!i->supported)
 			yyerror("%s rule: '%s' conditional is not currently supported\n", rname, ent->name);
-		if (!peer && (i->side == peer_cond))
+		if (!peer && (i->side == cond_side::peer_cond))
 			yyerror("%s rule: '%s' conditional is only valid in the peer expression\n", rname, ent->name);
-		if (peer && (i->side == local_cond))
+		if (peer && (i->side == cond_side::local_cond))
 			yyerror("%s rule: '%s' conditional is not allowed in the peer expression\n", rname, ent->name);
 		if (!ent->eq && !i->in)
 			yyerror("%s rule: keyword 'in' is not allowed in '%s' socket conditional\n", rname, ent->name);
