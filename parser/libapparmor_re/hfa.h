@@ -188,8 +188,8 @@ public:
 	iterator end() { return cache.end(); }
 
 	typedef std::set<perms_t *>::const_iterator const_iterator;
-	iterator cbegin() { return cache.cbegin(); }
-	iterator cend() { return cache.cend(); }
+	const_iterator cbegin() { return cache.cbegin(); }
+	const_iterator cend() { return cache.cend(); }
 
 	iterator find(perms_t * const &val) { return cache.find(val); }
 
