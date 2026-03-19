@@ -141,7 +141,7 @@ rule_result_t io_uring_rule::gen_policy_re(Profile &prof)
 		 * needs to be the same priority
 		 */
 		if (!prof.policy.rules->add_rule(buf.c_str(), priority,
-					RULE_ALLOW, AA_MAY_READ, 0,
+					rule_mode_t::ALLOW, AA_MAY_READ, 0,
 					parseopts))
 			goto fail;
 

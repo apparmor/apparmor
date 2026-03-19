@@ -199,7 +199,7 @@ void unix_rule::downgrade_rule(Profile &prof) {
 		yyerror(_("Memory allocation error."));
 	if (sock_type_n != -1)
 		mask = 1 << sock_type_n;
-	if (rule_mode != RULE_DENY) {
+	if (rule_mode != rule_mode_t::DENY) {
 		prof.net.allow[AF_UNIX] |= mask;
 		if (audit == audit_t::FORCE)
 			prof.net.audit[AF_UNIX] |= mask;

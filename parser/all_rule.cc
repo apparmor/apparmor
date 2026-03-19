@@ -98,7 +98,7 @@ void all_rule::add_implied_rules(Profile &prof)
 			yyerror(_("Memory allocation error."));
 		}
 		int perms = (AA_BASE_PERMS & ~(AA_EXEC_TYPE | AA_MAY_EXEC));
-		if (rule_mode != RULE_DENY) {
+		if (rule_mode != rule_mode_t::DENY) {
 			/* duplicate to other permission set */
 			perms |= perms << AA_OTHER_SHIFT;
 		}
@@ -125,7 +125,7 @@ void all_rule::add_implied_rules(Profile &prof)
 		ix_prefix.owner = prefix->owner;
 
 		ix_prefix.priority -= 1;
-		if (rule_mode != RULE_DENY)
+		if (rule_mode != rule_mode_t::DENY)
 			perms |= AA_EXEC_INHERIT;
 		/* duplicate to other permission set */
 		perms |= perms << AA_OTHER_SHIFT;
@@ -142,9 +142,9 @@ void all_rule::add_implied_rules(Profile &prof)
 		if (prefix->owner != owner_t::UNSPECIFIED)
 			yyerror(_("owner prefix not allowed on capability rules"));
 
-		if (rule_mode == RULE_DENY && audit == audit_t::FORCE) {
+		if (rule_mode == rule_mode_t::DENY && audit == audit_t::FORCE) {
 			prof.caps.deny |= 0xffffffffffffffff;
-		} else if (rule_mode == RULE_DENY) {
+		} else if (rule_mode == rule_mode_t::DENY) {
 			prof.caps.deny |= 0xffffffffffffffff;
 			prof.caps.quiet |= 0xffffffffffffffff;
 		} else {

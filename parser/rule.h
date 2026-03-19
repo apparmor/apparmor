@@ -160,9 +160,9 @@ std::ostream &operator<<(std::ostream &os, rule_t &rule);
 
 typedef std::list<rule_t *> RuleList;
 
-/* Not classes so they can be used in the bison front end */
+/* Scoped enums used in the bison front end */
 enum class audit_t { UNSPECIFIED, FORCE, QUIET };
-typedef enum { RULE_UNSPECIFIED, RULE_ALLOW, RULE_DENY, RULE_PROMPT } rule_mode_t;
+enum class rule_mode_t { UNSPECIFIED, ALLOW, DENY, PROMPT };
 enum class owner_t { UNSPECIFIED, SPECIFIED, NOT };
 
 
@@ -197,21 +197,21 @@ public:
 		}
 
 		switch (rule_mode) {
-		case RULE_ALLOW:
+		case rule_mode_t::ALLOW:
 			if (output)
 				os << " ";
 
 			os << "allow";
 			output = true;
 			break;
-		case RULE_DENY:
+		case rule_mode_t::DENY:
 			if (output)
 				os << " ";
 
 			os << "deny";
 			output = true;
 			break;
-		case RULE_PROMPT:
+		case rule_mode_t::PROMPT:
 			if (output)
 				os << " ";
 
@@ -276,7 +276,7 @@ public:
 		/* Must construct prefix here see note on prefixes */
 		priority = 0;
 		audit = audit_t::UNSPECIFIED;
-		rule_mode = RULE_UNSPECIFIED;
+		rule_mode = rule_mode_t::UNSPECIFIED;
 		owner = owner_t::UNSPECIFIED;
 	};
 
@@ -309,8 +309,8 @@ public:
 		}
 
 		/* allow deny conflicts */
-		if (p.rule_mode != RULE_UNSPECIFIED) {
-			if (rule_mode != RULE_UNSPECIFIED &&
+		if (p.rule_mode != rule_mode_t::UNSPECIFIED) {
+			if (rule_mode != rule_mode_t::UNSPECIFIED &&
 			    rule_mode != p.rule_mode) {
 				error = "conflicting mode prefix";
 				return false;
@@ -330,10 +330,10 @@ public:
 
 		/* TODO: MOVE this ! */
 		/* does the prefix imply a modifier */
-		if (p.rule_mode == RULE_DENY && p.audit == audit_t::FORCE) {
-			rule_mode = RULE_DENY;
-		} else if (p.rule_mode == RULE_DENY) {
-			rule_mode = RULE_DENY;
+		if (p.rule_mode == rule_mode_t::DENY && p.audit == audit_t::FORCE) {
+			rule_mode = rule_mode_t::DENY;
+		} else if (p.rule_mode == rule_mode_t::DENY) {
+			rule_mode = rule_mode_t::DENY;
 			audit = audit_t::FORCE;
 		} else if (p.audit != audit_t::UNSPECIFIED) {
 			audit = p.audit;

@@ -949,7 +949,7 @@ void network_rule::update_compat_net(void)
 		for (auto& entry : nm.second) {
 			if (entry.type > SOCK_PACKET) {
 				/* setting mask instead of a bit */
-				if (rule_mode == RULE_DENY) {
+				if (rule_mode == rule_mode_t::DENY) {
 					deny[entry.family] |= entry.type;
 					if (dedup_perms_rule_t::audit != audit_t::FORCE)
 						quiet[entry.family] |= entry.type;
@@ -959,7 +959,7 @@ void network_rule::update_compat_net(void)
 						audit[entry.family] |= entry.type;
 				}
 			} else {
-				if (rule_mode == RULE_DENY) {
+				if (rule_mode == rule_mode_t::DENY) {
 					deny[entry.family] |= 1 << entry.type;
 					if (dedup_perms_rule_t::audit != audit_t::FORCE)
 						quiet[entry.family] |= 1 << entry.type;

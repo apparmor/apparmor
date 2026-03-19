@@ -81,9 +81,9 @@ public:
 		iterator res = nodes.find(tmp);
 		if (res == nodes.end()) {
 			Node *node;
-			if (mode == RULE_DENY)
+			if (mode == rule_mode_t::DENY)
 				node = new DenyMatchFlag(priority, perms, audit);
-			else if (mode == RULE_PROMPT)
+			else if (mode == rule_mode_t::PROMPT)
 				node = new PromptMatchFlag(priority, perms, audit);
 			else if (exact_match)
 				node = new ExactMatchFlag(priority, perms, audit);
