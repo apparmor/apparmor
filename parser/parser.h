@@ -175,20 +175,27 @@ struct var_string {
 	char *suffix;
 };
 
-#define COD_READ_CHAR 		'r'
-#define COD_WRITE_CHAR 		'w'
-#define COD_APPEND_CHAR		'a'
-#define COD_EXEC_CHAR 		'x'
-#define COD_LINK_CHAR 		'l'
-#define COD_LOCK_CHAR		'k'
-#define COD_MMAP_CHAR		'm'
-#define COD_INHERIT_CHAR 	'i'
-#define COD_UNCONFINED_CHAR	'U'
-#define COD_UNSAFE_UNCONFINED_CHAR	'u'
-#define COD_PROFILE_CHAR	'P'
-#define COD_UNSAFE_PROFILE_CHAR	'p'
-#define COD_LOCAL_CHAR		'C'
-#define COD_UNSAFE_LOCAL_CHAR	'c'
+enum class cod_t : char {
+	READ = 'r',
+	WRITE = 'w',
+	APPEND = 'a',
+	EXEC = 'x',
+	LINK = 'l',
+	LOCK = 'k',
+	MMAP = 'm',
+	INHERIT = 'i',
+	UNCONFINED = 'U',
+	UNSAFE_UNCONFINED = 'u',
+	PROFILE = 'P',
+	UNSAFE_PROFILE = 'p',
+	LOCAL = 'C',
+	UNSAFE_LOCAL = 'c',
+};
+
+static inline constexpr char cod_char_value(cod_t value)
+{
+	return static_cast<char>(value);
+}
 
 #define OPTION_ADD      1
 #define OPTION_REMOVE   2
