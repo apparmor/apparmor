@@ -791,6 +791,15 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 
 		/* only output for secmark rule rules */
 		if (is_iface && (entry.label_match || is_peer)) {
+			/* use an alternation of a direct null or
+			 * iface match pattern to ensure kernel can
+			 * use direct null to skip iface cond when
+			 * determining whether to label a packet,
+			 * because iface is not available at this
+			 * point
+			 */
+			if (perms & AA_MAY_SEND)
+				oss << "(\\x00|";
 			if (!entry.iface)
 				oss << default_match_pattern; /* iface not specified */
 			else
@@ -798,6 +807,8 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 
 			oss << "\\x00"; /* null transition */
 
+			if (perms & AA_MAY_SEND)
+				oss << ")";
 			buf = oss.str();
 
 			perm32_t ifperms = cond_perms;
