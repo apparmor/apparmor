@@ -97,6 +97,9 @@ endif
 # Internationalization support. Define a package and a LOCALEDIR
 EXTRA_CFLAGS+=-DPACKAGE=\"${NAME}\" -DLOCALEDIR=\"${LOCALEDIR}\"
 
+# Config directory (default /etc/apparmor; overridable at build time for packaging)
+EXTRA_CFLAGS+=-DCONFDIR=\"${CONFDIR}\"
+
 SRCS = parser_common.c parser_include.c parser_interface.c parser_lex.c \
        parser_main.c parser_misc.c parser_merge.c parser_symtab.c \
        parser_yacc.c parser_regex.c parser_variable.c parser_policy.c \
