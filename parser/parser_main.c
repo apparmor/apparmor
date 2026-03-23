@@ -120,7 +120,7 @@ aa_features *policy_features = NULL;
 aa_features *override_features = NULL;
 aa_features *kernel_features = NULL;
 
-static const char *config_file = "/etc/apparmor/parser.conf";
+static const char *config_file = CONFDIR "/parser.conf";
 
 #define ARG_SKIP_BAD_CACHE		129
 #define ARG_PURGE_CACHE			130
