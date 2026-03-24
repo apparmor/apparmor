@@ -397,7 +397,7 @@ struct dfa_stuff {
 	dfa_stuff(void): rules(NULL), dfa(NULL), size(0) { }
 };
 
-class Profile {
+class Profile final {
 public:
 	bool uses_prompt_rules;
 	char *ns;
@@ -455,7 +455,7 @@ public:
 		entries = NULL;
 	};
 
-	virtual ~Profile();
+	~Profile();
 
 	bool operator<(Profile const &rhs)const
 	{

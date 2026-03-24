@@ -295,7 +295,7 @@ struct DiffDag {
  * proto: Is a temporary work variable used during dfa creation.  It can
  *        be replaced by using the nodemap, but that is slower
  */
-class State {
+class State final {
 public:
 	State(perms_t_Cache &cache, optflags const &opts, int l, ProtoState &n,
 	      State *other, bool filedfa):
@@ -404,7 +404,7 @@ typedef std::map<const State *, size_t> Renumber_Map;
 typedef std::map<perms_t * const, size_t, deref_less_than_perms> idxmap_t;
 
 /* Transitions in the DFA. */
-class DFA {
+class DFA final {
 	void dump_node_to_dfa(void);
 	State *add_new_state(optflags const &opts, NodeSet *nodes,
 			     State *other);
@@ -434,7 +434,7 @@ class DFA {
 	}
 public:
 	DFA(Node *root, optflags const &flags, bool filedfa);
-	virtual ~DFA();
+	~DFA();
 
 	State *match_len(State *state, const char *str, size_t len);
 	State *match_until(State *state, const char *str, const char term);

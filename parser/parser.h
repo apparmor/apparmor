@@ -442,8 +442,8 @@ extern const char *basedir;
 extern pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 					 std::string& pcre, int *first_re_pos);
 extern bool build_list_val_expr(std::string& buffer, struct value_list *list);
-extern bool convert_entry(std::string& buffer, char *entry);
-extern int clear_and_convert_entry(std::string& buffer, char *entry);
+extern bool convert_entry(std::string& buffer, const char *entry);
+extern int clear_and_convert_entry(std::string& buffer, const char *entry);
 extern int process_profile_regex(Profile *prof);
 extern int process_profile_policydb(Profile *prof);
 

@@ -829,7 +829,7 @@ fail:
 	return false;
 }
 
-bool convert_entry(std::string& buffer, char *entry)
+bool convert_entry(std::string& buffer, const char *entry)
 {
 	pattern_t ptype;
 	int pos;
@@ -845,7 +845,7 @@ bool convert_entry(std::string& buffer, char *entry)
 	return true;
 }
 
-int clear_and_convert_entry(std::string& buffer, char *entry)
+int clear_and_convert_entry(std::string& buffer, const char *entry)
 {
 	buffer.clear();
 	return convert_entry(buffer, entry);

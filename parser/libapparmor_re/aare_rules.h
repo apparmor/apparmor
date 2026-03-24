@@ -33,7 +33,7 @@
 #include "../perms.h"
 #include "../rule.h"
 
-class UniquePerm {
+class UniquePerm final {
 public:
 	int priority;
 	rule_mode_t mode;
@@ -57,7 +57,7 @@ public:
 	}
 };
 
-class UniquePermsCache {
+class UniquePermsCache final {
 public:
 	typedef std::map<UniquePerm, Node*> UniquePermMap;
 	typedef UniquePermMap::iterator iterator;
@@ -102,7 +102,7 @@ public:
 
 typedef std::map<Node *, Node *> PermExprMap;
 
-class aare_rules {
+class aare_rules final {
 	Node *root;
 	void add_to_rules(Node *tree, Node *perms);
 	UniquePermsCache unique_perms;

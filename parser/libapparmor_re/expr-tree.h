@@ -101,7 +101,7 @@
  * in such a way that this value will always be in bounds, and only an
  * unpack time verification is needed.
  */
-class transchar {
+class transchar final {
 public:
 	short c;
 
@@ -142,7 +142,7 @@ public:
 
 };
 
-class Chars {
+class Chars final {
 public:
 	// https://stackoverflow.com/questions/32869247/a-container-for-integer-intervals-such-as-rangeset-for-c
 	std::set<transchar> chars;

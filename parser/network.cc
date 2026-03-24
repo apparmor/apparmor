@@ -547,7 +547,7 @@ ostream &network_rule::dump(ostream &os)
 	class_rule_t::dump(os);
 
 	unsigned int count = sizeof(sock_types)/sizeof(sock_types[0]);
-	unsigned int mask = ~((1 << count) -1);
+	unsigned int mask = ~((1U << count) -1);
 	unsigned int j;
 
 	/* This can only be set by an unqualified network rule */
@@ -575,7 +575,7 @@ ostream &network_rule::dump(ostream &os)
 
 		for (j = 0; j < count; j++) {
 			const char *type_name;
-			if (type & (1 << j)) {
+			if (type & (1U << j)) {
 				type_name = sock_types[j].name;
 				if (type_name)
 					os << " " << type_name;
