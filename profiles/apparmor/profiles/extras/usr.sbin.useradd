@@ -24,6 +24,7 @@ include <tunables/global>
 
   capability audit_write,
   capability chown,
+  capability dac_read_search,
   capability dac_override,
   capability fowner,
   capability fsetid,
@@ -38,8 +39,8 @@ include <tunables/global>
   /etc/passwd* rwl,
   /etc/shadow* rwl,
   /etc/pwdutils/logging r,
-  /etc/skel r,
-  /etc/skel/** r,
+  /{,usr/}etc/skel/ r,
+  /{,usr/}etc/skel/** r,
   /etc/subuid rw,
   /etc/subuid- rw,
   /etc/subuid+ rw,
