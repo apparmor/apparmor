@@ -274,6 +274,39 @@ static int test_features_new_from_string_too_large(void)
 	return rc;
 }
 
+static int test_features_is_equal_unterminated(void)
+{
+	aa_features *features1 = NULL, *features2 = NULL;
+	const char *features_str = "policy {versions {v7 {yes\n}\n}\n}";
+	int rc = 0;
+
+	errno = 0;
+	MY_TEST(aa_features_new_from_string(&features1, features_str,
+					     strlen(features_str)) == 0,
+		"could not create first features object");
+	MY_TEST(features1 != NULL, "first features object is NULL");
+
+	errno = 0;
+	MY_TEST(aa_features_new_from_string(&features2, features_str,
+					     strlen(features_str)) == 0,
+		"could not create second features object");
+	MY_TEST(features2 != NULL, "second features object is NULL");
+
+	if (features1 && features2) {
+		MY_TEST(aa_features_is_equal(features1, features2),
+			"equal feature strings should compare equal");
+
+		memset(features1->string, 'x', STRING_SIZE);
+		MY_TEST(!aa_features_is_equal(features1, features2),
+			"unterminated feature string should compare non-equal");
+	}
+
+	aa_features_unref(features1);
+	aa_features_unref(features2);
+
+	return rc;
+}
+
 int main(void)
 {
 	int retval, rc = 0;
@@ -291,6 +324,10 @@ int main(void)
 		rc = retval;
 
 	retval = test_features_new_from_string_too_large();
+	if (retval)
+		rc = retval;
+
+	retval = test_features_is_equal_unterminated();
 	if (retval)
 		rc = retval;
 
