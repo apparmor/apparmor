@@ -36,8 +36,12 @@ int parse_net_perms(const char *str_mode, perm32_t *mode, int fail)
 
 void write_net_ip_size(std::ostringstream &o, net_ip_size size)
 {
+	std::ios_base::fmtflags saved_flags = o.flags();
+	char saved_fill = o.fill();
 	o << "\\x" << std::setfill('0') << std::setw(2) << std::hex
 	  << static_cast<unsigned int>(size);
+	o.flags(saved_flags);
+	o.fill(saved_fill);
 }
 
 /* Bleah C++ doesn't have non-trivial designated initializers so we just
