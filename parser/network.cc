@@ -1038,3 +1038,89 @@ int network_rule::cmp(rule_t const &rhs) const
 		return res;
 	return null_strcmp(label, nrhs.label);
 };
+
+#ifdef UNIT_TEST
+#include "unit_test.h"
+
+static int test_write_net_ip_size_values(void)
+{
+	int rc = 0;
+	std::ostringstream oss;
+
+	write_net_ip_size(oss, net_ip_size::NONE);
+	MY_TEST(oss.str() == "\\x00", "NONE outputs \\x00");
+
+	oss.str("");
+	write_net_ip_size(oss, net_ip_size::IPV4);
+	MY_TEST(oss.str() == "\\x01", "IPV4 outputs \\x01");
+
+	oss.str("");
+	write_net_ip_size(oss, net_ip_size::IPV6);
+	MY_TEST(oss.str() == "\\x02", "IPV6 outputs \\x02");
+
+	return rc;
+}
+
+static int test_write_net_ip_size_preserves_default_stream_state(void)
+{
+	int rc = 0;
+	std::ostringstream oss;
+	std::ios_base::fmtflags flags_before = oss.flags();
+	char fill_before = oss.fill();
+
+	write_net_ip_size(oss, net_ip_size::IPV4);
+
+	MY_TEST(oss.flags() == flags_before, "default flags preserved");
+	MY_TEST(oss.fill() == fill_before, "default fill char preserved");
+
+	/* subsequent output must still use decimal (not hex from internals) */
+	oss.str("");
+	oss << 255;
+	MY_TEST(oss.str() == "255", "decimal output not polluted after write_net_ip_size");
+
+	return rc;
+}
+
+static int test_write_net_ip_size_preserves_custom_stream_state(void)
+{
+	int rc = 0;
+	std::ostringstream oss;
+
+	/* establish non-default formatting state */
+	oss << std::hex << std::setfill('*');
+	std::ios_base::fmtflags flags_before = oss.flags();
+	char fill_before = oss.fill();
+
+	write_net_ip_size(oss, net_ip_size::IPV4);
+
+	MY_TEST(oss.flags() == flags_before, "custom flags preserved");
+	MY_TEST(oss.fill() == fill_before, "custom fill char preserved");
+
+	/* subsequent output must still honour the preserved hex flag */
+	oss.str("");
+	oss << 255;
+	MY_TEST(oss.str() == "ff", "hex flag preserved: 255 formats as ff");
+
+	return rc;
+}
+
+int main(void)
+{
+	int rc = 0;
+	int retval;
+
+	retval = test_write_net_ip_size_values();
+	if (retval)
+		rc = retval;
+
+	retval = test_write_net_ip_size_preserves_default_stream_state();
+	if (retval)
+		rc = retval;
+
+	retval = test_write_net_ip_size_preserves_custom_stream_state();
+	if (retval)
+		rc = retval;
+
+	return rc;
+}
+#endif /* UNIT_TEST */
