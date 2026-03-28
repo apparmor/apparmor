@@ -687,18 +687,16 @@ std::string gen_iface_cond(const char *iface)
 	std::ostringstream oss;
 	if (iface) {
 		int pos;
-		oss << "\\x00";
 		ptype = convert_aaregex_to_pcre(iface, 0, glob_default, buf, &pos);
 		if (ptype == ePatternInvalid)
 			throw std::runtime_error("Invalid iface conditional");
 		oss << buf;
 	} else {
 		/* match any iface */
-		oss << ".*";
+		oss << default_match_pattern;
 	}
 
-	/* separator */
-	//???oss << "\\x00"
+	oss << "\\x00"; /* null transition */
 	
 	return oss.str();
 }
@@ -781,7 +779,7 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 	}
 
 	cond_perms = map_perms(perms);
-	if (!is_cmd && (entry.label_match || is_peer || (is_iface && entry.iface)))
+	if ((!is_cmd && (entry.label_match || is_peer)) || is_iface)
 		cond_perms = AA_COMPAT_CONT_MATCH;
 
 	for (auto &oss : streams) {
@@ -796,7 +794,7 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 			return false;
 
 		/* only output for secmark rule rules */
-		if (is_iface && (entry.label_match || is_peer)) {
+		if (is_iface) {
 			/* use an alternation of a direct null or
 			 * iface match pattern to ensure kernel can
 			 * use direct null to skip iface cond when
@@ -806,18 +804,15 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 			 */
 			if (perms & AA_MAY_SEND)
 				oss << "(\\x00|";
-			if (!entry.iface)
-				oss << default_match_pattern; /* iface not specified */
-			else
-				oss << gen_iface_cond(entry.iface);
 
-			oss << "\\x00"; /* null transition */
+			oss << gen_iface_cond(entry.iface);
 
 			if (perms & AA_MAY_SEND)
 				oss << ")";
+
 			buf = oss.str();
 
-			perm32_t ifperms = cond_perms;
+			perm32_t ifperms = (entry.label_match || is_peer) ? cond_perms : map_perms(perms);
 			if (perms & AA_MAY_SEND)
 				ifperms |= AA_SET_LABEL;
 			if (!prof.policy.rules->add_rule(buf.c_str(), priority,
@@ -828,15 +823,16 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 		}
 		
 		if (entry.label_match || is_peer) {
+			perm32_t lperms = cond_perms;
 			if (!is_peer)
-				cond_perms = map_perms(perms);
+				lperms = map_perms(perms);
 
 			oss << default_match_pattern; /* label - not used for now */
 			oss << "\\x00"; /* null transition */
 
 			buf = oss.str();
 			if (!prof.policy.rules->add_rule(buf.c_str(), priority,
-							 rule_mode, cond_perms,
+							 rule_mode, lperms,
 							 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
 							 parseopts))
 				return false;
@@ -848,7 +844,7 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 bool network_rule::gen_net_rule(Profile &prof, unsigned int netclass, u16 family, unsigned int type_mask, unsigned int protocol, bool skb) {
 	std::ostringstream buffer;
 	std::string buf;
-	bool is_iface = skb && features_supports_ifacev9_skb && (local.iface || peer.iface);
+	bool is_iface = skb && features_supports_ifacev9_skb;
 
 	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << netclass;
 	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ((family & 0xff00) >> 8);
@@ -860,7 +856,7 @@ bool network_rule::gen_net_rule(Profile &prof, unsigned int netclass, u16 family
 		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (type_mask & 0xff);
 	}
 
-	if (!(features_supports_inetv8 || features_supports_inetv9) || (family != AF_INET && family != AF_INET6)) {
+	if (!skb && (!(features_supports_inetv8 || features_supports_inetv9) || (family != AF_INET && family != AF_INET6))) {
 		buf = buffer.str();
 		if (!prof.policy.rules->add_rule(buf.c_str(), priority,
 				rule_mode, map_perms(perms),
@@ -871,10 +867,17 @@ bool network_rule::gen_net_rule(Profile &prof, unsigned int netclass, u16 family
 	}
 
 	buf = buffer.str();
+
+	/* mandatory cont_match at this point */
+	if (!prof.policy.rules->add_rule(buf.c_str(), priority,
+					 rule_mode, AA_COMPAT_CONT_MATCH, 0,
+					 parseopts))
+		return false;
+
 	/* create perms need to be generated excluding the rest of the perms */
-	if (perms & AA_NET_CREATE) {
+	if (!skb && perms & AA_NET_CREATE) {
 		if (!prof.policy.rules->add_rule(buf.c_str(), priority,
-					   rule_mode, map_perms(perms & AA_NET_CREATE) | (AA_CONT_MATCH << 1),
+					   rule_mode, map_perms(perms & AA_NET_CREATE) | AA_COMPAT_CONT_MATCH,
 						 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms & AA_NET_CREATE) : 0,
 						 parseopts))
 			return false;
@@ -923,6 +926,8 @@ bool network_rule::gen_net_rule(Profile &prof, unsigned int netclass, u16 family
 		}
 	}
 
+	if (skb) /* skip next perms for skb */
+		goto out;
 
 	for (int local_port = local.from_port; local_port <= local.to_port; local_port++) {
 		std::list<std::ostringstream> streams;
@@ -973,7 +978,7 @@ bool network_rule::gen_net_rule(Profile &prof, unsigned int netclass, u16 family
 			}
 		}
 	}
-
+out:
 	return true;
 }
 
