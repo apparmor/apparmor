@@ -107,6 +107,11 @@ class NetworkTestParse(NetworkTest):
         ('network peer=(ip=::1, port=22),',         exp(False, False, False, '',           None,                None,   True,  None,       True,  NetworkRule.ALL,                       {"ip": "::1", 'port': '22'})),
         ('network (connect, rw) stream ip=192.168.122.2 port=22 peer=(ip=192.168.122.3 port=22),',
                                                     exp(False, False, False, '',           {'connect', 'rw'},   None,   True,  'stream',   False, {'ip': '192.168.122.2', 'port': '22'}, {"ip": "192.168.122.3", 'port': '22'})),  # noqa: E127
+        ('network interface=eth0,',                 exp(False, False, False, '',           None,                None,   True,  None,       True,  {"interface": "eth0"},                 NetworkRule.ALL)),
+        ('network label=foo,',                      exp(False, False, False, '',           None,                None,   True,  None,       True,  {"label": "foo"},                      NetworkRule.ALL)),
+        ('network peer=(label=bar),',               exp(False, False, False, '',           None,                None,   True,  None,       True,  NetworkRule.ALL,                       {"label": "bar"})),
+        ('network interface="eth 0" label="f o",',  exp(False, False, False, '',           None,                None,   True,  None,       True,  {"interface": "eth 0", "label": "f o"}, NetworkRule.ALL)),
+        ('network interface=eth0 peer=(interface=eth1),', exp(False, False, False, '',     None,                None,   True,  None,       True,  {"interface": "eth0"},                 {"interface": "eth1"})),
     )
 
     def _run_test(self, rawrule, expected):
@@ -133,6 +138,8 @@ class NetworkTestParseInvalid(NetworkTest):
         ('network packet peer=(ip=1::),',                   (AppArmorException, True)),  # Only inet[6] domains can be used in conjunction with a peer expression
         ('priority=a network,',                             (AppArmorException, False)),
         ('priority=-1042 network,',                         (AppArmorException, True)),
+        ('network interface=,',                             (AppArmorException, True)),
+        ('network label=,',                                 (AppArmorException, True)),
     )
 
     def _run_test(self, rawrule, expected):
@@ -162,6 +169,7 @@ class NetworkTestParseFromLog(NetworkTest):
             'aamode': 'DENIED',
             'accesses': None,
             'addr': None,
+            'peer': None,
             'peer_addr': None,
             'port': 1234,
             'remote_port': None,
@@ -198,6 +206,8 @@ class NetworkFromInit(NetworkTest):
         (NetworkRule({'bind', 'listen'}, NetworkRule.ALL, 'stream',         {'port': '22'},  NetworkRule.ALL),             exp(False, False, False, '',      {'bind', 'listen'}, None,   True,  'stream',  False, {'port': '22'},  NetworkRule.ALL)),
         (NetworkRule(NetworkRule.ALL,    NetworkRule.ALL, 'stream',         NetworkRule.ALL, {'port': '22'}),              exp(False, False, False, '',      None,               None,   True,  'stream',  False, NetworkRule.ALL,  {'port': '22'})),
         (NetworkRule(NetworkRule.ALL,    NetworkRule.ALL, 'stream',         NetworkRule.ALL, {'ip': '::1', 'port': '22'}), exp(False, False, False, '',      None,               None,   True,  'stream',  False, NetworkRule.ALL,  {'ip': '::1', 'port': '22'})),
+        (NetworkRule(NetworkRule.ALL,    NetworkRule.ALL, 'stream',         NetworkRule.ALL, {'interface': 'eth0'}),       exp(False, False, False, '',      None,               None,   True,  'stream',  False, NetworkRule.ALL,  {'interface': 'eth0'})),
+        (NetworkRule(NetworkRule.ALL,    NetworkRule.ALL, 'stream',         {'label': 'foo'}, NetworkRule.ALL),            exp(False, False, False, '',      None,               None,   True,  'stream',  False, {'label': 'foo'}, NetworkRule.ALL)),
     )
 
     def _run_test(self, obj, expected):
@@ -300,6 +310,9 @@ class WriteNetworkTestAATest(AATest):
         (' priority = 0     allow network         tcp      ,# foo bar',       'priority=0 allow network tcp, # foo bar'),
         (' priority = 43    allow network         tcp      ,# foo bar',       'priority=43 allow network tcp, # foo bar'),
         (' priority=+123    allow network         tcp      ,# foo bar',       'priority=123 allow network tcp, # foo bar'),
+        ('   network interface=eth0,',                                       'network interface=eth0,'),
+        ('   network label="foo bar",',                                      'network label="foo bar",'),
+        ('   network peer=(label=bar),',                                     'network peer=(label=bar),'),
 
     )
 
@@ -487,6 +500,8 @@ class NetworkLogprofHeaderTest(AATest):
         ('audit deny network inet,',                        [_('Qualifier'), 'audit deny', _('Accesses'), _('ALL'),      _('Network Family'), 'inet',   _('Socket Type'), _('ALL'), _('Local'), _('ALL'),                    _('Peer'), _('ALL')]),
         ('network (bind, listen) stream ip=::1 port=22,',   [                              _('Accesses'), 'bind listen', _('Network Family'), _('ALL'), _('Socket Type'), 'stream', _('Local'), {'ip': '::1', 'port': '22'}, _('Peer'), _('ALL')]),  # noqa: E201
         ('audit deny network inet peer=(ip=::1),',          [_('Qualifier'), 'audit deny', _('Accesses'), _('ALL'),      _('Network Family'), 'inet',   _('Socket Type'), _('ALL'), _('Local'), _('ALL'),                    _('Peer'), {'ip': '::1'}]),
+        ('network interface=eth0,',                         [_('Accesses'), _('ALL'),      _('Network Family'), _('ALL'),   _('Socket Type'), _('ALL'), _('Local'), {'interface': 'eth0'}, _('Peer'), _('ALL')]),
+        ('network peer=(label=foo),',                       [_('Accesses'), _('ALL'),      _('Network Family'), _('ALL'),   _('Socket Type'), _('ALL'), _('Local'), _('ALL'),              _('Peer'), {'label': 'foo'}]),
     )
 
     def _run_test(self, params, expected):
