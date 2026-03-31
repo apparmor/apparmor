@@ -771,6 +771,15 @@ std::string gen_iface_cond(const char *iface)
 	return oss.str();
 }
 
+static std::string gen_default_cond(const char *ent_str, const char *name)
+{
+	std::string buf;
+	if (!convert_entry(buf, ent_str))
+		throw std::runtime_error(std::string("Invalidate conditional ") + name);
+
+	return buf;
+}
+
 std::list<std::ostringstream> gen_all_ip_options(std::ostringstream &oss) {
 
 	std::list<std::ostringstream> all_streams;
@@ -954,8 +963,7 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 			if (!is_peer)
 				lperms = map_perms(perms);
 
-			oss << default_match_pattern; /* label - not used for now */
-
+			oss << gen_default_cond(entry.label_match, "label");
 			buf = oss.str();
 			if (is_iface && !entry.label_match) {
 				/* mandatory perms at this point for
