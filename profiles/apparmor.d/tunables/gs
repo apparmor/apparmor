@@ -9,6 +9,6 @@
 #------------------------------------------------------------------
 # vim: ft=apparmor
 
-@{gs_file_ext}=[pP][dD][fF] [pP][sS] [eE][pP][sS] [eE][pP][sS][iI] [pP][nN][gG] [jJ][pP][gG] [jJ][pP][eE][gG] [pP][nN][mM] [tT][iI][fF] [tT][iI][fF][fF] [bB][mM][pP] [pP][cC][xX] [pP][sS][dD] [tT][xX][tT] [pP][xX][lL] [dD][oO][cC][xX] [xX][pP][sS]
+@{gs_file_ext}=[pP][dD][fF] [pP][sS] [eE][pP][sS] [eE][pP][sS][iI] [pP][nN][gG] [jJ][pP][gG] [jJ][pP][eE][gG] [pP][nN][mM] [tT][iI][fF] [tT][iI][fF][fF] [bB][mM][pP] [pP][cC][xX] [pP][sS][dD] [tT][xX][tT] [pP][xX][lL] [dD][oO][cC][xX] [xX][pP][sS] [xX][mM][lL] [iI][cC][cC] [rR][dD][fF]
 
 include if exists <tunables/gs.d>
