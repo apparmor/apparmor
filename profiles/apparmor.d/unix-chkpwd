@@ -1,17 +1,17 @@
-# apparmor.d - Full set of apparmor profiles
+# profile initially developed in apparmor.d - Full set of apparmor profiles
 # Copyright (C) 2019-2021 Mikhail Morfikov
 # SPDX-License-Identifier: GPL-2.0-only
 
 # The apparmor.d project comes with several variables and abstractions
 # that are not part of upstream AppArmor yet. Therefore this profile was
 # adopted to use abstractions and variables that are available.
-# Copyright (C) Christian Boltz 2024
+# Copyright (C) Christian Boltz 2024-2026
 
 abi <abi/5.0>,
 
 include <tunables/global>
 
-profile unix-chkpwd /{,usr/}{,s}bin/unix_chkpwd {
+profile unix-chkpwd /{,usr/}{,s}bin/unix_chkpwd flags=(attach_disconnected.path=/att/unix-chkpwd/) {
   include <abstractions/base>
   include <abstractions/nameservice>
 
@@ -37,6 +37,12 @@ profile unix-chkpwd /{,usr/}{,s}bin/unix_chkpwd {
   # file_inherit
   owner /dev/pts/[0-9]* rw,
   owner /dev/tty[0-9]* rw,
+
+  # disconnected paths - their non-disconnected counterpart is allowed via abstractions
+  /att/unix-chkpwd/run/authd.sock rw,
+  /att/unix-chkpwd/run/systemd/journal/dev-log w,
+  /att/unix-chkpwd/run/systemd/userdb/io.systemd.DynamicUser rw,
+  /att/unix-chkpwd/run/systemd/userdb/org.gnome.DisplayManager rw,
 
   include if exists <local/unix-chkpwd>
 }
