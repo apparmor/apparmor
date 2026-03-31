@@ -30,8 +30,11 @@ profile gs /usr/bin/gs {
   # allow read access to paperspec
   file r /etc/paperspecs,
 
-  # allow access to files with selected extensions under HOME
+  # allow access to files with selected extensions under HOME and
+  # common mount locations
   owner file rw @{HOME}/**.@{gs_file_ext},
+  owner file rw /mnt/**.@{gs_file_ext},
+  owner file rw /media/*/**.@{gs_file_ext},
 
   # allow access to local printer devices
   file rw @{print_devices},
