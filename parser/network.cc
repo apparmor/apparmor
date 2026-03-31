@@ -471,6 +471,9 @@ network_rule::network_rule(perm32_t perms_p, struct cond_entry *conds,
 
 	move_conditionals(conds, local);
 	move_conditionals(peer_conds, peer);
+	if (peer.iface)
+		yyerror("interface cannot be set for peer in network rules\n");
+	peer.iface = local.iface;
 	free_cond_list(conds);
 	free_cond_list(peer_conds);
 
@@ -512,6 +515,9 @@ network_rule::network_rule(perm32_t perms_p, const char *family, const char *typ
 
 	move_conditionals(conds, local);
 	move_conditionals(peer_conds, peer);
+	if (peer.iface)
+		yyerror("interface cannot be set for peer in network rules\n");
+	peer.iface = local.iface;
 	free_cond_list(conds);
 	free_cond_list(peer_conds);
 
