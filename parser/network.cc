@@ -828,6 +828,21 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 				lperms = map_perms(perms);
 
 			oss << default_match_pattern; /* label - not used for now */
+
+			buf = oss.str();
+			if (is_iface && !entry.label_match) {
+				/* mandatory perms at this point for
+				 * skb because default label has to
+				 * match actual perms.
+				 * AA_COMPAT_CONT_MATCH is checked on
+				 * the null transition */
+				if (!prof.policy.rules->add_rule(buf.c_str(), priority,
+								 rule_mode, map_perms(perms),
+								 dedup_perms_rule_t::audit == audit_t::FORCE ? map_perms(perms) : 0,
+								 parseopts))
+					return false;
+			}
+
 			oss << "\\x00"; /* null transition */
 
 			buf = oss.str();
