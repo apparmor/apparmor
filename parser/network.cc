@@ -762,11 +762,27 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << AA_CLASS_NETV8;
 	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ((family & 0xff00) >> 8);
 	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (family & 0xff);
-	if (type_mask > 0xffff) {
+
+	if (type_mask > 0xffff || type_mask == ALL_TYPES) {
 		buffer << "..";
 	} else {
-		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ((type_mask & 0xff00) >> 8);
-		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (type_mask & 0xff);
+		bool single_type = type_mask && !(type_mask & (type_mask - 1));
+		if (!single_type)
+			buffer << "(";
+		/* generate rules for types that are set */
+		bool first = true;
+		for (int t = 0; t < 16; t++) {
+			if (type_mask & (1 << t)) {
+				if (first)
+					first = false;
+				else
+					buffer << "|";
+				buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ((t & 0xff00) >> 8);
+				buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (t & 0xff);
+			}
+		}
+		if (!single_type)
+			buffer << ")";
 	}
 
 	if (!features_supports_inet || (family != AF_INET && family != AF_INET6)) {
@@ -896,20 +912,8 @@ int network_rule::gen_policy_re(Profile &prof)
 		unsigned int type = perm.second.first;
 		unsigned int protocol = perm.second.second;
 
-		if (type > 0xffff) {
-			if (!gen_net_rule(prof, family, type, protocol))
-				goto fail;
-		} else {
-			int t;
-			/* generate rules for types that are set */
-			for (t = 0; t < 16; t++) {
-				if (type & (1 << t)) {
-					if (!gen_net_rule(prof, family, t, protocol))
-						goto fail;
-				}
-			}
-		}
-
+		if (!gen_net_rule(prof, family, type, protocol))
+			goto fail;
 	}
 	return RULE_OK;
 
