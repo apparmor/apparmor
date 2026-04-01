@@ -1,0 +1,8 @@
+  abi <abi/5.0>,
+
+  # Pressure Stall Information interface (read-write)
+  # Writing to these files to set up polling creates kernel objects and
+  # could be an exploit stepping-stone, so make this separate
+  @{PROC}/pressure/{cpu,memory,io} rw,
+
+  include if exists <abstractions/psi-read-poll.d>
