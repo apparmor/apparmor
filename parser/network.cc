@@ -867,11 +867,27 @@ bool network_rule::gen_net_rule(Profile &prof, unsigned int netclass, u16 family
 	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << netclass;
 	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ((family & 0xff00) >> 8);
 	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (family & 0xff);
-	if (type_mask > 0xffff) {
+
+	if (type_mask > 0xffff || type_mask == ALL_TYPES) {
 		buffer << "..";
 	} else {
-		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ((type_mask & 0xff00) >> 8);
-		buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (type_mask & 0xff);
+		bool single_type = type_mask && !(type_mask & (type_mask - 1));
+		if (!single_type)
+			buffer << "(";
+		/* generate rules for types that are set */
+		bool first = true;
+		for (int t = 0; t < 16; t++) {
+			if (type_mask & (1 << t)) {
+				if (first)
+					first = false;
+				else
+					buffer << "|";
+				buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ((t & 0xff00) >> 8);
+				buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (t & 0xff);
+			}
+		}
+		if (!single_type)
+			buffer << ")";
 	}
 
 	if (!skb && (!(features_supports_inetv8 || features_supports_inetv9) || (family != AF_INET && family != AF_INET6))) {
@@ -1017,29 +1033,9 @@ int network_rule::gen_policy_re(Profile &prof)
 		unsigned int type = perm.second.first;
 		unsigned int protocol = perm.second.second;
 
-		if (type > 0xffff) {
-			if (!gen_net_rule(prof, netclass, family,
-					  type, protocol, false))
-				goto fail;
-
-			if (skb && !gen_net_rule(prof, AA_CLASS_NETV9_SKB, family,
-						 type, protocol, skb))
-				goto fail;
-		} else {
-			int t;
-			/* generate rules for types that are set */
-			for (t = 0; t < 16; t++) {
-				if (type & (1 << t)) {
-					if (!gen_net_rule(prof, netclass, family,
-							  t, protocol, false))
-						goto fail;
-					if (skb && !gen_net_rule(prof, AA_CLASS_NETV9_SKB, family,
-								 t, protocol, skb))
-						goto fail;
-				}
-			}
-		}
-
+		if (!gen_net_rule(prof, netclass, family, type, protocol,
+				  false))
+			goto fail;
 	}
 	return RULE_OK;
 
