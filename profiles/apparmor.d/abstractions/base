@@ -101,6 +101,7 @@
   @{sys}/devices/system/cpu/possible r,
 
   # transparent hugepage support
+  @{sys}/kernel/mm/transparent_hugepage/enabled r,
   @{sys}/kernel/mm/transparent_hugepage/hpage_pmd_size r,
 
   # glibc's *printf protections read the maps file
