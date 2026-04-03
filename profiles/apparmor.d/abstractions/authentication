@@ -19,7 +19,7 @@
   @{etc_ro}/nologin                r,
   @{etc_ro}/pam.d/*                r,
   @{etc_ro}/securetty              r,
-  @{etc_ro}/security/*             r,
+  @{etc_ro}/security/**            r,
   @{etc_ro}/shadow                 r,
   @{etc_ro}/gshadow                r,
   @{etc_ro}/pwdb.conf              r,
