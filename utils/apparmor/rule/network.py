@@ -16,7 +16,7 @@
 import re
 
 from apparmor.common import AppArmorBug, AppArmorException
-from apparmor.regex import RE_PROFILE_NETWORK, strip_parenthesis
+from apparmor.regex import RE_PROFILE_NETWORK, strip_parenthesis, aare
 from apparmor.rule import BaseRule, BaseRuleset, logprof_value_or_all, parse_modifiers, check_dict_keys, \
     check_and_split_list, initialize_cond_dict, print_dict_values, tuple_to_dict
 from apparmor.translations import init_translation
@@ -57,9 +57,11 @@ network_ipv6 = (
 
 network_port = r'(port\s*=\s*(?P<%s>\d+))[,\s]*'
 ip_cond = fr'\s*ip\s*=\s*(?P<%s>(({network_ipv4})|({network_ipv6})|none))[,\s]*'
+network_interface = r'(interface\s*=\s*(?P<%s>' + aare + r'))[,\s]*'
+network_label = r'(label\s*=\s*(?P<%s>' + aare + r'))[,\s]*'
 
-RE_LOCAL_EXPR = f'((({ip_cond % "ip"})|({network_port % "port"}))*)'
-RE_PEER_EXPR = fr'(peer\s*=\s*\(\s*(({ip_cond % "ip_peer"})|({network_port % "port_peer"}))+\s*\))'
+RE_LOCAL_EXPR = f'((({ip_cond % "ip"})|({network_port % "port"})|({network_interface % "interface"})|({network_label % "label"}))*)'
+RE_PEER_EXPR = fr'(peer\s*=\s*\(\s*(({ip_cond % "ip_peer"})|({network_port % "port_peer"})|({network_interface % "interface_peer"})|({network_label % "label_peer"}))+\s*\))'
 
 
 RE_NETWORK_DOMAIN = '(' + '|'.join(network_domain_keywords) + ')'
@@ -102,16 +104,16 @@ class NetworkRule(BaseRule):
                 accesses = self.ALL
             else:
                 accesses = accesses.split()
-            local_expr = tuple_to_dict(local_expr, ['ip', 'port'])
-            peer_expr = tuple_to_dict(peer_expr, ['ip', 'port'])
+            local_expr = tuple_to_dict(local_expr, ['ip', 'port', 'interface', 'label'])
+            peer_expr = tuple_to_dict(peer_expr, ['ip', 'port', 'interface', 'label'])
 
         self.accesses, self.all_accesses, unknown_items = check_and_split_list(accesses, access_flags, self.ALL,  type(self).__name__, 'accesses')
 
         if unknown_items:
             raise AppArmorException(f'Invalid access in Network rule: {unknown_items}')
 
-        self.local_expr = check_dict_keys(local_expr, {'ip', 'port'}, self.ALL)
-        self.peer_expr = check_dict_keys(peer_expr, {'ip', 'port'}, self.ALL)
+        self.local_expr = check_dict_keys(local_expr, {'ip', 'port', 'interface', 'label'}, self.ALL)
+        self.peer_expr = check_dict_keys(peer_expr, {'ip', 'port', 'interface', 'label'}, self.ALL)
 
         if self.local_expr != self.ALL and 'port' in self.local_expr and int(self.local_expr['port']) > 65535:
             raise AppArmorException(f'Invalid port: {self.local_expr["port"]}')
@@ -180,8 +182,8 @@ class NetworkRule(BaseRule):
             else:
                 accesses = cls.ALL
 
-            local_expr = initialize_cond_dict(r, ['ip', 'port'], '', cls.ALL)
-            peer_expr = initialize_cond_dict(r, ['ip', 'port'], '_peer', cls.ALL)
+            local_expr = initialize_cond_dict(r, ['ip', 'port', 'interface', 'label'], '', cls.ALL)
+            peer_expr = initialize_cond_dict(r, ['ip', 'port', 'interface', 'label'], '_peer', cls.ALL)
 
         else:
             accesses = cls.ALL
@@ -293,17 +295,18 @@ class NetworkRule(BaseRule):
             _('Peer'), peer_expr,
         )
 
+    # XXX: interface and peer_interface are not present in kernel log events yet.
     @staticmethod
     def hashlog_from_event(hl, ev):
-        local = (ev['addr'], ev['port'])
-        peer = (ev['peer_addr'], ev['remote_port'])
+        local = (ev.get('addr'), ev.get('port'), ev.get('interface'), ev.get('label'))
+        peer = (ev.get('peer_addr'), ev.get('remote_port'), ev.get('peer_interface'), ev.get('peer'))
         hl[ev['accesses']][ev['family']][ev['sock_type']][ev['protocol']][local][peer] = True
 
     @classmethod
     def from_hashlog(cls, hl):
         for access, family, sock_type, protocol, local_event, peer_event in BaseRule.generate_rules_from_hashlog(hl, 6):
             if access and set(access.split()) & non_peer_accesses:
-                peer_event = (None, None)
+                peer_event = (None, None, None, None)
             yield cls(access, family, sock_type, local_event, peer_event, log_event=True)
 
 

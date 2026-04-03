@@ -177,6 +177,7 @@ public:
 	network_rule(perm32_t perms_p, unsigned int family, unsigned int type);
 	~network_rule() override
 	{
+		peer.iface = NULL; /* stores the same pointer as local */
 		peer.free_conds();
 		local.free_conds();
 		if (allow) {
