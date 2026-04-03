@@ -32,7 +32,7 @@ enum cond_side { local_cond, peer_cond, either_cond };
 struct supported_cond {
 	const char *name;
 	bool supported;
-	bool in;
+	cond_comp supported_conds;
 	bool multivalue;
 	enum cond_side side ;
 };

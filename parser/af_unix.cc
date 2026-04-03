@@ -42,8 +42,8 @@ int parse_unix_perms(const char *str_perms, perm32_t *perms, int fail)
 
 
 static struct supported_cond supported_conds[] = {
-	{ "addr", true, false, false, either_cond },
-	{ NULL, false, false, false, local_cond },	/* sentinel */
+	{ "addr", true, cond_comp::EQ, false, either_cond },
+	{ NULL, false, cond_comp::EQ, false, local_cond },	/* sentinel */
 };
 
 void unix_rule::move_conditionals(struct cond_entry *conds)

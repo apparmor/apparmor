@@ -272,7 +272,7 @@ LIST_VALUE_ID_CHARS	([^ \t\n"!,]{-}[()]|\\[ ]|\\\t|\\\"|\\!|\\,|\\\(|\\\))
 LIST_VALUE_QUOTED_ID_CHARS [^\0"]|\\\"
 LIST_VALUE_ID	{LIST_VALUE_ID_CHARS}+
 QUOTED_LIST_VALUE_ID	\"{LIST_VALUE_QUOTED_ID_CHARS}+\"
-ID_CHARS_NOEQ	[^ \t\n"!,]{-}[=)]
+ID_CHARS_NOEQ	[^ \t\n"!,]{-}[:=)]
 LEADING_ID_CHARS_NOEQ [^ \t\n"!,]{-}[=()+&]
 ID_NOEQ		{ID_CHARS_NOEQ}|(,{ID_CHARS_NOEQ})
 IDS_NOEQ	{LEADING_ID_CHARS_NOEQ}{ID_NOEQ}*
@@ -484,6 +484,10 @@ IN_OP		in
 
 	{EQUALS} { RETURN_TOKEN(TOK_EQUALS); }
 
+	{OVERRIDE_ASSIGN}{WS}*/[^(\n]{-}{WS} { BEGIN_AND_RETURN(SUB_VALUE, TOK_OVERRIDE_ASSIGN); }
+
+	{OVERRIDE_ASSIGN} { RETURN_TOKEN(TOK_OVERRIDE_ASSIGN); }
+
 	/* Don't push state here as this is a transition start condition and
 	 * we want to return to the start condition that invoked <EXTCOND_MODE>
 	 * when LIST_VAL_ID is done
@@ -525,6 +529,14 @@ IN_OP		in
 
 	{EQUALS}	{
 		PUSH_AND_RETURN(LIST_COND_VAL, TOK_EQUALS);
+	}
+
+	{OVERRIDE_ASSIGN}{WS}*{OPEN_PAREN}	{
+		PUSH_AND_RETURN(LIST_COND_PAREN_VAL, TOK_OVERRIDE_ASSIGN);
+	}
+
+	{OVERRIDE_ASSIGN}	{
+		PUSH_AND_RETURN(LIST_COND_VAL, TOK_OVERRIDE_ASSIGN);
 	}
 }
 

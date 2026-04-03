@@ -116,9 +116,16 @@ struct value_list {
 
 int cmp_value_list(value_list *lhs, value_list *rhs);
 
+enum class cond_comp {
+	NONE,
+	EQ,
+	IN,
+	SET,
+};
+
 struct cond_entry {
 	char *name;
-	int eq;			/* where equals was used in specifying list */
+	cond_comp comp; /* '=' or 'in' was used in specifying list */
 	struct value_list *vals;
 
 	struct cond_entry *next;
@@ -339,6 +346,8 @@ extern int features_supports_networkv8;
 extern bool features_supports_networkv9;
 extern bool features_supports_inetv8;
 extern bool features_supports_inetv9;
+extern bool features_supports_networkv9_skb;
+extern bool features_supports_ifacev9_skb;
 extern int features_supports_identity_names;
 extern int kernel_supports_policydb;
 extern int kernel_supports_diff_encode;
@@ -457,7 +466,7 @@ extern int is_blacklisted(const char *name, const char *path);
 extern struct value_list *new_value_list(char *value);
 extern void free_value_list(struct value_list *list);
 extern void print_value_list(struct value_list *list, std::ostream &os);
-extern struct cond_entry *new_cond_entry(char *name, int eq, struct value_list *list);
+extern struct cond_entry *new_cond_entry(char *name, cond_comp comp, struct value_list *list);
 extern void move_conditional_value(const char *rulename, char **dst_ptr,
 				   struct cond_entry *cond_ent);
 extern void free_cond_entry(struct cond_entry *ent);

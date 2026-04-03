@@ -12,6 +12,7 @@
 #include "net_inet.h"
 
 enum protocol {
+	INVALID,
 	UDP,
 	TCP,
 	ICMP
@@ -25,15 +26,16 @@ struct connection_info {
 	char *protocol;
 	enum protocol prot;
 	int timeout;
-} net_info;
+	char *interface;
+} net_info = {0};
 
 int receive_bind()
 {
 	int sock;
-	struct sockaddr_in local;
-	struct sockaddr_in6 local6;
+	struct sockaddr_in local = {0};
+	struct sockaddr_in6 local6 = {0};
 
-	struct ip_address bind_addr;
+	struct ip_address bind_addr = {0};
 
 	if (!parse_ip(net_info.bind_ip, net_info.bind_port, &bind_addr)) {
 		fprintf(stderr, "FAIL - could not parse bind ip address\n");
@@ -50,6 +52,9 @@ int receive_bind()
 	case ICMP:
 		sock = socket(bind_addr.family, SOCK_DGRAM, IPPROTO_ICMP);
 		break;
+	default:
+		fprintf(stderr, "FAIL - invalid protocol\n");
+		return -1;
 	}
 
 	if (sock < 0) {
@@ -60,6 +65,12 @@ int receive_bind()
 	const int enable = 1;
 	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &enable, sizeof(int)) < 0)
 		perror("FAIL - setsockopt(SO_REUSEADDR) failed");
+
+	if (net_info.interface) {
+		bind_addr.interface = net_info.interface;
+		if (setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, net_info.interface, strlen(net_info.interface)) < 0)
+			perror("FAIL - setsockopt(SO_BINDTODEVICE) failed");
+	}
 
 	if (bind_addr.family == AF_INET) {
 		local = convert_to_sockaddr_in(bind_addr);
@@ -224,6 +235,7 @@ static void usage(char *prog_name, char *msg)
 	fprintf(stderr, "--remote_port remote port\n");
 	fprintf(stderr, "--protocol    protocol: udp or tcp\n");
 	fprintf(stderr, "--sender      path of the sender\n");
+	fprintf(stderr, "--interface   connect to specified network interface\n");
 	fprintf(stderr, "--timeout     timeout in seconds\n");
 	exit(EXIT_FAILURE);
 }
@@ -243,10 +255,11 @@ int main(int argc, char *argv[])
 		{"protocol",    required_argument, 0,  'p' },
 		{"timeout",     required_argument, 0,  't' },
 		{"sender",      required_argument, 0,  's' },
+		{"interface",   required_argument, 0,  'n' },
 		{0,             0,                 0,  0   }
 	};
 
-	while ((opt = getopt_long(argc, argv,"i:o:r:e:p:t:s:", long_options, 0)) != -1) {
+	while ((opt = getopt_long(argc, argv,"i:o:r:e:p:t:s:n:", long_options, 0)) != -1) {
 		switch (opt) {
 		case 'i':
 			net_info.bind_ip = optarg;
@@ -277,6 +290,9 @@ int main(int argc, char *argv[])
 		case 's':
 			sender = optarg;
 			break;
+		case 'n':
+			net_info.interface = optarg;
+			break;
 		default:
 			usage(argv[0], "Unrecognized option\n");
 		}
@@ -305,11 +321,12 @@ int main(int argc, char *argv[])
 		/* invert remote x local ips to sender */
 		execl(sender, sender, net_info.remote_ip, net_info.remote_port,
 		      net_info.bind_ip, net_info.bind_port,
-		      net_info.protocol, NULL);
+		      net_info.protocol, net_info.interface, NULL);
 		printf("FAIL %d - execlp %s --bind_ip %s --bind_port %s "
-		       "--remote_ip %s --remote_port %s --protocol %s - %m\n",
+		       "--remote_ip %s --remote_port %s --protocol %s --interface %s - %m\n",
 		       getuid(), sender, net_info.bind_ip, net_info.bind_port,
-		       net_info.remote_ip, net_info.remote_port, net_info.protocol);
+		       net_info.remote_ip, net_info.remote_port, net_info.protocol,
+		       net_info.interface);
 		exit(EXIT_FAILURE);
 	}
 
@@ -323,6 +340,9 @@ int main(int argc, char *argv[])
 	case ICMP:
 		ret = receive_icmp(sockfd);
 		break;
+	default:
+		printf("FAIL - Invalid protocol.\n");
+		exit(1);
 	}
 
 	if (ret == -1) {
