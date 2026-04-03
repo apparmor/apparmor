@@ -399,15 +399,42 @@ bool network_rule::parse_address(ip_conds &entry)
 	return parse_ip(entry.sip, &entry.ip);
 }
 
+bool network_rule::parse_iface(ip_conds &entry)
+{
+	std::string buf;
+	pattern_t ptype;
+	int pos;
+
+	if (!entry.iface)
+		yyerror("internal error. null iface passed to parse_iface");
+
+	ptype = convert_aaregex_to_pcre(entry.iface, 0, glob_default, buf, &pos);
+	if (ptype == pattern_t::Invalid)
+		return false;
+
+	/* atm just discard buf, this is just so we can detect conversion
+	 * error in the front-end. Ideally would store but that is more work atm
+	 */
+	return true;
+}
+
+
 void network_rule::move_conditionals(struct cond_entry *conds, ip_conds &ip_cond)
 {
 	struct cond_entry *cond_ent;
 
 	list_for_each(conds, cond_ent) {
-		/* for now disallow keyword 'in' (list) */
-		if (!cond_ent->eq)
-			yyerror("keyword \"in\" is not allowed in network rules\n");
-		if (strcmp(cond_ent->name, "ip") == 0) {
+		if (strcmp(cond_ent->name, "label") == 0) {
+			move_conditional_value("network", &ip_cond.label_match, cond_ent);
+			if (cond_ent->comp == cond_comp::SET)
+				ip_cond.set_label = true;
+			else if (cond_ent->comp == cond_comp::EQ)
+				ip_cond.set_label = false;
+			else
+				yyerror("unsupported operator in label conditional of network rules\n");
+		} else if (cond_ent->comp != cond_comp::EQ) { /* next conds only allow '=' */
+			yyerror("unsupported operator used in conditions of network rules\n");
+		} else if (strcmp(cond_ent->name, "ip") == 0) {
 			move_conditional_value("network", &ip_cond.sip, cond_ent);
 			if (!parse_address(ip_cond))
 				yyerror("network invalid ip='%s'\n", ip_cond.sip);
@@ -415,6 +442,10 @@ void network_rule::move_conditionals(struct cond_entry *conds, ip_conds &ip_cond
 			move_conditional_value("network", &ip_cond.sport, cond_ent);
 			if (!parse_port(ip_cond))
 				yyerror("network invalid port='%s'\n", ip_cond.sport);
+		} else if (strcmp(cond_ent->name, "interface") == 0) {
+			move_conditional_value("network", &ip_cond.iface, cond_ent);
+			if (!parse_iface(ip_cond))
+				yyerror("network invalid interface='%s'\n", ip_cond.iface);
 		} else {
 			yyerror("invalid network rule conditional \"%s\"\n",
 				cond_ent->name);
@@ -434,7 +465,7 @@ void network_rule::set_netperm(unsigned int family, unsigned int type, unsigned 
 
 network_rule::network_rule(perm32_t perms_p, struct cond_entry *conds,
 			   struct cond_entry *peer_conds):
-	dedup_perms_rule_t(features_supports_networkv9 ? AA_CLASS_NETV9 : AA_CLASS_NETV8), label(NULL)
+	dedup_perms_rule_t(features_supports_networkv9 ? AA_CLASS_NETV9 : AA_CLASS_NETV8)
 {
 	size_t family_index, i;
 
@@ -475,7 +506,7 @@ network_rule::network_rule(perm32_t perms_p, struct cond_entry *conds,
 network_rule::network_rule(perm32_t perms_p, const char *family, const char *type,
 			   const char *protocol, struct cond_entry *conds,
 			   struct cond_entry *peer_conds):
-	dedup_perms_rule_t(features_supports_networkv9 ? AA_CLASS_NETV9 : AA_CLASS_NETV8), label(NULL)
+	dedup_perms_rule_t(features_supports_networkv9 ? AA_CLASS_NETV9 : AA_CLASS_NETV8)
 {
 	const struct network_tuple *mapping = NULL;
 
@@ -526,7 +557,7 @@ network_rule::network_rule(perm32_t perms_p, const char *family, const char *typ
 }
 
 network_rule::network_rule(perm32_t perms_p, unsigned int family, unsigned int type):
-	dedup_perms_rule_t(features_supports_networkv9 ? AA_CLASS_NETV9 : AA_CLASS_NETV8), label(NULL)
+	dedup_perms_rule_t(features_supports_networkv9 ? AA_CLASS_NETV9 : AA_CLASS_NETV8)
 {
 	network_map[family].push_back({ family, type, 0xFFFFFFFF });
 	set_netperm(family, type, 0xFFFFFFFF);
@@ -643,6 +674,29 @@ std::string gen_port_cond(uint16_t port)
 	return oss.str();
 }
 
+std::string gen_iface_cond(const char *iface)
+{
+	std::string buf;
+	pattern_t ptype;
+	std::ostringstream oss;
+	if (iface) {
+		int pos;
+		oss << "\\x00";
+		ptype = convert_aaregex_to_pcre(iface, 0, glob_default, buf, &pos);
+		if (ptype == pattern_t::Invalid)
+			throw std::runtime_error("Invalid iface conditional");
+		oss << buf;
+	} else {
+		/* match any iface */
+		oss << ".*";
+	}
+
+	/* separator */
+	//???oss << "\\x00"
+	
+	return oss.str();
+}
+
 std::list<std::ostringstream> gen_all_ip_options(std::ostringstream &oss) {
 
 	std::list<std::ostringstream> all_streams;
@@ -681,7 +735,8 @@ std::list<std::ostringstream> copy_streams_list(std::list<std::ostringstream> &s
 	return streams_copy;
 }
 
-bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &streams, ip_conds &entry, bool is_peer, uint16_t port, bool is_port, bool is_cmd)
+bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &streams, ip_conds &entry,
+				bool is_peer, uint16_t port, bool is_port, bool is_cmd, bool is_iface)
 {
 	std::string buf;
 	perm32_t cond_perms;
@@ -720,7 +775,7 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 	}
 
 	cond_perms = map_perms(perms);
-	if (!is_cmd && (label || is_peer))
+	if (!is_cmd && (entry.label_match || is_peer || (is_iface && entry.iface)))
 		cond_perms = AA_COMPAT_CONT_MATCH;
 
 	for (auto &oss : streams) {
@@ -734,7 +789,28 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 						 parseopts))
 			return false;
 
-		if (label || is_peer) {
+		/* only output for secmark rule rules */
+		if (is_iface && (entry.label_match || is_peer)) {
+			if (!entry.iface)
+				oss << default_match_pattern; /* iface not specified */
+			else
+				oss << gen_iface_cond(entry.iface);
+
+			oss << "\\x00"; /* null transition */
+
+			buf = oss.str();
+
+			perm32_t ifperms = cond_perms;
+			if (perms & AA_MAY_SEND)
+				ifperms |= AA_SET_LABEL;
+			if (!prof.policy.rules->add_rule(buf.c_str(), priority,
+							 rule_mode, ifperms,
+							 dedup_perms_rule_t::audit == audit_t::FORCE ? map_perms(perms) : 0,
+							 parseopts))
+				return false;
+		}
+		
+		if (entry.label_match || is_peer) {
 			if (!is_peer)
 				cond_perms = map_perms(perms);
 
@@ -752,10 +828,10 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 	return true;
 }
 
-bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mask, unsigned int protocol) {
+bool network_rule::gen_net_rule(Profile &prof, unsigned int netclass, u16 family, unsigned int type_mask, unsigned int protocol, bool skb) {
 	std::ostringstream buffer;
 	std::string buf;
-	unsigned int netclass = features_supports_networkv9 ? AA_CLASS_NETV9 : AA_CLASS_NETV8;
+	bool is_iface = skb && features_supports_ifacev9_skb && (local.iface || peer.iface);
 
 	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << netclass;
 	buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ((family & 0xff00) >> 8);
@@ -803,7 +879,9 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 			cmd_buffer << buffer.str();
 			streams.push_back(std::move(cmd_buffer));
 
-			if (!gen_ip_conds(prof, streams, peer, true, peer_port, peer.is_port, false))
+			if (!gen_ip_conds(prof, streams, peer,
+					  true, peer_port, peer.is_port,
+					  false, is_iface))
 				return false;
 
 			for (auto &oss : streams) {
@@ -820,7 +898,9 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 					localstreams.push_back(std::move(local_buffer));
 				}
 
-				if (!gen_ip_conds(prof, localstreams, local, false, local_port, local.is_port, true))
+				if (!gen_ip_conds(prof, localstreams, local,
+						  false, local_port, local.is_port,
+						  true, is_iface))
 					return false;
 			}
 		}
@@ -833,7 +913,8 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 
 		common_buffer << buffer.str();
 		streams.push_back(std::move(common_buffer));
-		if (!gen_ip_conds(prof, streams, local, false, local_port, local.is_port, false))
+		/* skb is always false for AA_NET_LISTEN and AA_NET_OPT, and therefore so is is_iface */
+		if (!gen_ip_conds(prof, streams, local, false, local_port, local.is_port, false, false))
 			return false;
 
 		if (perms & AA_NET_LISTEN) {
@@ -883,6 +964,8 @@ rule_result_t network_rule::gen_policy_re(Profile &prof)
 {
 	std::ostringstream buffer;
 	std::string buf;
+	unsigned int netclass = features_supports_networkv9 ? AA_CLASS_NETV9 : AA_CLASS_NETV8;
+	bool skb = features_supports_networkv9_skb;
 
 	if (!(features_supports_networkv8 || features_supports_networkv9)) {
 		warn_once(prof.name);
@@ -895,14 +978,23 @@ rule_result_t network_rule::gen_policy_re(Profile &prof)
 		unsigned int protocol = perm.second.second;
 
 		if (type > 0xffff) {
-			if (!gen_net_rule(prof, family, type, protocol))
+			if (!gen_net_rule(prof, netclass, family,
+					  type, protocol, false))
+				goto fail;
+
+			if (skb && !gen_net_rule(prof, AA_CLASS_NETV9_SKB, family,
+						 type, protocol, skb))
 				goto fail;
 		} else {
 			int t;
 			/* generate rules for types that are set */
 			for (t = 0; t < 16; t++) {
 				if (type & (1 << t)) {
-					if (!gen_net_rule(prof, family, t, protocol))
+					if (!gen_net_rule(prof, netclass, family,
+							  t, protocol, false))
+						goto fail;
+					if (skb && !gen_net_rule(prof, AA_CLASS_NETV9_SKB, family,
+								 t, protocol, skb))
 						goto fail;
 				}
 			}
@@ -981,6 +1073,12 @@ static int cmp_ip_conds(ip_conds const &lhs, ip_conds const &rhs)
 	res = null_strcmp(lhs.sport, rhs.sport);
 	if (res)
 		return res;
+	res = null_strcmp(lhs.iface, rhs.iface);
+	if (res)
+		return res;
+	res = null_strcmp(lhs.label_match, rhs.label_match);
+	if (res)
+		return res;
 	return lhs.is_none - rhs.is_none;
 }
 
@@ -1023,8 +1121,5 @@ int network_rule::cmp(rule_t const &rhs) const
 	res = cmp_ip_conds(local, nrhs.local);
 	if (res)
 		return res;
-	res = cmp_ip_conds(peer, nrhs.peer);
-	if (res)
-		return res;
-	return null_strcmp(label, nrhs.label);
+	return cmp_ip_conds(peer, nrhs.peer);
 };

@@ -62,12 +62,13 @@
 #define AA_NET_GETOPT		0x02000000
 
 #define AA_CONT_MATCH		0x08000000
+#define AA_SET_LABEL		0x80000000
 
 #define AA_VALID_NET_PERMS (AA_NET_SEND | AA_NET_RECEIVE | AA_NET_CREATE | \
 			    AA_NET_SHUTDOWN | AA_NET_CONNECT | \
 			    AA_NET_SETATTR | AA_NET_GETATTR | AA_NET_BIND | \
 			    AA_NET_ACCEPT | AA_NET_LISTEN | AA_NET_SETOPT | \
-			    AA_NET_GETOPT | AA_CONT_MATCH)
+			    AA_NET_GETOPT | AA_SET_LABEL | AA_CONT_MATCH)
 #define AA_LOCAL_NET_PERMS (AA_NET_CREATE | AA_NET_SHUTDOWN | AA_NET_SETATTR |\
 			    AA_NET_GETATTR | AA_NET_BIND | AA_NET_ACCEPT |    \
 			    AA_NET_LISTEN | AA_NET_SETOPT | AA_NET_GETOPT)
@@ -126,7 +127,10 @@ class ip_conds {
 public:
 	char *sip = NULL;
 	char *sport = NULL;
+	char *iface = NULL;
+	char *label_match = NULL;
 
+	bool set_label = false; /* unused while label_match is ununsed */
 	bool is_ip = false;
 	bool is_port = false;
 
@@ -146,6 +150,8 @@ public:
 			free(sport);
 			sport = NULL;
 		}
+		if (iface)
+			free(iface);
 	}
 };
 
@@ -157,14 +163,12 @@ public:
 
 	ip_conds peer;
 	ip_conds local;
-	char *label;
-
-	bool has_local_conds(void) { return local.sip || local.sport; }
+	bool has_local_conds(void) { return local.sip || local.sport || local.iface || local.label_match; }
 	bool has_peer_conds(void) { return peer.sip || peer.sport; }
 	/* empty constructor used only for the profile to access
 	 * static elements to maintain compatibility with
 	 * AA_CLASS_NET */
-	network_rule(): dedup_perms_rule_t(AA_CLASS_NETV8), label(NULL) { }
+	network_rule(): dedup_perms_rule_t(AA_CLASS_NETV8) { }
 	network_rule(perm32_t perms_p, struct cond_entry *conds,
 		     struct cond_entry *peer_conds);
 	network_rule(perm32_t perms_p, const char *family, const char *type,
@@ -193,12 +197,13 @@ public:
 		}
 	};
 
-	bool gen_ip_conds(Profile &prof, std::list<std::ostringstream> &streams, ip_conds &entry, bool is_peer, uint16_t port, bool is_port, bool is_cmd);
-	bool gen_net_rule(Profile &prof, u16 family, unsigned int type_mask, unsigned int protocol);
+	bool gen_ip_conds(Profile &prof, std::list<std::ostringstream> &streams, ip_conds &entry, bool is_peer, uint16_t port, bool is_port, bool is_cmd, bool is_iface);
+	bool gen_net_rule(Profile &prof, unsigned int netclass, u16 family, unsigned int type_mask, unsigned int protocol, bool skb);
 	void set_netperm(unsigned int family, unsigned int type, unsigned int protocol);
 	void update_compat_net(void);
 	bool parse_address(ip_conds &entry);
 	bool parse_port(ip_conds &entry);
+	bool parse_iface(ip_conds &entry);
 
 	// update TODO: in equality.sh when priority is a valid prefix
 	bool valid_prefix(const prefixes &p, const char *&error) override {

@@ -450,7 +450,7 @@ const char *local_name(const char *name)
  */
 char *get_xattr_value(struct cond_entry *entry)
 {
-	if (!entry->eq)
+	if (entry->comp != cond_comp::EQ)
 		return NULL;
 	if (!entry->vals)
 		return NULL;
@@ -951,6 +951,7 @@ static const char *mediates_ptrace =  CLASS_STR(AA_CLASS_PTRACE);
 static const char *mediates_socket_net = CLASS_STR(AA_CLASS_NET);	// socket af_family type
 static const char *mediates_netv8 = CLASS_STR(AA_CLASS_NETV8);		// address on inet
 static const char *mediates_netv9 = CLASS_STR(AA_CLASS_NETV9);
+static const char *mediates_netv9_skb = CLASS_STR(AA_CLASS_NETV9_SKB);
 static const char *mediates_net_unixv7 = CLASS_SUB_STR(AA_CLASS_NET, AF_UNIX);
 static const char *mediates_net_unixv9 = CLASS_SUB_STR(AA_CLASS_NETV9, AF_UNIX);
 static const char *mediates_ns = CLASS_STR(AA_CLASS_NS);
@@ -1023,6 +1024,9 @@ int process_profile_policydb(Profile *prof)
 			goto out;
 		if (features_supports_networkv8 &&
 		    !prof->policy.rules->add_rule(mediates_netv8, mediates_priority, rule_mode_t::ALLOW, AA_MAY_READ, 0, parseopts))
+			goto out;
+		if (features_supports_networkv9_skb &&
+		    !prof->policy.rules->add_rule(mediates_netv9_skb, mediates_priority, rule_mode_t::ALLOW, AA_MAY_READ, 0, parseopts))
 			goto out;
 		/* v9 requires net and unix to be done together to avoid
 		 * the problem that happened with v7/v8 unix/net
