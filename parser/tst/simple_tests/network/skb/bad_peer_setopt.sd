@@ -1,0 +1,11 @@
+#
+#=DESCRIPTION simple network getattr w/peer modifier
+#=EXRESULT FAIL
+
+# The create, bind, listen, shutdown, getattr, setattr, getopt, and setopt
+# permissions are local socket permissions. They are only applied to the local
+# socket and can't be specified in rules that have a peer component.
+
+profile a_profile {
+  network setopt peer=(ip=127.0.0.1),
+}
