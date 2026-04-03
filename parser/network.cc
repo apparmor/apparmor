@@ -838,7 +838,7 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 				 * the null transition */
 				if (!prof.policy.rules->add_rule(buf.c_str(), priority,
 								 rule_mode, map_perms(perms),
-								 dedup_perms_rule_t::audit == audit_t::FORCE ? map_perms(perms) : 0,
+								 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
 								 parseopts))
 					return false;
 			}
