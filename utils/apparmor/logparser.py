@@ -243,8 +243,6 @@ class ReadLog:
             ev['remote_port'] = event.net_foreign_port or None
             ev['addr'] = event.net_local_addr
             ev['peer_addr'] = event.net_foreign_addr
-            ev['addr'] = event.net_local_addr
-            ev['peer_addr'] = event.net_foreign_addr
             ev['peer'] = event.peer
         elif event_type == 'unix':
             ev['accesses'] = event.requested_mask
