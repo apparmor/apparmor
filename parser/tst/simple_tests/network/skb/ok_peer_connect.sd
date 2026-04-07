@@ -1,7 +1,7 @@
 #
 #=DESCRIPTION simple network getattr w/peer modifier
-#=EXRESULT FAIL
+#=EXRESULT PASS
 
 profile a_profile {
-  network getattr peer=(ip=127.0.0.1),
+  network connect peer=(ip=127.0.0.1),
 }

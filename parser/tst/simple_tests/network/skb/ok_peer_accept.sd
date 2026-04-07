@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION simple network getattr w/peer modifier
+#=EXRESULT PASS
+
+profile a_profile {
+  network accept peer=(ip=127.0.0.1),
+}
