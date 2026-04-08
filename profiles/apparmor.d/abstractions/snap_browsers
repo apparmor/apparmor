@@ -17,6 +17,7 @@ profile snap_browsers {
   /{,snap/core/[0-9]*/,snap/snapd/[0-9]*/}usr/lib/snapd/snapd r,
   /{,snap/core/[0-9]*/,snap/snapd/[0-9]*/}usr/lib/snapd/snap-seccomp rPix,
   /{,snap/core/[0-9]*/,snap/snapd/[0-9]*/}usr/lib/snapd/snap-confine Pix,
+  /{,snap/core/[0-9]*/,snap/snapd/[0-9]*/}usr/lib/@{multiarch}/* mr,
   /var/lib/snapd/system-key r,
   /run/snapd.socket rw,
 
@@ -32,10 +33,30 @@ profile snap_browsers {
   dbus send bus="session" path="/org/freedesktop/systemd1" interface="org.freedesktop.systemd1.Manager" member="StartTransientUnit" peer=(name="org.freedesktop.systemd1"),
   dbus receive bus="session" path="/org/freedesktop/systemd1" interface="org.freedesktop.systemd1.Manager" member="JobRemoved",
 
-  /sys/kernel/security/apparmor/features/ r,
+  /sys/kernel/security/apparmor/features/{,**} r,
 
   # allow launching official browser snaps.
   /snap/{brave,chromium,firefox,opera}/[0-9]*/meta/{snap.yaml,hooks/} r,
   /var/lib/snapd/sequence/{brave,chromium,firefox,opera}.json r,
   /var/lib/snapd/inhibit/{brave,chromium,firefox,opera}.lock rk,
+
+  owner @{run}/user/@{uid}/.mutter-Xwaylandauth.* r,
+  owner @{run}/user/@{uid}/snap.{brave,chromium,firefox,opera}/ rw,
+  /sys/fs/cgroup/cgroup.controllers r,
+
+  /usr/bin/getent rmCx,
+  profile getent /usr/bin/getent {
+    include <abstractions/base>
+    include <abstractions/nameservice-strict>
+    @{exec_path} rm,
+  }
+
+  /usr/bin/systemctl rmCx,
+  profile systemctl /usr/bin/systemctl {
+    include <abstractions/base>
+    @{exec_path} rm,
+
+    unix bind addr=@*/bus/systemctl/system,
+  }
+
 }
