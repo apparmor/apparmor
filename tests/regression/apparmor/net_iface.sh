@@ -21,6 +21,18 @@ bin=$pwd
 requires_kernel_features network_v9_skb/iface
 requires_parser_support "network interface=eth0,"
 
+skb_enabled_path="/proc/sys/kernel/apparmor_packet_mediation"
+if [ ! -e $skb_enabled_path ]; then
+	echo "$skb_enabled_path not available. Skipping tests ..."
+	exit 0
+else
+	skb_enabled=$(cat $skb_enabled_path)
+	if [ $skb_enabled -eq 0 ]; then
+		echo "$skb_enabled_path disabled. Skipping tests ..."
+		exit 0
+	fi
+fi
+
 settest net_inet_rcv
 
 sender="$bin/net_inet_snd"
