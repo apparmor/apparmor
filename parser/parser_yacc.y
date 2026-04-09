@@ -771,7 +771,7 @@ rules: rules opt_prefix network_rule
 	{
 		const char *error;
 		if (!$3->add_prefix($2, error))
-			yyerror(error);
+			yyerror("%s", error);
 		/* class members need to be updated after prefix is added */
 		$3->update_compat_net();
 
@@ -803,7 +803,7 @@ rules:  rules opt_prefix prefix_rule
 	{
 		const char *error;
 		if (!$3->add_prefix($2, error))
-			yyerror(error);
+			yyerror("%s", error);
 		$1->rule_ents.push_back($3);
 		$$ = $1;
 	}
