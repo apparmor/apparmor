@@ -423,7 +423,10 @@ void sd_serialize_xtable(std::ostringstream &buf, const char * const *table)
 	}
 
 	sd_write_array(buf, NULL, count);
-	for (size_t i = 4; i < count + 4; i++) {
+	for (size_t i = 4; i < AA_EXEC_COUNT; i++) {
+		if (!table[i]) {
+			continue;
+		}
 		size_t len = strlen(table[i]) + 1;
 
 		/* if its a namespace make sure the second : is overwritten
