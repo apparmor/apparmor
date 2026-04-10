@@ -100,7 +100,7 @@ void cond_expr::compare(cond_op op, const T &lhs, const T &rhs)
 		result = lhs <= rhs;
 		break;
 	default:
-		PDEBUG("Invalid op\n");
+		yyerror("Internal error: invalid comparison operator %d", (int)op);
 	}
 }
 
