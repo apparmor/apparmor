@@ -425,7 +425,7 @@ extern int zstd_compress_level;
 extern FILE *yyin;
 extern void yyrestart(FILE *fp);
 extern int yyparse(void);
-extern void yyerror(const char *msg, ...);
+extern void yyerror(const char *msg, ...) __attribute__((noreturn, format(printf, 1, 2)));
 extern int yylex(void);
 
 /* parser_include.c */
