@@ -34,6 +34,16 @@ int parse_net_perms(const char *str_mode, perm32_t *mode, int fail)
 	return parse_X_perms("net", AA_VALID_NET_PERMS, str_mode, mode, fail);
 }
 
+void write_net_ip_size(std::ostringstream &o, net_ip_size size)
+{
+	std::ios_base::fmtflags saved_flags = o.flags();
+	char saved_fill = o.fill();
+	o << "\\x" << std::setfill('0') << std::setw(2) << std::hex
+	  << static_cast<unsigned int>(size);
+	o.flags(saved_flags);
+	o.fill(saved_fill);
+}
+
 /* Bleah C++ doesn't have non-trivial designated initializers so we just
  * have to make sure these are in order.  This means we are more brittle
  * but there isn't much we can do.
@@ -657,14 +667,14 @@ std::string gen_ip_cond(struct ip_address const &ip)
 	int i;
 	if (ip.family == AF_INET) {
 		/* add a byte containing the size of the following ip */
-		oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << IPV4_SIZE;
+		write_net_ip_size(oss, net_ip_size::IPV4);
 
 		u8 *byte = (u8 *) &ip.address.address_v4; /* in network byte order */
 		for (i = 0; i < 4; i++)
 			oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<unsigned int>(byte[i]);
 	} else {
 		/* add a byte containing the size of the following ip */
-		oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << IPV6_SIZE;
+		write_net_ip_size(oss, net_ip_size::IPV6);
 		for (i = 0; i < 16; ++i)
 			oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<unsigned int>(ip.address.address_v6[i]);
 	}
@@ -713,15 +723,15 @@ std::list<std::ostringstream> gen_all_ip_options(std::ostringstream &oss) {
 	ipv4 << oss.str();
 	ipv6 << oss.str();
 
-	none << "\\x" << std::setfill('0') << std::setw(2) << std::hex << NONE_SIZE;
+	write_net_ip_size(none, net_ip_size::NONE);
 
 	/* add a byte containing the size of the following ip */
-	ipv4 << "\\x" << std::setfill('0') << std::setw(2) << std::hex << IPV4_SIZE;
+	write_net_ip_size(ipv4, net_ip_size::IPV4);
 	for (i = 0; i < 4; i++)
 		ipv4 << ".";
 
 	/* add a byte containing the size of the following ip */
-	ipv6 << "\\x" << std::setfill('0') << std::setw(2) << std::hex << IPV6_SIZE;
+	write_net_ip_size(ipv6, net_ip_size::IPV6);
 	for (i = 0; i < 16; ++i)
 		ipv6 << ".";
 
@@ -774,7 +784,7 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 			oss << gen_ip_cond(entry.ip);
 			streams.push_back(std::move(oss));
 		} else if (entry.is_none) {
-			oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << NONE_SIZE;
+			write_net_ip_size(oss, net_ip_size::NONE);
 			streams.push_back(std::move(oss));
 		} else {
 			streams.splice(streams.end(), gen_all_ip_options(oss));
@@ -1163,3 +1173,89 @@ int network_rule::cmp(rule_t const &rhs) const
 		return res;
 	return cmp_ip_conds(peer, nrhs.peer);
 };
+
+#ifdef UNIT_TEST
+#include "unit_test.h"
+
+static int test_write_net_ip_size_values(void)
+{
+	int rc = 0;
+	std::ostringstream oss;
+
+	write_net_ip_size(oss, net_ip_size::NONE);
+	MY_TEST(oss.str() == "\\x00", "NONE outputs \\x00");
+
+	oss.str("");
+	write_net_ip_size(oss, net_ip_size::IPV4);
+	MY_TEST(oss.str() == "\\x01", "IPV4 outputs \\x01");
+
+	oss.str("");
+	write_net_ip_size(oss, net_ip_size::IPV6);
+	MY_TEST(oss.str() == "\\x02", "IPV6 outputs \\x02");
+
+	return rc;
+}
+
+static int test_write_net_ip_size_preserves_default_stream_state(void)
+{
+	int rc = 0;
+	std::ostringstream oss;
+	std::ios_base::fmtflags flags_before = oss.flags();
+	char fill_before = oss.fill();
+
+	write_net_ip_size(oss, net_ip_size::IPV4);
+
+	MY_TEST(oss.flags() == flags_before, "default flags preserved");
+	MY_TEST(oss.fill() == fill_before, "default fill char preserved");
+
+	/* subsequent output must still use decimal (not hex from internals) */
+	oss.str("");
+	oss << 255;
+	MY_TEST(oss.str() == "255", "decimal output not polluted after write_net_ip_size");
+
+	return rc;
+}
+
+static int test_write_net_ip_size_preserves_custom_stream_state(void)
+{
+	int rc = 0;
+	std::ostringstream oss;
+
+	/* establish non-default formatting state */
+	oss << std::hex << std::setfill('*');
+	std::ios_base::fmtflags flags_before = oss.flags();
+	char fill_before = oss.fill();
+
+	write_net_ip_size(oss, net_ip_size::IPV4);
+
+	MY_TEST(oss.flags() == flags_before, "custom flags preserved");
+	MY_TEST(oss.fill() == fill_before, "custom fill char preserved");
+
+	/* subsequent output must still honour the preserved hex flag */
+	oss.str("");
+	oss << 255;
+	MY_TEST(oss.str() == "ff", "hex flag preserved: 255 formats as ff");
+
+	return rc;
+}
+
+int main(void)
+{
+	int rc = 0;
+	int retval;
+
+	retval = test_write_net_ip_size_values();
+	if (retval)
+		rc = retval;
+
+	retval = test_write_net_ip_size_preserves_default_stream_state();
+	if (retval)
+		rc = retval;
+
+	retval = test_write_net_ip_size_preserves_custom_stream_state();
+	if (retval)
+		rc = retval;
+
+	return rc;
+}
+#endif /* UNIT_TEST */
