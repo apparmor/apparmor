@@ -117,6 +117,8 @@ long str_set_to_long(std::set<std::string> &src, char **endptr)
 		converted_src = strtol(src.begin()->c_str(), endptr, 0);
 	if (errno == ERANGE)
 		yyerror(_("Value out of valid range\n"));
+	if (errno == EINVAL)
+		yyerror(_("Value is not valid\n"));
 	return converted_src;
 }
 
