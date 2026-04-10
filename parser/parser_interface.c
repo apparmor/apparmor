@@ -253,9 +253,10 @@ static inline void sd_write_name(std::ostringstream &buf, const char *name)
 {
 	PDEBUG("Writing name '%s'\n", name ? name : "(null)");
 	if (name) {
+		size_t len = strlen(name);
 		sd_write_code(buf, sd_code::NAME);
-		sd_write16(buf, strlen(name) + 1);
-		buf.write(name, strlen(name) + 1);
+		sd_write16(buf, len + 1);
+		buf.write(name, len + 1);
 	}
 }
 
