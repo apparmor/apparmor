@@ -1125,7 +1125,6 @@ static int cmp_ip_conds(ip_conds const &lhs, ip_conds const &rhs)
 static int cmp_network_map(std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> const &lhs,
 			   std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> const &rhs)
 {
-	int res;
 	size_t family_index;
 	for (family_index = AF_UNSPEC; family_index < get_af_max(); family_index++) {
 		std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>>::const_iterator li = lhs.find(family_index);
@@ -1137,14 +1136,18 @@ static int cmp_network_map(std::unordered_map<unsigned int, std::pair<unsigned i
 		} else if (ri == rhs.end()) {
 			return 1;		// lhs > rhs
 		}
-
-		res = li->second.first - ri->second.first;
-		if (res)
-			return res;
-
-		res = li->second.second - ri->second.second;
-		if (res)
-			return res;
+		if (li->second.first < ri->second.first) {
+			return -1;
+		}
+		if (li->second.first > ri->second.first) {
+			return 1;
+		}
+		if (li->second.second < ri->second.second) {
+			return -1;
+		}
+		if (li->second.second > ri->second.second) {
+			return 1;
+		}
 	}
 	return 0;
 }
