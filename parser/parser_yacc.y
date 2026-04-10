@@ -1105,6 +1105,9 @@ link_rule: TOK_LINK opt_subset_flag id_or_var TOK_ARROW id_or_var TOK_END_OF_RUL
 		struct cod_entry *entry;
 		PDEBUG("Matched: link tok_id (%s) -> (%s)\n", $3, $5);
 		entry = new_entry($3, AA_LINK_BITS, $5);
+		if (!entry) {
+			yyerror(_("Memory allocation error."));
+		}
 		entry->subset = $2;
 		PDEBUG("rule.entry: link (%s)\n", entry->name);
 		$$ = entry;

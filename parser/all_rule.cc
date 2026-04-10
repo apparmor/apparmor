@@ -101,6 +101,9 @@ void all_rule::add_implied_rules(Profile &prof)
 		if (!path)
 			yyerror(_("Memory allocation error."));
 		entry = new_entry(path, perms, NULL);
+		if (!entry) {
+			yyerror(_("Memory allocation error."));
+		}
 		if (!entry_add_prefix(entry, *prefix, error)) {
 			yyerror(_("%s"), error);
 		}
@@ -130,6 +133,9 @@ void all_rule::add_implied_rules(Profile &prof)
 		if (!path)
 			yyerror(_("Memory allocation error."));
 		entry = new_entry(path, perms, NULL);
+		if (!entry) {
+			yyerror(_("Memory allocation error."));
+		}
 		if (!entry_add_prefix(entry, ix_prefix, error)) {
 			yyerror(_("%s"), error);
 		}
