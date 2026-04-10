@@ -752,7 +752,7 @@ perm32_t parse_perms(const char *str_perms)
 	perms = SHIFT_PERMS(tmp, AA_USER_SHIFT);
 	perms |= SHIFT_PERMS(tmp, AA_OTHER_SHIFT);
 	if (perms & ~AA_VALID_PERMS)
-		yyerror(_("Internal error generated invalid perm 0x%llx\n"), perms);
+		yyerror(_("Internal error generated invalid perm 0x%x\n"), perms);
 	return perms;
 }
 
