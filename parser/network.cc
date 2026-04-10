@@ -608,7 +608,7 @@ ostream &network_rule::dump(ostream &os)
 		if (type == 0xffffffff || type == ALL_TYPES)
 			continue;
 
-		printf(" {");
+		os << " {";
 
 		for (j = 0; j < count; j++) {
 			const char *type_name;
@@ -623,7 +623,7 @@ ostream &network_rule::dump(ostream &os)
 		if (type & mask)
 			os << " #" << std::hex << (type & mask);
 
-		printf(" }");
+		os << " }";
 
 		const char *protocol_name = net_find_protocol_name(protocol);
 		if (protocol_name)
