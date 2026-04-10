@@ -33,7 +33,7 @@
 using namespace std;
 
 /* See unix(7) for autobind address definition */
-#define autobind_address_pattern "\\x00[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]";
+#define autobind_address_pattern "\\x00[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]"
 
 int parse_unix_perms(const char *str_perms, perm32_t *perms, int fail)
 {
