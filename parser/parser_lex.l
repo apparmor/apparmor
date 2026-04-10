@@ -227,7 +227,7 @@ static char *lsntrim(char *s, int l)
 {
 	const char *end = s + l;
 
-	while (s <= end && isspace(*s))
+	while (s < end && isspace(*s))
 		s++;
 	return s;
 }
@@ -370,7 +370,7 @@ IN_OP		in
 		int lt = *yytext == '<'  ? 1 : 0;
 		int len = yyleng - lt*2;
 		char *s = yytext + lt;
-		char * filename = lsntrim(s, yyleng);
+		char * filename = lsntrim(s, len);
 		bool exists = YYSTATE == INCLUDE_EXISTS;
 
 		filename = processid(filename, rsntrim(filename, len - (filename - s)));
