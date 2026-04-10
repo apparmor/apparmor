@@ -124,12 +124,11 @@ void all_rule::add_implied_rules(Profile &prof)
 		// TODO:
 		// need a better way to make sure the prefix is initialized
 		// without a constructor or copy constructor
-		ix_prefix.priority = prefix->priority -1;
+		ix_prefix.priority = prefix->priority - 1;
 		ix_prefix.audit = prefix->audit;
 		ix_prefix.rule_mode = prefix->rule_mode;
 		ix_prefix.owner = prefix->owner;
 
-		ix_prefix.priority -= 1;
 		if (rule_mode != rule_mode_t::DENY)
 			perms |= AA_EXEC_INHERIT;
 		/* duplicate to other permission set */
