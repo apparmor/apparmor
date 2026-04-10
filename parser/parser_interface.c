@@ -259,7 +259,7 @@ static inline void sd_write_name(std::ostringstream &buf, const char *name)
 	}
 }
 
-static inline void sd_write_blob(std::ostringstream &buf, void *b, int buf_size, char *name)
+static inline void sd_write_blob(std::ostringstream &buf, const void *b, int buf_size, const char *name)
 {
 	sd_write_name(buf, name);
 	sd_write_code(buf, sd_code::BLOB);
