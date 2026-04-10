@@ -46,6 +46,16 @@ PROFILE = 'sbin.pingy'
 config = None
 
 
+def _get_parser():
+    """Return the parser binary path, preferring APPARMOR_PARSER env var.
+
+    When running under pytest-xdist the global config object is not populated;
+    the parser path is conveyed via the environment variable set in conftest.py
+    instead.
+    """
+    return os.environ.get('APPARMOR_PARSER') or (config.parser if config else testlib.DEFAULT_PARSER)
+
+
 class AAParserCachingCommon(testlib.AATestTemplate):
     do_cleanup = True
 
@@ -63,13 +73,13 @@ class AAParserCachingCommon(testlib.AATestTemplate):
         self.abstraction = testlib.write_file(self.tmp_dir, ABSTRACTION, ABSTRACTION_CONTENTS)
         self.profile = testlib.write_file(self.tmp_dir, PROFILE, PROFILE_CONTENTS)
 
-        if config.debug:
+        if config and config.debug:
             self.do_cleanup = False
             self.debug = True
 
         # Warnings break the test harness, but chroots may not be setup
         # to have the config file, etc.
-        self.cmd_prefix = [config.parser, '--config-file=./parser.conf', '--base', self.tmp_dir, '--skip-kernel-load']
+        self.cmd_prefix = [_get_parser(), '--config-file=./parser.conf', '--base', self.tmp_dir, '--skip-kernel-load']
 
         if not self.is_apparmorfs_mounted():
             self.cmd_prefix.extend(('-M', './features_files/features.all'))
@@ -97,7 +107,7 @@ class AAParserCachingCommon(testlib.AATestTemplate):
                 shutil.rmtree(self.tmp_dir)
 
     def get_cache_dir(self, create=False):
-        cmd = [config.parser, '--print-cache-dir']
+        cmd = [_get_parser(), '--print-cache-dir']
         cmd.extend(self.cmd_prefix)
         rc, report = self.run_cmd(cmd)
         if rc != 0:
@@ -469,7 +479,7 @@ class AAParserCachingTests(AAParserCachingCommon):
         # copy parser
         os.mkdir(os.path.join(self.tmp_dir, 'parser'))
         new_parser = os.path.join(self.tmp_dir, 'parser', 'apparmor_parser')
-        shutil.copy(config.parser, new_parser)
+        shutil.copy(_get_parser(), new_parser)
         self._set_mtime(new_parser, os.stat(self.cache_file).st_mtime + self.mtime_res)
 
         cmd = list(self.cmd_prefix)
@@ -544,6 +554,7 @@ def main():
     p.add_argument('-v', '--verbose', action="store_true", dest="verbose")
     p.add_argument('-d', '--debug', action="store_true", dest="debug")
     config = p.parse_args()
+    os.environ['APPARMOR_PARSER'] = config.parser
 
     verbosity = 2 if config.verbose else 1
 
