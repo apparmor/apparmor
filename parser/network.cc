@@ -241,7 +241,7 @@ const char *net_find_af_name(unsigned int af)
 {
 	size_t i;
 
-	if (af < 0 || af > get_af_max())
+	if (af > get_af_max())
 		return NULL;
 
 	for (i = 0; i < sizeof(network_mappings) / sizeof(*network_mappings); i++) {
