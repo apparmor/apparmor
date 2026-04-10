@@ -960,7 +960,7 @@ bool parse_label(bool *_stack, char **_ns, char **_name,
 alloc_fail:
 	err = _("Memory allocation error.");
 	if (yyerr)
-		yyerror(err);
+		yyerror("%s", err);
 	else
 		fprintf(stderr, "%s", err);
 
