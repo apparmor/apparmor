@@ -959,7 +959,7 @@ rules: rules TOK_SET TOK_RLIMIT TOK_ID TOK_LE TOK_VALUE opt_id TOK_END_OF_RULE
 				value = tmp;
 				break;
 			default:
-				yyerror("Unknown RLIMIT %d\n", $4);
+				yyerror("Unknown RLIMIT %s\n", $4);
 			}
 		}
 		$1->rlimits.specified |= 1 << limit;
