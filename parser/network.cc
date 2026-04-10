@@ -1056,16 +1056,40 @@ unsigned int *network_rule::quiet = NULL;
 
 bool network_rule::alloc_net_table()
 {
-	if (allow)
+	if (allow && audit && deny && quiet)
 		return true;
+
 	allow = (unsigned int *) calloc(get_af_max(), sizeof(unsigned int));
+	if (!allow) {
+		goto out;
+	}
 	audit = (unsigned int *) calloc(get_af_max(), sizeof(unsigned int));
+	if (!audit) {
+		goto out;
+	}
 	deny = (unsigned int *) calloc(get_af_max(), sizeof(unsigned int));
+	if (!deny) {
+		goto out;
+	}
 	quiet = (unsigned int *) calloc(get_af_max(), sizeof(unsigned int));
-	if (!allow || !audit || !deny || !quiet)
-		return false;
+	if (!quiet) {
+		goto out;
+	}
 
 	return true;
+
+out:
+		free(allow);
+		free(audit);
+		free(deny);
+		free(quiet); // Not possible but easier in case refactor.
+
+		allow = NULL;
+		audit = NULL;
+		deny = NULL;
+		quiet = NULL;
+
+		return false;
 }
 
 /* update is required because at the point of the creation of the
