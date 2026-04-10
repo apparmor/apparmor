@@ -113,6 +113,8 @@ void all_rule::add_implied_rules(Profile &prof)
 		const char *error;
 		struct cod_entry *entry;
 		char *path = strdup("/{**,}");
+		if (!path)
+			yyerror(_("Memory allocation error."));
 		int perms = AA_MAY_EXEC;
 		prefixes ix_prefix;
 
@@ -129,8 +131,6 @@ void all_rule::add_implied_rules(Profile &prof)
 			perms |= AA_EXEC_INHERIT;
 		/* duplicate to other permission set */
 		perms |= perms << AA_OTHER_SHIFT;
-		if (!path)
-			yyerror(_("Memory allocation error."));
 		entry = new_entry(path, perms, NULL);
 		if (!entry_add_prefix(entry, ix_prefix, error)) {
 			yyerror(_("%s"), error);
