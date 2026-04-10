@@ -824,7 +824,7 @@ int parse_X_perms(const char *X, int valid, const char *str_perms, perm32_t *per
 	if (*perms & ~valid) {
 		if (fail)
 			yyerror(_("Internal error generated invalid %s perm 0x%x\n"),
-				X, perms);
+				X, *perms);
 		else
 			return 0;
 	}
