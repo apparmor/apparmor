@@ -135,27 +135,59 @@ static std::string escape_re(std::string str)
 	return str;
 }
 
+// saved_var adds a variable to the global symbol table upon destruction.
+class saved_var final {
+	std::string var_name;
+	const variable *saved = nullptr;
+
+	public:
+	saved_var() = default;
+	saved_var(const saved_var &) = delete;
+	saved_var &operator=(const saved_var &) = delete;
+
+	// ~saved_var restores the global symbol table variable previously saved with [save].
+	~saved_var() {
+		if (var_name.empty()) return;
+		auto tmp = global_symtab.delete_var(var_name.c_str());
+		delete tmp;
+		if (saved) {
+			(void)global_symtab.add_var(*saved); // We ignore errors since the variable was just removed.
+			delete saved;
+		}
+	}
+
+	// save saves the current state of the given variable to restore later.
+	void save(const char *name) {
+		if (saved) {
+			delete saved;
+			saved = nullptr;
+		}
+		var_name = name;
+		saved = global_symtab.delete_var(name);
+	}
+};
+
 int process_profile_variables(Profile *prof)
 {
 	int error = 0;
-	variable *saved_exec_path = NULL;
-	variable *saved_attach_path = NULL;
-	variable *tmp = NULL;
+	saved_var saved_profile_name;
+	saved_var saved_exec_path;
+	saved_var saved_attach_path;
 
 	/* needs to be before PROFILE_NAME_VARIABLE so that variable will
 	 * have the correct name
 	 */
 	error = process_variables_in_name(*prof);
-
 	if (error)
-		goto out;
+		return error;
 
 	/* escape profile name elements that could be interpreted as
 	 * regular expressions.
 	 */
+	saved_profile_name.save(PROFILE_NAME_VARIABLE);
 	error = global_symtab.add_var(PROFILE_NAME_VARIABLE, escape_re(prof->get_name(false)).c_str());
 	if (error)
-		goto out;
+		return error;
 
 	if (prof->attachment) {
 		/* IF we didn't want a path based profile name to generate
@@ -164,47 +196,26 @@ int process_profile_variables(Profile *prof)
 		 * the attachment.
 		 */
 		/* need to take into account alias, but not yet */
-		saved_attach_path = global_symtab.delete_var(PROFILE_ATTACH_VAR);
+		saved_attach_path.save(PROFILE_ATTACH_VAR);
 		error = global_symtab.add_var(PROFILE_ATTACH_VAR, (const char*) prof->attachment);
 		if (error)
-			goto cleanup_name;
+			return error;
 		/* update to use kernel vars if available */
-		saved_exec_path = global_symtab.delete_var(PROFILE_EXEC_VAR);
+		saved_exec_path.save(PROFILE_EXEC_VAR);
 		error = global_symtab.add_var(PROFILE_EXEC_VAR, (const char*) prof->attachment);
 		if (error)
-			goto cleanup_attach;
+			return error;
 	}
 
 	error = process_variables_in_entries(prof->entries);
 	if (error)
-		goto cleanup;
-	error = process_variables_in_rules(*prof);
+		return error;
 
-cleanup:
-	/* ideally these variables would be local scoped and we would not
-	 * have to clean them up here, but unfortunately variables
-	 * don't support that yet.
-	 */
-	if (prof->attachment) {
-		tmp = global_symtab.delete_var(PROFILE_EXEC_VAR);
-		delete tmp;
-		if (saved_exec_path)
-			global_symtab.add_var(*saved_exec_path);
-	}
-cleanup_attach:
-	if (prof->attachment) {
-		tmp = global_symtab.delete_var(PROFILE_ATTACH_VAR);
-		delete tmp;
-		if (saved_attach_path)
-			global_symtab.add_var(*saved_attach_path);
-	}
-cleanup_name:
-	tmp = global_symtab.delete_var(PROFILE_NAME_VARIABLE);
-	delete tmp;
-	delete saved_exec_path;
-	delete saved_attach_path;
-out:
-	return error;
+	error = process_variables_in_rules(*prof);
+	if (error)
+		return error;
+
+	return 0;
 }
 
 #ifdef UNIT_TEST
