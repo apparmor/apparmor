@@ -1748,9 +1748,10 @@ def collapse_log(hashlog, ignore_null_profiles=True):
             for access in mqueue.keys():
                 for mqueue_type in mqueue[access]:
                     for mqueue_name in mqueue[access][mqueue_type]:
-                        mqueue_event = MessageQueueRule(access, mqueue_type, MessageQueueRule.ALL, mqueue_name, log_event=True)
-                        if not hat_exists or not is_known_rule(aa[profile][hat], 'mqueue', mqueue_event):
-                            log_dict[aamode][final_name]['mqueue'].add(mqueue_event)
+                        if mqueue_name:
+                            mqueue_event = MessageQueueRule(access, mqueue_type, MessageQueueRule.ALL, mqueue_name, log_event=True)
+                            if not hat_exists or not is_known_rule(aa[profile][hat], 'mqueue', mqueue_event):
+                                log_dict[aamode][final_name]['mqueue'].add(mqueue_event)
 
             io_uring = hashlog[aamode][full_profile]['io_uring']
             for access in io_uring.keys():
