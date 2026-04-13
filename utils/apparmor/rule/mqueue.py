@@ -228,7 +228,8 @@ class MessageQueueRule(BaseRule):
     @classmethod
     def from_hashlog(cls, hl):
         for access, mqueue_type, mqueue_name in BaseRule.generate_rules_from_hashlog(hl, 3):
-            yield cls(access, mqueue_type, MessageQueueRule.ALL, mqueue_name, log_event=True)
+            if mqueue_name:
+                yield cls(access, mqueue_type, MessageQueueRule.ALL, mqueue_name, log_event=True)
 
 
 class MessageQueueRuleset(BaseRuleset):

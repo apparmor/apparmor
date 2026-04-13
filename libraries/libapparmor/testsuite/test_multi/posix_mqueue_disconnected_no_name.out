@@ -1,0 +1,17 @@
+START
+File: posix_mqueue_disconnected_no_name.in
+Event type: AA_RECORD_DENIED
+Audit ID: 1775503928.412:154
+Operation: getattr
+Mask: getattr
+Denied Mask: getattr
+fsuid: 1000
+ouid: 0
+Profile: plasmashell
+Command: plasmashell
+Info: Failed name lookup - disconnected IPC path
+ErrorCode: 13
+PID: 2111
+Class: posix_mqueue
+Epoch: 1775503928
+Audit subid: 154
