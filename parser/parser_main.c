@@ -446,7 +446,7 @@ static long str_to_size(const char *s)
 	return -1;
 }
 
-bool str_to_int(const char *s, int *out) {
+static bool str_to_int(const char *s, int *out) {
 	char *end = NULL;
 	long v;
 
