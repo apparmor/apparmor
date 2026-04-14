@@ -161,7 +161,17 @@ void setup_cache_policy(const char *cachename)
 {
 	zstd_compress_t tmp = valid_compressed_cache(cachename);
 	if (tmp == ZSTD_COMPRESS_PRECOMPRESSED) {
-		zstd_compress_policy = ZSTD_COMPRESS_PRECOMPRESSED;
+		if (zstd_compress_policy != ZSTD_COMPRESS_NONE) {
+			zstd_compress_policy = ZSTD_COMPRESS_PRECOMPRESSED;
+		} else {
+			/*
+			 * Found a compressed cache be we doen't support compression
+			 * (e.g. cache copied from a compression-capable kernel's cache dir).
+			 * Treat as a miss; reparse will install an uncompressed replacement.
+			 */
+			pwarn(WARN_CACHE, "Compressed cache found but compression is disabled: ignoring\n");
+			mru_skip_cache = 1;
+		}
 	} else if (tmp == ZSTD_COMPRESS_RECOMPRESS) {
 		if (zstd_compress_policy == ZSTD_COMPRESS_POLICY ||
 		    zstd_compress_policy == ZSTD_COMPRESS_GUESS) {
