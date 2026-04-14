@@ -614,9 +614,6 @@ size_t recompress_policy_zstd(const char *compressed_data, size_t compressed_siz
 		PERROR(_("Recompression error: raw_size is zero\n"));
 		return 0;
 	}
-	const char *zstd_payload = compressed_data;
-	size_t zstd_payload_size = compressed_size;
-
 	/* Allocate and decompress */
 	char *raw_buf = (char *)malloc(raw_size);
 	if (!raw_buf) {
@@ -624,7 +621,7 @@ size_t recompress_policy_zstd(const char *compressed_data, size_t compressed_siz
 		return 0;
 	}
 
-	size_t dec_sz = ZSTD_decompress(raw_buf, raw_size, zstd_payload, zstd_payload_size);
+	size_t dec_sz = ZSTD_decompress(raw_buf, raw_size, compressed_data, compressed_size);
 	if (ZSTD_isError(dec_sz)) {
 		free(raw_buf);
 		PERROR(_("Decompression error: %s\n"), ZSTD_getErrorName(dec_sz));
