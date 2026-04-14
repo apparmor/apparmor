@@ -1182,7 +1182,9 @@ int process_binary(int option, aa_kernel_interface *kernel_interface,
 			return -1;
 		}
 
-		if (zstd_compress_policy == ZSTD_COMPRESS_POLICY) {
+		zstd_compress_t file_compress_policy = zstd_compress_policy;
+
+		if (file_compress_policy == ZSTD_COMPRESS_POLICY) {
 			zstd_compress_t state = is_valid_precompressed_profile(buffer, buffer_size, 0);
 			if (state == ZSTD_COMPRESS_NONE) {
 				size_t res = compress_policy_zstd(buffer, buffer_size, &compressed_data);
@@ -1195,20 +1197,20 @@ int process_binary(int option, aa_kernel_interface *kernel_interface,
 					data_to_load = compressed_data;
 				}
 			} else {
-				zstd_compress_policy = state;
+				file_compress_policy = state;
 			}
-		} else if (zstd_compress_policy == ZSTD_COMPRESS_GUESS) {
+		} else if (file_compress_policy == ZSTD_COMPRESS_GUESS) {
 			if (profilename)
-				zstd_compress_policy = valid_compressed_cache(profilename);
+				file_compress_policy = valid_compressed_cache(profilename);
 			else
-				zstd_compress_policy = is_valid_precompressed_profile(buffer, buffer_size, zstd_compress_level);
+				file_compress_policy = is_valid_precompressed_profile(buffer, buffer_size, zstd_compress_level);
 		}
 
-		if (zstd_compress_policy == ZSTD_COMPRESS_PRECOMPRESSED || zstd_compress_policy == ZSTD_COMPRESS_RECOMPRESS) {
+		if (file_compress_policy == ZSTD_COMPRESS_PRECOMPRESSED || file_compress_policy == ZSTD_COMPRESS_RECOMPRESS) {
 			/* Strip user header before loading or recompression */
 			char *payload = buffer + sizeof(struct compr_user_header);
 			size_t payload_size = buffer_size - sizeof(struct compr_user_header);
-			if (zstd_compress_policy == ZSTD_COMPRESS_RECOMPRESS) {
+			if (file_compress_policy == ZSTD_COMPRESS_RECOMPRESS) {
 				buffer_size = recompress_policy_zstd(payload, payload_size, &compressed_data);
 				if (buffer_size == 0) {
 					pwarn(WARN_CACHE, _("Recompression failed, falling back to original compressed data\n"));
@@ -1221,7 +1223,7 @@ int process_binary(int option, aa_kernel_interface *kernel_interface,
 				data_to_load = payload;
 				buffer_size = payload_size;
 			}
-		} else if (zstd_compress_policy != ZSTD_COMPRESS_POLICY) {
+		} else if (file_compress_policy != ZSTD_COMPRESS_POLICY) {
 			data_to_load = buffer;
 		}
 
