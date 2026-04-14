@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <sys/types.h>
+#include <sys/uio.h>
 #include <unistd.h>
 #include <sys/stat.h>
 
@@ -156,6 +157,31 @@ zstd_compress_t is_valid_precompressed_fd(const char *cachename)
 	return is_valid_precompressed_profile(buffer, sz, zstd_compress_level);
 }
 
+void setup_cache_policy(const char *cachename)
+{
+	zstd_compress_t tmp = valid_compressed_cache(cachename);
+	if (tmp == ZSTD_COMPRESS_PRECOMPRESSED) {
+		zstd_compress_policy = ZSTD_COMPRESS_PRECOMPRESSED;
+	} else if (tmp == ZSTD_COMPRESS_RECOMPRESS) {
+		if (zstd_compress_policy == ZSTD_COMPRESS_POLICY ||
+		    zstd_compress_policy == ZSTD_COMPRESS_GUESS) {
+			zstd_compress_policy = ZSTD_COMPRESS_POLICY;
+			write_cache = 1;
+		}
+	} else {
+		/* Not a valid compressed cache; check for uncompressed */
+		struct stat stat_bin;
+		if (stat(cachename, &stat_bin) == 0 && stat_bin.st_size > 0 &&
+		    valid_cached_file_version(cachename)) {
+			set_cache_tstamp(stat_bin.st_mtim);
+			if (zstd_compress_policy == ZSTD_COMPRESS_POLICY)
+				write_cache = 1;
+		} else if (!cond_clear_cache) {
+			write_cache = 0;
+		}
+	}
+}
+
 zstd_compress_t valid_compressed_cache(const char *cachename)
 {
 	struct stat stat_bin;
@@ -181,26 +207,6 @@ zstd_compress_t valid_compressed_cache(const char *cachename)
 	return ZSTD_COMPRESS_NONE;
 }
 
-void valid_read_cache(const char *cachename)
-{
-	struct stat stat_bin;
-
-	/* Load a binary cache if it exists and is newest */
-	if (!skip_read_cache) {
-		if (stat(cachename, &stat_bin) == 0 &&
-		    stat_bin.st_size > 0) {
-			if (valid_cached_file_version(cachename))
-				set_cache_tstamp(stat_bin.st_mtim);
-			else if (!cond_clear_cache)
-				write_cache = 0;
-		} else {
-			if (!cond_clear_cache)
-				write_cache = 0;
-			pwarn(WARN_DEBUG_CACHE, "%s: Invalid or missing cache file '%s' (%s)\n", progname, cachename, strerror(errno));
-		}
-	}
-}
-
 int cache_hit(const char *cachename)
 {
 	if (!mru_skip_cache) {
@@ -212,26 +218,15 @@ int cache_hit(const char *cachename)
 	return false;
 }
 
-int setup_cache_tmp(const char **cachetmpname, char *cachename, int create_compressed)
+int setup_cache_tmp(const char **cachetmpname, char *cachename)
 {
 	char *tmpname;
 	int cache_fd = -1;
-	char *end;
 
 	*cachetmpname = NULL;
 	if (write_cache) {
 		mode_t prev_mask;
-		if (create_compressed) {
-			end = strrchr(cachename, '/');
-			*end = '\0';
-			if (mkdir(cachename, 0700))
-				if (errno != EEXIST) {
-					*end = '/';
-					perror("Cannot create compressed cache directory\n");
-					return -1;
-				}
-			*end = '/';
-		}
+
 		/* Otherwise, set up to save a cached copy */
 		if (asprintf(&tmpname, "%s-XXXXXX", cachename) < 0) {
 			perror("asprintf");
@@ -278,4 +273,83 @@ void install_cache(const char *cachetmpname, const char *cachename)
 			PERROR("Wrote cache: %s\n", cachename);
 		}
 	}
+}
+
+char *read_policy_file(const char *path, size_t *file_size)
+{
+	FILE *file = path ? fopen(path, "rb") : stdin;
+	char *buffer = NULL, *tmp;
+	size_t size = 0, capacity = 0;
+
+	if (!file)
+		return NULL;
+
+	while (size == capacity) {
+		capacity = capacity ? capacity * 2 : 4096;
+		tmp = (char *) realloc(buffer, capacity);
+		if (!tmp) {
+			free(buffer);
+			buffer = NULL;
+			goto out;
+		}
+		buffer = tmp;
+		size += fread(buffer + size, 1, capacity - size, file);
+	}
+
+	if (ferror(file)) {
+		free(buffer);
+		buffer = NULL;
+	} else {
+		*file_size = size;
+	}
+
+out:
+	if (file != stdin)
+		fclose(file);
+	return buffer;
+}
+
+void install_compressed_cache(int cachetmp, const char *cachetmpname,
+			      const char *writecachename)
+{
+	size_t uncompressed_size = 0;
+	autofree char *uncompressed = read_policy_file(cachetmpname, &uncompressed_size);
+	if (!uncompressed) {
+		PERROR(_("Cannot read cache file '%s'\n"), cachetmpname);
+		unlink(cachetmpname);
+		return;
+	}
+
+	autofree char *compressed = NULL;
+	size_t compressed_size = compress_policy_zstd(uncompressed, uncompressed_size,
+						      &compressed);
+	if (compressed_size == 0) {
+		pwarn(WARN_CACHE, _("Compression failed, falling back to uncompressed cache\n"));
+		install_cache(cachetmpname, writecachename);
+		return;
+	}
+
+	struct compr_user_header uhdr = {
+		.version = COMPR_USER_HDR_VERSION,
+		.compress_level = (uint8_t)zstd_compress_level,
+		.padding = {0},
+	};
+	struct iovec iov[2] = {
+		{ .iov_base = &uhdr,      .iov_len = sizeof(uhdr) },
+		{ .iov_base = compressed, .iov_len = compressed_size },
+	};
+
+	if (ftruncate(cachetmp, 0) == -1 || lseek(cachetmp, 0, SEEK_SET) != 0) {
+		PERROR(_("%s: Unable to rewind tmp cache file\n"), progname);
+		return;
+	}
+
+	ssize_t wsize = writev(cachetmp, iov, 2);
+	if (wsize < 0 || (size_t)wsize < sizeof(uhdr) + compressed_size) {
+		PERROR(_("%s: Error writing compressed cache\n"), progname);
+		unlink(cachetmpname);
+		return;
+	}
+
+	install_cache(cachetmpname, writecachename);
 }
