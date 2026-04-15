@@ -103,9 +103,14 @@ unix_rule::unix_rule(unsigned int type_p, audit_t audit_p, rule_mode_t rule_mode
 {
 	if (type_p != 0xffffffff) {
 		sock_type_n = type_p;
-		sock_type = strdup(net_find_type_name(type_p));
-		if (!sock_type)
+		const char *type_name = net_find_type_name(type_p);
+		if (!type_name) {
 			yyerror("socket rule: invalid socket type '%d'", type_p);
+		}
+		sock_type = strdup(type_name);
+		if (!sock_type) {
+			yyerror(_("Memory allocation error."));
+		}
 	}
 	perms = AA_VALID_NET_PERMS;
 	audit = audit_p;
