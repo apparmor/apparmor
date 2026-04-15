@@ -1533,8 +1533,8 @@ netstat -x. The address then follows and may contain pattern matching
 and any characters including the null character. In AppArmor null
 characters must be specified by using an escape sequence I<\000> or
 I<\x00>. The pattern matching is the same as is used by file path matching
-so * will not match I</> even though it has no special meaning with
-in an abstract socket name. Eg.
+so * will not match I</> even though it has no special meaning within
+an abstract socket name. Eg.
 
   unix addr=@*,
 
