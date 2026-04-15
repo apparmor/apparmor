@@ -1391,6 +1391,58 @@ run_tests()
 				 network peer=(port=3459), \
 				 network peer=(port=3460), }"
 
+	    verify_binary_equality "network port bind range" \
+			   "/t { network bind port=1021-1023, }" \
+			   "/t { network bind port=1021, \
+				 network bind port=1022, \
+				 network bind port=1023, }"
+
+	    verify_binary_equality "network port bind range cross 1024" \
+			   "/t { network bind port=1023-1024, }" \
+			   "/t { network bind port=1023, \
+				 network bind port=1024, }"
+
+	    verify_binary_equality "network port bind range cross 1024 med" \
+			   "/t { network bind port=769-1278, }" \
+			   "/t { network bind port=769-1023, \
+				 network bind port=1024-1278, }"
+
+	    verify_binary_equality "network port bind range cross 1024 large" \
+			   "/t { network bind port=769-8191, }" \
+			   "/t { network bind port=769-1023, \
+				 network bind port=1024-8191, }"
+
+	    verify_binary_equality "network port range cross 1024" \
+			   "/t { network port=1023-1024, }" \
+			   "/t { network port=1023, \
+				 network port=1024, }"
+
+	    verify_binary_equality "network port range cross 1024 med" \
+			   "/t { network port=769-1278, }" \
+			   "/t { network port=769-1023, \
+				 network port=1024-1278, }"
+
+	    verify_binary_equality "network port range cross 1024 large" \
+			   "/t { network port=769-8191, }" \
+			   "/t { network port=769-1023, \
+				 network port=1024-8191, }"
+
+	    verify_binary_equality "network port peer range cross 1024" \
+			   "/t { network peer=(port=1023-1024), }" \
+			   "/t { network peer=(port=1023), \
+				 network peer=(port=1024), }"
+
+	    verify_binary_equality "network port peer range cross 1024 med" \
+			   "/t { network peer=(port=769-1278), }" \
+			   "/t { network peer=(port=769-1023), \
+				 network peer=(port=1024-1278), }"
+
+	    verify_binary_equality "network port range cross 1024 large" \
+			   "/t { network peer=(port=769-8191), }" \
+			   "/t { network peer=(port=769-1023), \
+				 network peer=(port=1024-8191), }"
+
+
 	    verify_binary_inequality "network port range allows more than single port" \
 			     "/t { network port=3456-3460, }" \
 			     "/t { network port=3456, }"
