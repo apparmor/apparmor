@@ -355,6 +355,9 @@ bool parse_port_number(const char *port_entry, uint16_t *port) {
 bool parse_range(const char *range, uint16_t *from, uint16_t *to)
 {
 	char *range_tmp = strdup(range);
+	if (!range_tmp) {
+		return false;
+	}
 	char *dash = strchr(range_tmp, '-');
 	bool ret = false;
 	if (dash == NULL)
