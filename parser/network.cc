@@ -634,15 +634,76 @@ std::string gen_ip_cond(const struct ip_address ip)
 	return oss.str();
 }
 
-std::string gen_port_cond(uint16_t port)
+
+static std::string gen_byte(uint16_t port)
 {
 	std::ostringstream oss;
-	if (port > 0) {
-		oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << ((port & 0xff00) >> 8);
-		oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (port & 0xff);
-	} else {
-		oss << "..";
+
+	oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << (port & 0xff);
+
+	return oss.str();
+}
+
+static std::string gen_byte_range(uint16_t from, uint16_t to)
+{
+	std::ostringstream oss;
+
+	if (from == 0 && to == 255)
+		return std::string(".");
+	oss << "[";
+	oss << gen_byte(from & 0xff);
+	oss << "-";
+	oss << gen_byte(to & 0xff);
+	oss << "]";
+
+	return oss.str();
+}
+
+std::string gen_port_cond(uint16_t from, uint16_t to)
+{
+	uint16_t from_high = from >> 8;
+	uint16_t to_high = to >> 8;
+	std::ostringstream oss;
+
+	if (from == to) {
+		if (from != 0) {
+			oss << gen_byte(from_high);
+			oss << gen_byte(from & 0xff);
+		} else
+			oss << "..";
+		return oss.str();
 	}
+	if (from_high == to_high) {
+		oss << gen_byte(from_high);
+		oss << gen_byte_range(from & 0xff, to & 0xff);
+		return oss.str();
+	}
+	/* we will need at least 2 ranges, use an alternation to encode
+	 * that all are supported at the same time
+	 *
+	 * This splits a port range into ranges that can be covered by
+	 * RE.
+	 * eg. 21-1027 will get split into
+	 *     21-255    0x00 [\d21-\d255]
+	 *     256-1023  [0x01-0x3] [0-255]
+	 *     1024-1027 [0x4] [0-3]
+	 */
+	oss << "(";
+	/* generate, lower range starting at @from up through rest of byte */ 
+	oss << gen_byte(from_high);
+	oss << gen_byte_range(from & 0xff, 0xff);
+	oss << "|";
+	if (to_high - from_high > 1) {
+		/* need a middle range, all lower byte entries filled */
+		oss << gen_byte_range(from_high + 1, to_high - 1);
+		oss << ".";
+		oss << "|";
+	}
+	/* upper range, @to upper byte, lower range 0-lower byye of upper */
+	oss << gen_byte(to_high);
+	oss << gen_byte_range(0, to & 0xff);
+	oss << ")";
+
 	return oss.str();
 }
 
@@ -684,23 +745,81 @@ std::list<std::ostringstream> copy_streams_list(std::list<std::ostringstream> &s
 	return streams_copy;
 }
 
-bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &streams, ip_conds &entry, bool is_peer, uint16_t port, bool is_port, bool is_cmd)
+/* defines used for port encoding */
+#define PRIVILEGED_PORT "\\x01"
+#define REMOTE_PORT "\\x02"
+#define UNPRIVILEGED_PORT "\\x00"
+
+/* TODO: allow policy to specify privileged/unprivileged flag, instead
+ * of extracting from range as this is just the default reserved range
+ * and this can be set at the system level.  the privileged port flag
+ * indicates permission to use a port in the privileged range.
+ */
+static std::string gen_port_type(port_type_t port_type)
+{
+	if (port_type == port_type_t::PRIVILEGED)
+		return std::string(PRIVILEGED_PORT);
+	else if (port_type == port_type_t::REMOTE)
+		return std::string(REMOTE_PORT);
+	return std::string(UNPRIVILEGED_PORT);
+}
+
+static std::string gen_port_cond_auto_type(ip_conds &entry, bool is_peer,
+					   bool is_bind)
+{
+	std::ostringstream oss;
+
+	/* extract type from range */
+	if (is_peer) {
+		oss << gen_port_type(port_type_t::REMOTE);
+		oss << gen_port_cond(entry.from_port, entry.to_port);
+	} else if (is_bind && entry.from_port < IPPORT_RESERVED) {
+		bool both = false;
+		uint16_t to;
+
+		if (entry.to_port >= IPPORT_RESERVED) {
+			/* cross privilege range,
+			 * need second range */
+			both = true;
+			oss << "(";
+			oss << gen_port_type(port_type_t::UNPRIVILEGED);
+			oss << gen_port_cond(IPPORT_RESERVED, entry.to_port);
+			to = IPPORT_RESERVED - 1;
+			oss << "|";
+		} else {
+			to = entry.to_port;
+		}
+		oss << gen_port_type(port_type_t::PRIVILEGED);
+		oss << gen_port_cond(entry.from_port, to);
+		if (both)
+			oss << ")";
+	} else {
+		oss << gen_port_type(port_type_t::UNPRIVILEGED);
+		oss << gen_port_cond(entry.from_port, entry.to_port);
+	}
+
+	return oss.str();
+}
+
+bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &streams, ip_conds &entry,
+				bool is_peer, bool is_cmd)
 {
 	std::string buf;
 	perm32_t cond_perms;
 	std::list<std::ostringstream> ip_streams;
 
 	for (auto &oss : streams) {
-		if (is_port && !(entry.is_ip && entry.is_none)) {
-			/* encode port type (privileged - 1, remote - 2, unprivileged - 0) */
-			if (!is_peer && perms & AA_NET_BIND && port < IPPORT_RESERVED)
-				oss << "\\x01";
-			else if (is_peer)
-				oss << "\\x02";
-			else
-				oss << "\\x00";
-
-			oss << gen_port_cond(port);
+		if (entry.is_port && !(entry.is_ip && entry.is_none)) {
+			if (entry.port_type != port_type_t::UNSPECIFIED) {
+				oss << gen_port_type(is_peer ?
+							port_type_t::REMOTE :
+							entry.port_type);
+				oss << gen_port_cond(entry.from_port,
+						     entry.to_port);
+			} else {
+				oss << gen_port_cond_auto_type(entry, is_peer,
+						!!(perms & AA_NET_BIND));
+			}
 		} else {
 			/* port type + port number */
 			oss << "...";
@@ -814,83 +933,67 @@ bool network_rule::gen_net_rule(Profile &prof, u16 family, unsigned int type_mas
 	}
 
 	if (perms & AA_PEER_NET_PERMS) {
-		for (int peer_port = peer.from_port; peer_port <= peer.to_port; peer_port++) {
-			std::list<std::ostringstream> streams;
-			std::ostringstream cmd_buffer;
-
-			cmd_buffer << buffer.str();
-			streams.push_back(std::move(cmd_buffer));
-
-			if (!gen_ip_conds(prof, streams, peer, true, peer_port, peer.is_port, false))
-				return false;
-
-			for (auto &oss : streams) {
-				oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << CMD_ADDR;
-			}
-
-			for (int local_port = local.from_port; local_port <= local.to_port; local_port++) {
-				std::list<std::ostringstream> localstreams;
-
-				for (auto &oss : streams) {
-					/* we need to copy streams because each local_port should be an unique entry */
-					std::ostringstream local_buffer;
-					local_buffer << oss.str();
-					localstreams.push_back(std::move(local_buffer));
-				}
-
-				if (!gen_ip_conds(prof, localstreams, local, false, local_port, local.is_port, true))
-					return false;
-			}
-		}
-	}
-
-
-	for (int local_port = local.from_port; local_port <= local.to_port; local_port++) {
 		std::list<std::ostringstream> streams;
-		std::ostringstream common_buffer;
+		std::ostringstream cmd_buffer;
 
-		common_buffer << buffer.str();
-		streams.push_back(std::move(common_buffer));
-		if (!gen_ip_conds(prof, streams, local, false, local_port, local.is_port, false))
+		cmd_buffer << buffer.str();
+		streams.push_back(std::move(cmd_buffer));
+
+		if (!gen_ip_conds(prof, streams, peer, true, false))
 			return false;
 
-		if (perms & AA_NET_LISTEN) {
-			std::list<std::ostringstream> cmd_streams;
-			cmd_streams = copy_streams_list(streams);
-
-			for (auto &cmd_buffer : streams) {
-				std::ostringstream listen_buffer;
-				listen_buffer << cmd_buffer.str();
-				listen_buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << CMD_LISTEN;
-				/* length of queue allowed - not used for now */
-				listen_buffer << "..";
-				buf = listen_buffer.str();
-				if (!prof.policy.rules->add_rule(buf.c_str(), priority,
-								 rule_mode, map_perms(perms),
-								 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
-								 parseopts))
-					return false;
-			}
+		for (auto &oss : streams) {
+			oss << "\\x" << std::setfill('0') << std::setw(2) << std::hex << CMD_ADDR;
 		}
-		if (perms & AA_NET_OPT) {
-			std::list<std::ostringstream> cmd_streams;
-			cmd_streams = copy_streams_list(streams);
 
-			for (auto &cmd_buffer : streams) {
-				std::ostringstream opt_buffer;
-				opt_buffer << cmd_buffer.str();
-				opt_buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << CMD_OPT;
-				/* level - not used for now */
-				opt_buffer << "..";
-				/* socket mapping - not used for now */
-				opt_buffer << "..";
-				buf = opt_buffer.str();
-				if (!prof.policy.rules->add_rule(buf.c_str(), priority,
-								 rule_mode, map_perms(perms),
-								 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
-								 parseopts))
-					return false;
-			}
+		if (!gen_ip_conds(prof, streams, local, false, true))
+			return false;
+	}
+
+	std::list<std::ostringstream> streams;
+	std::ostringstream common_buffer;
+
+	common_buffer << buffer.str();
+	streams.push_back(std::move(common_buffer));
+	if (!gen_ip_conds(prof, streams, local, false, false))
+		return false;
+
+	if (perms & AA_NET_LISTEN) {
+		std::list<std::ostringstream> cmd_streams;
+		cmd_streams = copy_streams_list(streams);
+
+		for (auto &cmd_buffer : streams) {
+			std::ostringstream listen_buffer;
+			listen_buffer << cmd_buffer.str();
+			listen_buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << CMD_LISTEN;
+			/* length of queue allowed - not used for now */
+			listen_buffer << "..";
+			buf = listen_buffer.str();
+			if (!prof.policy.rules->add_rule(buf.c_str(), priority,
+							 rule_mode, map_perms(perms),
+							 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
+							 parseopts))
+				return false;
+		}
+	}
+	if (perms & AA_NET_OPT) {
+		std::list<std::ostringstream> cmd_streams;
+		cmd_streams = copy_streams_list(streams);
+
+		for (auto &cmd_buffer : streams) {
+			std::ostringstream opt_buffer;
+			opt_buffer << cmd_buffer.str();
+			opt_buffer << "\\x" << std::setfill('0') << std::setw(2) << std::hex << CMD_OPT;
+			/* level - not used for now */
+			opt_buffer << "..";
+			/* socket mapping - not used for now */
+			opt_buffer << "..";
+			buf = opt_buffer.str();
+			if (!prof.policy.rules->add_rule(buf.c_str(), priority,
+						 rule_mode, map_perms(perms),
+						 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
+						 parseopts))
+				return false;
 		}
 	}
 
