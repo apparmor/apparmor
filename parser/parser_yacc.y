@@ -931,7 +931,7 @@ rules: rules TOK_SET TOK_RLIMIT TOK_ID TOK_LE TOK_VALUE opt_id TOK_END_OF_RULE
 				if (!end || $6 == end || $7)
 					yyerror("RLIMIT '%s' invalid value %s %s\n", $4, $6, $7 ? $7 : "");
 				if (tmp < -20 || tmp > 19)
-					yyerror("RLIMIT '%s' out of range (-20 .. 19) %d\n", $4, tmp);
+					yyerror("RLIMIT '%s' out of range (-20 .. 19) %lld\n", $4, tmp);
 				value = tmp + 20;
 				break;
 #endif
@@ -959,7 +959,7 @@ rules: rules TOK_SET TOK_RLIMIT TOK_ID TOK_LE TOK_VALUE opt_id TOK_END_OF_RULE
 				value = tmp;
 				break;
 			default:
-				yyerror("Unknown RLIMIT %d\n", $4);
+				yyerror("Unknown RLIMIT %s\n", $4);
 			}
 		}
 		$1->rlimits.specified |= 1 << limit;

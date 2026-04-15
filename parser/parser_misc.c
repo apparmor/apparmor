@@ -740,7 +740,7 @@ perm32_t parse_perms(const char *str_perms)
 	perms = SHIFT_PERMS(tmp, AA_USER_SHIFT);
 	perms |= SHIFT_PERMS(tmp, AA_OTHER_SHIFT);
 	if (perms & ~AA_VALID_PERMS)
-		yyerror(_("Internal error generated invalid perm 0x%llx\n"), perms);
+		yyerror(_("Internal error generated invalid perm 0x%x\n"), perms);
 	return perms;
 }
 
@@ -812,7 +812,7 @@ int parse_X_perms(const char *X, int valid, const char *str_perms, perm32_t *per
 	if (*perms & ~valid) {
 		if (fail)
 			yyerror(_("Internal error generated invalid %s perm 0x%x\n"),
-				X, perms);
+				X, *perms);
 		else
 			return 0;
 	}
@@ -960,7 +960,7 @@ bool parse_label(bool *_stack, char **_ns, char **_name,
 alloc_fail:
 	err = _("Memory allocation error.");
 	if (yyerr)
-		yyerror(err);
+		yyerror("%s", err);
 	else
 		fprintf(stderr, "%s", err);
 
