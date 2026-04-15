@@ -36,7 +36,13 @@ load_and_verify() {
 
     echo "profile $prof {}" | genprofile image=$prof --stdin
 
-    cache_md5=$(cat $cache_dir/profile | md5sum | awk '{ print $1 }')
+    # Check for the zstd magic number and decompress the cache if needed
+    if [ $(hexdump -s 8 -n 4 --format "\"%x\"" $cache_dir/profile) = "fd2fb528" ]; then
+        # Skip past our own custom header
+        cache_md5=$(cat $cache_dir/profile | tail -c +9 | zstdcat | md5sum | awk '{ print $1 }')
+    else
+        cache_md5=$(cat $cache_dir/profile | md5sum | awk '{ print $1 }')
+    fi
 
     local matching=0
     for binary_policy in /sys/kernel/security/apparmor/policy/profiles/$prof*/raw_data; do
