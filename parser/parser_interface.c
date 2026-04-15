@@ -754,7 +754,7 @@ int __sd_serialize_profile(int option, aa_kernel_interface *kernel_interface,
 		}
 
 		if (cache_fd != -1) {
-			/* Cache always stores raw (uncompressed) policy */
+			/* Write uncompressed policy to the cache FD. It will be compressed later in parser loop if enabled. */
 			wsize = write(cache_fd, raw_policy_string.c_str(), raw_policy_size);
 			if (wsize < 0) {
 				error = -errno;

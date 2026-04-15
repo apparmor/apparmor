@@ -45,11 +45,16 @@ void set_cache_tstamp(struct timespec t);
 void update_mru_tstamp(FILE *file, const char *path);
 bool valid_cached_file_version(const char *cachename);
 zstd_compress_t is_valid_precompressed_profile(char* buffer, size_t buffer_size, uint8_t min_compr_level);
+zstd_compress_t is_valid_precompressed_fd(const char *cachename);
+void setup_cache_policy(const char *cachename);
 char *cache_filename(struct aa_policy_cache *pc, int dir, const char *basename);
-void valid_read_cache(const char *cachename);
+
 zstd_compress_t valid_compressed_cache(const char *cachename);
 int cache_hit(const char *cachename);
-int setup_cache_tmp(const char **cachetmpname, char *cachename, int create_compressed);
+int setup_cache_tmp(const char **cachetmpname, char *cachename);
 void install_cache(const char *cachetmpname, const char *cachename);
+char *read_policy_file(const char *path, size_t *file_size);
+void install_compressed_cache(int cachetmp, const char *cachetmpname,
+			      const char *writecachename);
 
 #endif /* __AA_POLICY_CACHE_H */
