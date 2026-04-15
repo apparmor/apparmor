@@ -750,28 +750,7 @@ std::string gen_port_cond(uint16_t from, uint16_t to)
 	return oss.str();
 }
 
-std::string gen_iface_cond(const char *iface)
-{
-	std::string buf;
-	pattern_t ptype;
-	std::ostringstream oss;
-	if (iface) {
-		int pos;
-		ptype = convert_aaregex_to_pcre(iface, 0, glob_default, buf, &pos);
-		if (ptype == ePatternInvalid)
-			throw std::runtime_error("Invalid iface conditional");
-		oss << buf;
-	} else {
-		/* match any iface */
-		oss << default_match_pattern;
-	}
-
-	oss << "\\x00"; /* null transition */
-	
-	return oss.str();
-}
-
-static std::string gen_default_cond(const char *ent_str, const char *name)
+static std::string gen_default_cond(char *ent_str, const char *name)
 {
 	std::string buf;
 	if (!convert_entry(buf, ent_str))
@@ -941,7 +920,8 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 			if (perms & AA_MAY_SEND)
 				oss << "(\\x00|";
 
-			oss << gen_iface_cond(entry.iface);
+			oss << gen_default_cond(entry.iface, "iface");
+			oss << "\\x00"; /* null transition */
 
 			if (perms & AA_MAY_SEND)
 				oss << ")";
