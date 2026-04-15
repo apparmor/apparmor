@@ -4,7 +4,7 @@
 abi <abi/5.0>,
 include <tunables/global>
 
-profile brave /opt/brave.com/brave{,-beta,-nightly}/brave flags=(unconfined) {
+profile brave /opt/brave.com/brave{,-origin}{,-beta,-nightly}/brave flags=(unconfined) {
   userns,
   @{exec_path} mr,
 
