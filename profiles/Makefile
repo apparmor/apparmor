@@ -36,7 +36,7 @@ EXTRAS_ABSTRACTIONS_SOURCE=./apparmor/profiles/extras/abstractions
 ifdef USE_SYSTEM
     PYTHONPATH=
     PARSER?=apparmor_parser
-    LOGPROF?=aa-logprof
+    LOGPROF?=aa-logprof --no-check-mountpoint
 else
     # PYTHON_DIST_BUILD_PATH based on libapparmor/swig/python/test/Makefile.am
     PYTHON_DIST_BUILD_PATH = ../libraries/libapparmor/swig/python/build/$$($(PYTHON) ../libraries/libapparmor/swig/python/test/buildpath.py)
@@ -45,7 +45,7 @@ else
     PYTHONPATH=../utils/:$(PYTHON_DIST_BUILD_PATH)
     PARSER?=../parser/apparmor_parser
     # use ../utils logprof
-    LOGPROF?=LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) PYTHONPATH=$(PYTHONPATH) $(PYTHON) ../utils/aa-logprof --configdir ../utils/test
+    LOGPROF?=LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) PYTHONPATH=$(PYTHONPATH) $(PYTHON) ../utils/aa-logprof --no-check-mountpoint --configdir ../utils/test
 endif
 
 # $(PWD) is wrong when using "make -C profiles" - explicitly set it here to get the right value
