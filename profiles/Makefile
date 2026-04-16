@@ -50,7 +50,7 @@ else
     PYTHONPATH=../utils/:$(PYTHON_DIST_BUILD_PATH)
     PARSER?=../parser/apparmor_parser
     # use ../utils logprof
-    LOGPROF?=LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) PYTHONPATH=$(PYTHONPATH) $(PYTHON) ../utils/aa-logprof --configdir ../utils/
+    LOGPROF?=LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) PYTHONPATH=$(PYTHONPATH) $(PYTHON) ../utils/aa-logprof --configdir ../utils/test
 endif
 
 # $(PWD) is wrong when using "make -C profiles" - explicitly set it here to get the right value
