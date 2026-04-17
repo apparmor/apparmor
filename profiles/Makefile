@@ -122,20 +122,20 @@ check-parser: test-dependencies
 	@echo "*** Checking profiles from ${PROFILES_SOURCE} against apparmor_parser"
 	$(Q)for profile in $$(find ${PROFILES_SOURCE} -maxdepth 1 -type f) ; do \
 		[ -n "${VERBOSE}" ] && echo "Testing $${profile}" ; \
-		${PARSER} --config-file=../parser/tst/parser.conf -S -b ${PROFILES_SOURCE} $${profile} > /dev/null || exit 1; \
+		${PARSER} --config-file=../parser/tst/parser.conf -QK -S -b ${PROFILES_SOURCE} $${profile} > /dev/null || exit 1; \
 	done
 
 	@echo "*** Checking profiles from ${EXTRAS_SOURCE} against apparmor_parser"
 	$(Q)for profile in $$(find ${EXTRAS_SOURCE} -maxdepth 1 -type f -not -name README) ; do \
 		[ -n "${VERBOSE}" ] && echo "Testing $${profile}" ; \
-		${PARSER} --config-file=../parser/tst/parser.conf -S -b ${EXTRAS_SOURCE} -I ${PROFILES_SOURCE} $${profile} > /dev/null || exit 1; \
+		${PARSER} --config-file=../parser/tst/parser.conf -QK -S -b ${EXTRAS_SOURCE} -I ${PROFILES_SOURCE} $${profile} > /dev/null || exit 1; \
 	done
 
 	@echo "*** Checking abstractions from ${ABSTRACTIONS_SOURCE} against apparmor_parser"
 	$(Q)for abstraction in $$(find ${ABSTRACTIONS_SOURCE} -maxdepth 1 -type f -printf '%P\n') ; do \
 		[ -n "${VERBOSE}" ] && echo "Testing ${ABSTRACTIONS_SOURCE}/$${abstraction}" ; \
 		echo "abi <abi/4.0>, include <tunables/global> profile test { include <abstractions/$${abstraction}> }" \
-		| ${PARSER} --config-file=../parser/tst/parser.conf -S -b ${PROFILES_SOURCE} > /dev/null \
+		| ${PARSER} --config-file=../parser/tst/parser.conf -QK -S -b ${PROFILES_SOURCE} > /dev/null \
 		|| exit 1; \
 	done
 
@@ -143,7 +143,7 @@ check-parser: test-dependencies
 	$(Q)for abstraction in $$(find ${EXTRAS_ABSTRACTIONS_SOURCE} -maxdepth 1 -type f -printf '%P\n') ; do \
 		[ -n "${VERBOSE}" ] && echo "Testing ${EXTRAS_ABSTRACTIONS_SOURCE}/$${abstraction}" ; \
 		echo "abi <abi/4.0>, include <tunables/global> profile test { include <abstractions/$${abstraction}> }" \
-		| ${PARSER} --config-file=../parser/tst/parser.conf -S -b ${PROFILES_SOURCE} -I ${EXTRAS_SOURCE} > /dev/null \
+		| ${PARSER} --config-file=../parser/tst/parser.conf -QK -S -b ${PROFILES_SOURCE} -I ${EXTRAS_SOURCE} > /dev/null \
 		|| exit 1; \
 	done
 
