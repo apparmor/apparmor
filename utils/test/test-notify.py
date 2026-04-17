@@ -51,6 +51,9 @@ class TestGet_last_login_timestamp(AATest):
             # wtmp-x86_64-past is hand-edited to Thu Dec 30 00:00:00 CET 1999, which is outside the expected data range
             get_last_login_timestamp('root', 'wtmp-examples/wtmp-x86_64-past', 'wtmp-examples/does-not-exist')
 
+    def test_nonexistent_file(self):
+        self.assertEqual(get_last_login_timestamp('root', filename='/does/not/exist', lastlog2_db='/also/does/not/exist'), 0)
+
 
 class TestSane_timestamp(AATest):
     tests = (
