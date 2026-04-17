@@ -85,14 +85,6 @@ ifdef DEBUG
 LEXLIB	:= -lfl
 endif
 
-# override this on the make command to point to where the immunix.h file is
-# (yeah this is lame, but since we are tied to the kernel so tightly...)
-#INCLUDEDIR = /usr/src/linux/include
-INCLUDEDIR =
-
-ifdef INCLUDEDIR
-	CFLAGS += -I$(INCLUDEDIR)
-endif
 
 # Internationalization support. Define a package and a LOCALEDIR
 EXTRA_CFLAGS+=-DPACKAGE=\"${NAME}\" -DLOCALEDIR=\"${LOCALEDIR}\"

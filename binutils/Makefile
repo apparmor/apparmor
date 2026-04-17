@@ -37,13 +37,6 @@ endif #CFLAGS
 
 EXTRA_CFLAGS = ${CFLAGS} ${CPPFLAGS} ${EXTRA_CXXFLAGS} $(EXTRA_WARNINGS)
 
-#INCLUDEDIR = /usr/src/linux/include
-INCLUDEDIR =
-
-ifdef INCLUDEDIR
-	CFLAGS += -I$(INCLUDEDIR)
-endif
-
 # Internationalization support. Define a package and a LOCALEDIR
 EXTRA_CFLAGS+=-DPACKAGE=\"${NAME}\" -DLOCALEDIR=\"${LOCALEDIR}\"
 
