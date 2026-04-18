@@ -131,9 +131,7 @@ test-profiles:
   script:
     # This is to touch the built files in the test stage to avoid needless rebuilding
     - make -C profiles --touch
-    - make -C profiles check-parser
-    - make -C profiles check-abstractions.d
-    - make -C profiles check-local
+    - make -C profiles check
 
 shellcheck:
   stage: test
@@ -142,7 +140,7 @@ shellcheck:
     - .ubuntu-common
   script:
     - printf '\e[0K%s:%s:%s[collapsed=true]\r\e[0K%s\n' section_start "$(date +%s)" install_extra_deps "Installing additional dependencies..."
-    - apt-get install --no-install-recommends -y python3-minimal file shellcheck xmlstarlet
+    - apt-get install --no-install-recommends -y python3-minimal file shellcheck xmlstarlet python3-setuptools
     - printf '\e[0K%s:%s:%s\r\e[0K\n' section_end "$(date +%s)" install_extra_deps
     - shellcheck --version
     - "./tests/bin/shellcheck-tree --format=checkstyle
