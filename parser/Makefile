@@ -155,7 +155,7 @@ LEX_C_FILES	= parser_lex.c
 YACC_C_FILES	= parser_yacc.c parser_yacc.h
 
 TESTS = tst_regex tst_misc tst_symtab tst_variable tst_lib tst_interface
-TEST_CFLAGS = $(EXTRA_CFLAGS) -DUNIT_TEST -Wno-unused-result
+TEST_CXXFLAGS = $(EXTRA_CXXFLAGS) -DUNIT_TEST -Wno-unused-result
 TEST_OBJECTS = $(filter-out \
 			parser_lex.o \
 			parser_yacc.o \
@@ -381,9 +381,9 @@ cap_names.h: generated_cap_names.h base_cap_names.h
 tst_binaries: $(TESTS)
 
 tst_lib: lib.c parser.h $(filter-out lib.o, ${TEST_OBJECTS})
-	$(CXX) $(TEST_CFLAGS) -o $@ $< $(filter-out $(<:.c=.o), ${TEST_OBJECTS}) $(TEST_LDFLAGS) $(TEST_LDLIBS)
+	$(CXX) $(TEST_CXXFLAGS) -o $@ $< $(filter-out $(<:.c=.o), ${TEST_OBJECTS}) $(TEST_LDFLAGS) $(TEST_LDLIBS)
 tst_%: parser_%.c parser.h $(filter-out parser_%.o, ${TEST_OBJECTS})
-	$(CXX) $(TEST_CFLAGS) -o $@ $< $(filter-out $(<:.c=.o), ${TEST_OBJECTS}) $(TEST_LDFLAGS) $(TEST_LDLIBS)
+	$(CXX) $(TEST_CXXFLAGS) -o $@ $< $(filter-out $(<:.c=.o), ${TEST_OBJECTS}) $(TEST_LDFLAGS) $(TEST_LDLIBS)
 
 errnos.h:
 	echo '#include <errno.h>' > dump.c
