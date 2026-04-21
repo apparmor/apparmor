@@ -38,6 +38,7 @@ profile lsblk /usr/bin/lsblk {
 
   # Needed for Azure ACPI/NVMe
   @{sys}/devices/LNXSYSTM:00/LNXSYBUS:00/ACPI*:00/MSFT1000:00/** r,
+  @{sys}/devices/LNXSYSTM:00/LNXSYBUS:00/PNP*:00/device:*/VMBUS:*/*/pci*/*/nvme/nvme*/** r,
 
   /dev/sr@{int} rk,
 
