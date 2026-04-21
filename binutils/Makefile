@@ -24,7 +24,6 @@ LOCALEDIR=/usr/share/locale
 MANPAGES=aa-enabled.1 aa-exec.1 aa-features-abi.1 aa-load.8 aa-status.8
 
 WARNINGS = -Wall
-CPP_WARNINGS =
 ifndef CFLAGS
 CFLAGS	= -g -O2 -pipe
 
@@ -36,14 +35,7 @@ CFLAGS = -g -pg -fprofile-arcs -ftest-coverage
 endif
 endif #CFLAGS
 
-EXTRA_CFLAGS = ${CFLAGS} ${CPPFLAGS} ${EXTRA_CXXFLAGS} ${CPP_WARNINGS} $(EXTRA_WARNINGS)
-
-#INCLUDEDIR = /usr/src/linux/include
-INCLUDEDIR =
-
-ifdef INCLUDEDIR
-	CFLAGS += -I$(INCLUDEDIR)
-endif
+EXTRA_CFLAGS = ${CFLAGS} ${CPPFLAGS} ${EXTRA_CXXFLAGS} $(EXTRA_WARNINGS)
 
 # Internationalization support. Define a package and a LOCALEDIR
 EXTRA_CFLAGS+=-DPACKAGE=\"${NAME}\" -DLOCALEDIR=\"${LOCALEDIR}\"

@@ -56,49 +56,39 @@ HAVE_REALLOCARRAY:=$(shell echo $(STDLIB_INCLUDE) | ${CPP} ${CPPFLAGS} - - | gre
 
 WARNINGS = -Wall
 CXX_WARNINGS = ${WARNINGS} ${EXTRA_WARNINGS}
-CPP_WARNINGS =
-ifndef CFLAGS
-CFLAGS	= -g -O2 -pipe
+
+ifndef CXXFLAGS
+CXXFLAGS	= -g -O2 -pipe
 
 ifdef DEBUG
-CFLAGS += -pg -D DEBUG
+CXXFLAGS += -pg -D DEBUG
 endif
 ifdef COVERAGE
-CFLAGS = -g -pg -fprofile-arcs -ftest-coverage
+CXXFLAGS = -g -pg -fprofile-arcs -ftest-coverage
 endif
-endif #CFLAGS
+endif #CXXFLAGS
 
 HAVE_FLTO_PARTITION_NONE:=$(shell ${CC} -E -flto-partition=none /dev/null 1>/dev/null 2>&1 && echo true)
 ifeq ($(HAVE_FLTO_PARTITION_NONE),true)
-	CFLAGS += -flto-partition=none
+	CXXFLAGS += -flto-partition=none
 endif
 
-EXTRA_CXXFLAGS = ${CFLAGS} ${CPPFLAGS} ${CXX_WARNINGS} -std=gnu++0x
-EXTRA_CFLAGS = ${EXTRA_CXXFLAGS} ${CPP_WARNINGS}
+EXTRA_CXXFLAGS = ${CXXFLAGS} ${CPPFLAGS} ${CXX_WARNINGS} -std=gnu++0x
 
 ifeq ($(HAVE_REALLOCARRAY),true)
 EXTRA_CXXFLAGS+=-DHAVE_REALLOCARRAY=1
-EXTRA_CFLAGS+=-DHAVE_REALLOCARRAY=1
 endif
 
 ifdef DEBUG
 LEXLIB	:= -lfl
 endif
 
-# override this on the make command to point to where the immunix.h file is
-# (yeah this is lame, but since we are tied to the kernel so tightly...)
-#INCLUDEDIR = /usr/src/linux/include
-INCLUDEDIR =
-
-ifdef INCLUDEDIR
-	CFLAGS += -I$(INCLUDEDIR)
-endif
 
 # Internationalization support. Define a package and a LOCALEDIR
-EXTRA_CFLAGS+=-DPACKAGE=\"${NAME}\" -DLOCALEDIR=\"${LOCALEDIR}\"
+EXTRA_CXXFLAGS+=-DPACKAGE=\"${NAME}\" -DLOCALEDIR=\"${LOCALEDIR}\"
 
 # Config directory (default /etc/apparmor; overridable at build time for packaging)
-EXTRA_CFLAGS+=-DCONFDIR=\"${CONFDIR}\"
+EXTRA_CXXFLAGS+=-DCONFDIR=\"${CONFDIR}\"
 
 SRCS = parser_common.c parser_include.c parser_interface.c parser_lex.c \
        parser_main.c parser_misc.c parser_merge.c parser_symtab.c \
@@ -159,13 +149,13 @@ else
   AARE_LDFLAGS += -L$(LOCAL_LIBAPPARMOR_LDPATH)
   APPARMOR_H = $(LOCAL_LIBAPPARMOR_INCLUDE)/sys/apparmor.h
 endif
-EXTRA_CFLAGS += $(INCLUDE_APPARMOR)
+EXTRA_CXXFLAGS += $(INCLUDE_APPARMOR)
 
 LEX_C_FILES	= parser_lex.c
 YACC_C_FILES	= parser_yacc.c parser_yacc.h
 
 TESTS = tst_regex tst_misc tst_symtab tst_variable tst_lib tst_interface
-TEST_CFLAGS = $(EXTRA_CFLAGS) -DUNIT_TEST -Wno-unused-result
+TEST_CXXFLAGS = $(EXTRA_CXXFLAGS) -DUNIT_TEST -Wno-unused-result
 TEST_OBJECTS = $(filter-out \
 			parser_lex.o \
 			parser_yacc.o \
@@ -242,7 +232,7 @@ $(LIBAPPARMOR_A):
 endif
 
 apparmor_parser: $(OBJECTS) $(AAREOBJECTS) $(LIBAPPARMOR_A)
-	$(CXX) $(LDFLAGS) $(EXTRA_CFLAGS) -o $@ $(OBJECTS) $(LIBS) \
+	$(CXX) $(LDFLAGS) $(EXTRA_CXXFLAGS) -o $@ $(OBJECTS) $(LIBS) \
 	      ${LEXLIB}  $(AAREOBJECTS) $(AARE_LDFLAGS) $(AALIB)
 
 parser_yacc.c: parser_yacc.y $(STATIC_HDRS) $(GENERATED_HDRS)
@@ -254,103 +244,103 @@ parser_lex.c: parser_lex.l $(HDRS)
 	$(LEX) ${LEXFLAGS} -o$@ $<
 
 parser_lex.o: parser_lex.c $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 parser_misc.o: parser_misc.c $(HDRS) unit_test.h
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 parser_yacc.o: parser_yacc.c $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 parser_main.o: parser_main.c $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 parser_interface.o: parser_interface.c $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 parser_include.o: parser_include.c $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 parser_merge.o: parser_merge.c $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 parser_regex.o: parser_regex.c $(HDRS) unit_test.h
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 parser_symtab.o: parser_symtab.c $(HDRS) unit_test.h
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 parser_variable.o: parser_variable.c $(HDRS) unit_test.h
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 parser_policy.o: parser_policy.c $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 parser_alias.o: parser_alias.c $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 parser_common.o: parser_common.c $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 mount.o: mount.cc mount.h $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 common_optarg.o: common_optarg.c $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 policy_cache.o: policy_cache.c $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 lib.o: lib.c $(HDRS) unit_test.h
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 dbus.o: dbus.cc $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 signal.o: signal.cc $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 ptrace.o: ptrace.cc $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 network.o: network.cc $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 default_features.o: default_features.c $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 af_rule.o: af_rule.cc $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 af_unix.o: af_unix.cc $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 profile.o: profile.cc $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 rule.o: rule.cc $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 userns.o: userns.cc $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 mqueue.o: mqueue.cc $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 io_uring.o: io_uring.cc $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 all_rule.o: all_rule.cc $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 cond_expr.o: cond_expr.cc $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 variable.o: variable.cc $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 symtab.o: symtab.cc $(HDRS)
-	$(CXX) $(EXTRA_CFLAGS) -c -o $@ $<
+	$(CXX) $(EXTRA_CXXFLAGS) -c -o $@ $<
 
 
 parser_version.h: Makefile
@@ -391,9 +381,9 @@ cap_names.h: generated_cap_names.h base_cap_names.h
 tst_binaries: $(TESTS)
 
 tst_lib: lib.c parser.h $(filter-out lib.o, ${TEST_OBJECTS})
-	$(CXX) $(TEST_CFLAGS) -o $@ $< $(filter-out $(<:.c=.o), ${TEST_OBJECTS}) $(TEST_LDFLAGS) $(TEST_LDLIBS)
+	$(CXX) $(TEST_CXXFLAGS) -o $@ $< $(filter-out $(<:.c=.o), ${TEST_OBJECTS}) $(TEST_LDFLAGS) $(TEST_LDLIBS)
 tst_%: parser_%.c parser.h $(filter-out parser_%.o, ${TEST_OBJECTS})
-	$(CXX) $(TEST_CFLAGS) -o $@ $< $(filter-out $(<:.c=.o), ${TEST_OBJECTS}) $(TEST_LDFLAGS) $(TEST_LDLIBS)
+	$(CXX) $(TEST_CXXFLAGS) -o $@ $< $(filter-out $(<:.c=.o), ${TEST_OBJECTS}) $(TEST_LDFLAGS) $(TEST_LDLIBS)
 
 errnos.h:
 	echo '#include <errno.h>' > dump.c
