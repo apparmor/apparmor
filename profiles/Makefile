@@ -42,6 +42,7 @@ ifdef USE_SYSTEM
     PYTHONPATH=
     PARSER?=apparmor_parser
     LOGPROF?=aa-logprof --no-check-mountpoint
+    LD_LIBRARY_PATH?=
 else
     # PYTHON_DIST_BUILD_PATH based on libapparmor/swig/python/test/Makefile.am
     PYTHON_DIST_BUILD_PATH = ../libraries/libapparmor/swig/python/build/$$($(PYTHON) ../libraries/libapparmor/swig/python/test/buildpath.py)
@@ -122,13 +123,13 @@ docs:
 .PHONY: bench-parser-cli
 bench-parser-cli: test-dependencies
 	@echo "*** Benchmarking profile compilation against apparmor_parser"
-	hyperfine --export-json timings.json -N -w 5 -L profile steam,lsusb,fusermount3,Xorg,transmission "${PARSER} --config-file=../parser/tst/parser.conf -QK -b ${PROFILES_SOURCE} ${PROFILES_SOURCE}/{profile}"
+	LD_LIBRARY_PATH="$(LD_LIBRARY_PATH)" hyperfine --export-json timings.json -N -w 5 -L profile steam,lsusb,fusermount3,Xorg,transmission "${PARSER} --config-file=../parser/tst/parser.conf -QK -b ${PROFILES_SOURCE} ${PROFILES_SOURCE}/{profile}"
 
 .PHONY: bench-parser-outputsize
 bench-parser-outputsize: test-dependencies
 	$(Q)for profile in steam lsusb fusermount3 Xorg transmission; do \
 		echo -n "Size of profile $${profile}: " ; \
-		${PARSER} --config-file=../parser/tst/parser.conf -QK -S -b ${PROFILES_SOURCE} ${PROFILES_SOURCE}/$${profile} | wc -c ; \
+		LD_LIBRARY_PATH="$(LD_LIBRARY_PATH)" ${PARSER} --config-file=../parser/tst/parser.conf -QK -S -b ${PROFILES_SOURCE} ${PROFILES_SOURCE}/$${profile} | wc -c ; \
 	done
 
 .PHONY: check
@@ -139,15 +140,15 @@ check-parser: test-dependencies
 	@echo "*** Checking profiles from ${PROFILES_SOURCE} against apparmor_parser"
 	$(Q)for profile in $$(find ${PROFILES_SOURCE} -maxdepth 1 -type f) ; do \
 		[ -n "${VERBOSE}" ] && echo "Testing $${profile}" ; \
-		${PARSER} --config-file=../parser/tst/parser.conf -QK -S -b ${PROFILES_SOURCE} $${profile} > /dev/null || exit 1; \
-		../parser/tst/test_profile.py $${profile} --config-file=../parser/tst/parser.conf -QK -S -b ${PROFILES_SOURCE}  || exit 1; \
+		LD_LIBRARY_PATH="$(LD_LIBRARY_PATH)" ${PARSER} --config-file=../parser/tst/parser.conf -QK -S -b ${PROFILES_SOURCE} $${profile} > /dev/null || exit 1; \
+		LD_LIBRARY_PATH="$(LD_LIBRARY_PATH)" ../parser/tst/test_profile.py $${profile} --config-file=../parser/tst/parser.conf -QK -S -b ${PROFILES_SOURCE}  || exit 1; \
 	done
 
 	@echo "*** Checking profiles from ${EXTRAS_SOURCE} against apparmor_parser"
 	$(Q)for profile in $$(find ${EXTRAS_SOURCE} -maxdepth 1 -type f -not -name README) ; do \
 		[ -n "${VERBOSE}" ] && echo "Testing $${profile}" ; \
-		${PARSER} --config-file=../parser/tst/parser.conf -QK -S -b ${EXTRAS_SOURCE} -I ${PROFILES_SOURCE} $${profile} > /dev/null || exit 1; \
-		../parser/tst/test_profile.py $${profile} --config-file=../parser/tst/parser.conf -QK -S -b ${PROFILES_SOURCE}  || exit 1; \
+		LD_LIBRARY_PATH="$(LD_LIBRARY_PATH)" ${PARSER} --config-file=../parser/tst/parser.conf -QK -S -b ${EXTRAS_SOURCE} -I ${PROFILES_SOURCE} $${profile} > /dev/null || exit 1; \
+		LD_LIBRARY_PATH="$(LD_LIBRARY_PATH)" ../parser/tst/test_profile.py $${profile} --config-file=../parser/tst/parser.conf -QK -S -b ${PROFILES_SOURCE}  || exit 1; \
 	done
 
 	@echo "*** Checking abstractions from ${ABSTRACTIONS_SOURCE} against apparmor_parser"
@@ -155,7 +156,7 @@ check-parser: test-dependencies
 		for abstraction in $$(find $${abstraction_path} -maxdepth 1 -type f -printf '%P\n') ; do \
 			[ -n "${VERBOSE}" ] && echo "Testing $${abstraction_path}/$${abstraction}" ; \
 			echo "abi <abi/5.0>, include <tunables/global> profile test { include <abstractions/$${abstraction}> }" \
-			| ${PARSER} --config-file=../parser/tst/parser.conf -QK -S -b ${PROFILES_SOURCE} -I $${abstraction_path}/../ > /dev/null \
+			| LD_LIBRARY_PATH="$(LD_LIBRARY_PATH)" ${PARSER} --config-file=../parser/tst/parser.conf -QK -S -b ${PROFILES_SOURCE} -I $${abstraction_path}/../ > /dev/null \
 			|| exit 1; \
 		done; \
 	done
