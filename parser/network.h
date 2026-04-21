@@ -85,6 +85,16 @@
 #define IPV4_SIZE	1
 #define IPV6_SIZE	2
 
+enum class port_type_t {
+	UNSPECIFIED,
+	PRIVILEGED,
+	UNPRIVILEGED,
+	// TDOD allow both??
+	REMOTE,		/* internal only */
+};
+
+extern void write_net_ip_size(std::ostringstream &o, int size);
+
 struct network_tuple {
 	const char *family_name;
 	unsigned int family;
@@ -136,6 +146,7 @@ public:
 
 	uint16_t from_port = 0;
 	uint16_t to_port = 0;
+	port_type_t port_type = port_type_t::UNSPECIFIED;
 
 	struct ip_address ip;
 
@@ -198,7 +209,7 @@ public:
 		}
 	};
 
-	bool gen_ip_conds(Profile &prof, std::list<std::ostringstream> &streams, ip_conds &entry, bool is_peer, uint16_t port, bool is_port, bool is_cmd, bool is_iface);
+	bool gen_ip_conds(Profile &prof, std::list<std::ostringstream> &streams, ip_conds &entry, bool is_peer, bool is_cmd, bool is_iface);
 	bool gen_net_rule(Profile &prof, unsigned int netclass, u16 family, unsigned int type_mask, unsigned int protocol, bool skb);
 	void set_netperm(unsigned int family, unsigned int type, unsigned int protocol);
 	void update_compat_net(void);

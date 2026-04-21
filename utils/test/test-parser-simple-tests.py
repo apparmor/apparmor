@@ -455,6 +455,7 @@ syntax_failure = (
     'network/network_ok_45.sd',
     'network/network_ok_46.sd',
     'network/skb/ok_setlabel_peer_1.sd',
+    'network/port-torture.sd',
 )
 
 
