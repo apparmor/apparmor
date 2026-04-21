@@ -1704,10 +1704,12 @@ static bool get_kernel_features(struct aa_features **features)
 {
 	/* Gracefully handle AppArmor kernel without compatibility patch */
 	if (!kernel_features && aa_features_new_from_kernel(features) == -1) {
-		PERROR("Cache read/write disabled: interface file missing. "
-			"(Kernel needs AppArmor 2.4 compatibility patch.)\n");
-		write_cache = 0;
-		skip_read_cache = 1;
+		if (!(write_cache == 0 && skip_read_cache == 1)) {
+			PERROR("Cache read/write disabled: interface file missing. "
+				"(Kernel needs AppArmor 2.4 compatibility patch.)\n");
+			write_cache = 0;
+			skip_read_cache = 1;
+		}
 
 		/* Fall back to older match file */
 		if (!set_features_by_match_file(features))
