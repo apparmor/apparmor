@@ -135,10 +135,12 @@ ifdef USE_SYSTEM
   LIBAPPARMOR_A =
   INCLUDE_APPARMOR =
   APPARMOR_H =
+  LD_LIBRARY_PATH?=
 else
   LIBAPPARMOR_SRC = ../libraries/libapparmor
   LOCAL_LIBAPPARMOR_INCLUDE = $(LIBAPPARMOR_SRC)/include
   LOCAL_LIBAPPARMOR_LDPATH = $(LIBAPPARMOR_SRC)/src/.libs
+  LD_LIBRARY_PATH:="$(LOCAL_LIBAPPARMOR_LDPATH)"
 
   ifdef WITH_STATIC_LINKING
     LIBAPPARMOR_A = $(LOCAL_LIBAPPARMOR_LDPATH)/libapparmor.a
@@ -396,7 +398,7 @@ check: check_pod_files tests
 
 .SILENT: tests
 tests: apparmor_parser ${TESTS}
-	sh -e -c 'for test in ${TESTS} ; do echo "*** running $${test}" && ./$${test}; done'
+	sh -e -c 'for test in ${TESTS} ; do echo "*** running $${test}" && LD_LIBRARY_PATH="$(LD_LIBRARY_PATH)" ./$${test}; done'
 	$(Q)$(MAKE) -s -C tst tests
 
 $(AAREOBJECT): FORCE
