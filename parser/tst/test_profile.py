@@ -80,6 +80,8 @@ def process_profile(profile, extra_args):
         if in_entries:
             block.append(line)
 
+    if not block:
+        skip = 'no rules'
     # Last profile
     check_profile(curr_name, profile, skip, attachment, block)
 
