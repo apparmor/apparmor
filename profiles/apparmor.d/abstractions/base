@@ -37,7 +37,7 @@
   /usr/share/locale-langpack/**  r,
   /usr/share/locale/             r,
   /usr/share/locale/**           r,
-  /usr/share/**/locale/**        r,
+  /usr/share/**/locale{,s}/**    r,
   /usr/share/zoneinfo{,-icu}/    r,
   /usr/share/zoneinfo{,-icu}/**  r,
   /usr/share/X11/locale/**       r,
