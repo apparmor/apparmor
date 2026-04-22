@@ -40,7 +40,6 @@
   /usr/share/**/locale{,s}/**    r,
   /usr/share/zoneinfo{,-icu}/    r,
   /usr/share/zoneinfo{,-icu}/**  r,
-  /usr/share/X11/locale/**       r,
   @{run}/systemd/journal/dev-log w,
   # systemd native journal API (see sd_journal_print(4))
   @{run}/systemd/journal/socket  w,
