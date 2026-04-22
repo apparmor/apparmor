@@ -37,7 +37,7 @@ $foo = false
     network stream,
 
 	#Below rule comes from abstractions/base
-	allow /usr/share/X11/locale/**  r,
+	allow /usr/share/**/locale{,s}/**  r,
 	allow /home/*/** r,
 
     ptrace tracedby peer=/bin/strace,
