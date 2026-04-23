@@ -15,7 +15,7 @@ include <tunables/global>
 # vim: ft=apparmor
 #
 
-profile lsof /usr/bin/lsof flags=(attach_disconnected.path=/aa_disconnected/) {
+profile lsof /usr/bin/lsof flags=(attach_disconnected.path=/att/lsof/) {
   include <abstractions/base>
   include <abstractions/nameservice>
 

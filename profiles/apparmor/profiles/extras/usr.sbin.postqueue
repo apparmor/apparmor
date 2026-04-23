@@ -12,7 +12,7 @@ abi <abi/5.0>,
 
 include <tunables/global>
 
-/usr/sbin/postqueue flags=(attach_disconnected.path=/apparmor/disconnected/) {
+profile postqueue /usr/sbin/postqueue flags=(attach_disconnected.path=/att/postqueue/) {
   include <abstractions/base>
   include <abstractions/consoles>
   include <abstractions/nameservice>
@@ -22,7 +22,7 @@ include <tunables/global>
   # This is needed at least for permissions=paranoid
   capability dac_override,
 
-  /apparmor/disconnected/var/spool/postfix/public/showq r,
+  /att/postqueue/var/spool/postfix/public/showq r,
 
   /etc/postfix                         r,
   @{exec_path} mrix,
