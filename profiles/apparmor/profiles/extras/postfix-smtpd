@@ -14,7 +14,7 @@ abi <abi/5.0>,
 
 include <tunables/global>
 
-profile postfix-smtpd /usr/lib{,exec}/postfix/{bin/,sbin/,}smtpd flags=(attach_disconnected.path=/apparmor/disconnected/) {
+profile postfix-smtpd /usr/lib{,exec}/postfix/{bin/,sbin/,}smtpd flags=(attach_disconnected.path=/att/postfix-smtpd/) {
   include <abstractions/base>
   include <abstractions/nameservice>
   include <abstractions/postfix-common>
@@ -24,7 +24,7 @@ profile postfix-smtpd /usr/lib{,exec}/postfix/{bin/,sbin/,}smtpd flags=(attach_d
   capability dac_override,
   capability dac_read_search,
 
-  /apparmor/disconnected/var/spool/postfix/private/auth w,
+  /att/postfix-smtpd/var/spool/postfix/private/auth w,
 
   @{exec_path} mrix,
   /usr/sbin/postdrop                           rPx,
