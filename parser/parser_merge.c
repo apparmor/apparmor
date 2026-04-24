@@ -25,6 +25,24 @@
 #include "parser.h"
 #include "profile.h"
 
+static int strrcmp(const char *a, const char *b)
+{
+	int la = strlen(a);
+	int lb = strlen(b);
+
+	while (la && lb) {
+		if (a[la] < b[lb])
+			return -1;
+		if (a[la--] > b[lb--])
+			return 1;
+	}
+	if (la < lb)
+		return -1;
+	if (la > lb)
+		return 1;
+	return 0;
+}
+
 static int file_comp(const void *c1, const void *c2)
 {
 	struct cod_entry **e1, **e2;
@@ -34,7 +52,7 @@ static int file_comp(const void *c1, const void *c2)
 
 	if ((*e1)->link_name) {
 		if ((*e2)->link_name)
-			res = strcmp((*e1)->link_name, (*e2)->link_name);
+			res = strrcmp((*e1)->link_name, (*e2)->link_name);
 		else
 			return 1;
 	} else if ((*e2)->link_name) {
@@ -57,7 +75,7 @@ static int file_comp(const void *c1, const void *c2)
 	if ((*e1)->priority != (*e2)->priority)
 		return (*e2)->priority - (*e1)->priority;
 
-	return strcmp((*e1)->name, (*e2)->name);
+	return strrcmp((*e1)->name, (*e2)->name);
 }
 
 static int process_file_entries(Profile *prof)
