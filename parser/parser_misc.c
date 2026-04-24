@@ -977,7 +977,9 @@ struct cod_entry *new_entry(char *id, perm32_t perms, char *link_id)
 
 	entry->priority = 0;
 	entry->name = id;
+	entry->len = 0;
 	entry->link_name = link_id;
+	entry->llen = 0;
 	entry->perms = perms;
 	entry->audit = AUDIT_UNSPECIFIED;
 	entry->rule_mode = RULE_UNSPECIFIED;
