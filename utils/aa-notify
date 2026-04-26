@@ -809,14 +809,21 @@ def display_notification(ev, rl, message, userns_special_profiles):
         n.add_action('clicked', 'Allow', cb_add_to_profile, (ev, rl, userns_special_profiles))
     n.add_action('more_clicked', 'Show More', cb_more_info, (ev, rl, userns_special_profiles))
 
-    n.show()
+    try:
+        n.show()
+    except DBusException as exc:
+        print(_('ERROR! Failed to display notification:\n    {message}\n{exc}\n').format(message=message.replace('\n', '\n    '), exc=exc), file=sys.stderr)
 
 
 def display_aggregated_notification(rl, aggregated, maximum_number_notification_profiles, keys_to_aggregate, special_profiles):
     notification, summary, more_info, clean_rules = get_aggregated(rl, aggregated, maximum_number_notification_profiles, keys_to_aggregate, special_profiles)
     n = notify2.Notification(_('AppArmor security notice'), notification, 'gtk-dialog-warning')
     n.add_action('more_aggregated_clicked', 'Show More Info', cb_more_info_aggregated, (summary, more_info, clean_rules))
-    n.show()
+
+    try:
+        n.show()
+    except DBusException as exc:
+        print(_('ERROR! Failed to display notification:\n    {message}\n{exc}\n').format(message=more_info.replace('\n', '\n    '), exc=exc), file=sys.stderr)
 
 
 def main():
