@@ -131,6 +131,10 @@ class ReadLog:
             return 'pivot_root'
         elif e['class'] and e['class'] == 'net' and e['family'] and e['family'] == 'unix':
             return 'unix'
+        elif e['operation'] == 'change_onexec':
+            return 'change_profile'
+        elif e['operation'] == 'change_profile':
+            return 'change_profile'
         elif e['class'] == 'file' or self.op_type(e) == 'file':
             return 'file'
         elif e['operation'] == 'capable':
@@ -139,8 +143,6 @@ class ReadLog:
             return 'network'
         elif e['operation'] == 'change_hat':
             return 'change_hat'
-        elif e['operation'] == 'change_profile':
-            return 'change_profile'
         elif e['operation'] == 'ptrace':
             return 'ptrace'
         elif e['operation'] == 'signal':
@@ -341,6 +343,10 @@ class ReadLog:
             UnixRule.hashlog_from_event(self.hashlog[aamode][full_profile]['unix'], e)
             return
 
+        elif e['operation'] == 'change_profile' or e['operation'] == 'change_onexec':
+            ChangeProfileRule.hashlog_from_event(self.hashlog[aamode][full_profile]['change_profile'], e)
+            return
+
         elif e['class'] == 'file' or self.op_type(e) == 'file':
             FileRule.hashlog_from_event(self.hashlog[aamode][full_profile]['file'], e)
 
@@ -357,10 +363,6 @@ class ReadLog:
                 return
 
             self.hashlog[aamode][full_profile]['change_hat'][e['name2']] = True
-            return
-
-        elif e['operation'] == 'change_profile' or e['operation'] == 'change_onexec':
-            ChangeProfileRule.hashlog_from_event(self.hashlog[aamode][full_profile]['change_profile'], e)
             return
 
         elif e['operation'] == 'ptrace':
