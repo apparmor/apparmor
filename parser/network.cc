@@ -1129,6 +1129,10 @@ int network_rule::gen_policy_re(Profile &prof)
 		if (!gen_net_rule(prof, netclass, family, type, protocol,
 				  false))
 			goto fail;
+
+		if (skb && !gen_net_rule(prof, AA_CLASS_NETV9_SKB, family,
+					 type, protocol, skb))
+			goto fail;
 	}
 	return RULE_OK;
 
