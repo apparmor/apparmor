@@ -65,7 +65,7 @@ cond_expr::cond_expr(const char *var, cond_op op)
 */
 std::set<std::string> cond_expr::get_set(const char *var)
 {
-	char *var_name = variable::process_var(var);
+	char *var_name = variable::process_var(var, true);
 	if (!var_name) {
 		/* not a variable */
 		return {var};

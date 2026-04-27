@@ -123,18 +123,24 @@ ret:
 	return result;
 }
 
-char *variable::process_var(const char *var)
+char *variable::process_var(const char *var, bool quiet)
 {
 	const char *orig;
 	const char *info;
 	int len;
 
 	if (is_var(var, &orig, &len, &info) != VAR_VALID) {
-		PERROR(info, var);
+		if (!quiet)
+			PERROR(info, var);
 		return NULL;
 	}
 
 	return strndup(orig, len);
+}
+
+char *variable::process_var(const char *var)
+{
+	return variable::process_var(var, false);
 }
 
 int variable::add_set_value(struct value_list *values)
