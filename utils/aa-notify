@@ -936,7 +936,10 @@ def main():
                 n.add_action('clicked', 'Allow', cb_add_to_profile, (event, rl, userns_special_profiles))
             n.add_action('more_clicked', 'Show More', cb_more_info, (event, rl, userns_special_profiles))
 
-            n.show()
+            try:
+                n.show()
+            except DBusException as exc:
+                print(_('ERROR! Failed to display notification:\n    {message}\n{exc}\n').format(message=message.replace('\n', '\n    '), exc=exc), file=sys.stderr)
 
             # When notification is sent, raise privileged back to root if the
             # original effective user id was zero (to be able to read AppArmor logs)
