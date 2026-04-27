@@ -1,0 +1,1 @@
+type=AVC msg=audit(1750869214.285:124880): apparmor="ALLOWED" operation="change_profile" class="file" profile="/usr/sbin/php-fpm8.4" name="/usr/sbin/php-fpm8.4//ttrss" pid=869293 comm="php-fpm8.4" target="/usr/sbin/php-fpm8.4//ttrss"
