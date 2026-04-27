@@ -49,6 +49,7 @@ public:
 
 	/* strip off surrounding delimiters around variables */
 	static char *process_var(const char *var);
+	static char *process_var(const char *var, bool quiet);
 };
 
 std::tuple<std::string, std::string, std::string> extract_variable(const std::string& input);
