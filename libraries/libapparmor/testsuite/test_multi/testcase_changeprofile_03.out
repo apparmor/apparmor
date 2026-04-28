@@ -1,0 +1,13 @@
+START
+File: testcase_changeprofile_03.in
+Event type: AA_RECORD_ALLOWED
+Audit ID: 1750869214.285:124880
+Operation: change_profile
+Profile: /usr/sbin/php-fpm8.4
+Name: /usr/sbin/php-fpm8.4//ttrss
+Command: php-fpm8.4
+Name2: /usr/sbin/php-fpm8.4//ttrss
+PID: 869293
+Class: file
+Epoch: 1750869214
+Audit subid: 124880
