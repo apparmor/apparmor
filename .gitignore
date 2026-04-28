@@ -23,6 +23,9 @@ changehat/mod_apparmor/pod2htmd.tmp
 changehat/pam_apparmor/get_options.o
 changehat/pam_apparmor/pam_apparmor.o
 changehat/pam_apparmor/pam_apparmor.so
+init/aa-teardown.8
+init/aa-teardown.8.html
+init/pod2htmd.tmp
 parser/po/*.mo
 parser/af_names.h
 parser/cap_names.h
@@ -210,6 +213,7 @@ utils/test/common_test.pyc
 utils/test/.coverage
 utils/test/coverage-report.txt
 utils/test/htmlcov/
+utils/test/pod2htmd.tmp
 utils/vim/apparmor.vim
 utils/vim/apparmor.vim.5
 utils/vim/apparmor.vim.5.html
