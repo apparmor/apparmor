@@ -1130,9 +1130,13 @@ rule_result_t network_rule::gen_policy_re(Profile &prof)
 		unsigned int type = perm.second.first;
 		unsigned int protocol = perm.second.second;
 
-		if (!gen_net_rule(prof, netclass, family, type, protocol,
-				  false))
-			goto fail;
+		/* if deny network rule with iface specified, dont
+		   generate equivalent deny v8/v9 net rules */
+		if (!(skb && rule_mode == rule_mode_t::DENY && (peer.iface || local.iface))) {
+			if (!gen_net_rule(prof, netclass, family, type, protocol,
+					  false))
+				goto fail;
+		}
 
 		if (skb && !gen_net_rule(prof, AA_CLASS_NETV9_SKB, family,
 					 type, protocol, skb))
