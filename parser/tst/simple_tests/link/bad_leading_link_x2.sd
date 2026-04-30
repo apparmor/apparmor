@@ -1,0 +1,9 @@
+#
+#=DESCRIPTION test combined link and x transition
+#=EXRESULT FAIL
+#
+
+profile test {
+     lcx /link/** -> /target,
+}
+
