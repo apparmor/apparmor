@@ -205,6 +205,72 @@ If you want them, run `make local` before running `make check`.
  some of the locale languages, you can override the default by passing
  the LANGS arguments to make; e.g. make all install "LANGS=en_US fr".]
 
+### AppArmor in snapd
+
+snapd ships a vendored version of the AppArmor Userspace based on a
+tarball.
+
+To modify the AppArmor Userspace used by snapd, you can create your
+own by running:
+
+```sh
+$ make tarball
+$ sha256sum apparmor-*.tar.gz
+0d13f2cfa7da87a2284e45fb23c4820bca4939accf9a77f01fe0bb8cdec7038e  apparmor-5.0.0.tar.gz
+```
+
+This will generate a tarball of the current AppArmor tree.
+
+Copy this tarball to the snapd tree and edit the `source` in the
+`snapcraft.yaml` file under `build-aux/snap/` to reference the copied
+`.tar.gz`.
+
+In addition, modify the tarball checksum under `source-checksum`.
+
+```yaml
+  apparmor:
+    plugin: autotools
+    build-packages:
+      - autoconf-archive
+      - bison
+      - flex
+      - gettext
+      - g++
+      - pkg-config
+      - wget
+    source: ./apparmor-5.0.0.tar.gz
+    source-checksum: sha256/0d13f2cfa7da87a2284e45fb23c4820bca4939accf9a77f01fe0bb8cdec7038e
+```
+
+Next, make sure that the version of `libapparmor` from the tarball
+matches the one on `cmd/configure.ac` under the snapd tree
+
+```autoconf
+# Check if apparmor userspace library is available.
+AS_IF([test "x$enable_apparmor" = "xyes"], [
+    # Expect AppArmor5 when building as a snap under snapcraft
+    AS_IF([test "x$SNAPCRAFT_PROJECT_NAME" = "xsnapd"], [
+        PKG_CHECK_MODULES([APPARMOR5], [libapparmor = 5.0.0], [
+            AC_DEFINE([HAVE_APPARMOR], [1], [Build with apparmor5 support])], [
+            AC_MSG_ERROR([unable to find apparmor5 for snap build of snapd])])], [
+        PKG_CHECK_MODULES([APPARMOR], [libapparmor], [
+      AC_DEFINE([HAVE_APPARMOR], [1], [Build with apparmor support])])])
+], [
+    AC_MSG_WARN([
+    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    X                                                     X
+    X Apparmor is disabled, all snaps will run in devmode X
+    X                                                     X
+    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX])
+])
+```
+
+Then, to create the snapd snap with your vendored AppArmor, run
+
+```sh
+$ snapcraft pack
+```
+
 -------------------
 AppArmor Testsuites
 -------------------
