@@ -35,10 +35,10 @@ CFLAGS = -g -pg -fprofile-arcs -ftest-coverage
 endif
 endif #CFLAGS
 
-EXTRA_CFLAGS = ${CFLAGS} ${CPPFLAGS} ${EXTRA_CXXFLAGS} $(EXTRA_WARNINGS)
-
 # Internationalization support. Define a package and a LOCALEDIR
-EXTRA_CFLAGS+=-DPACKAGE=\"${NAME}\" -DLOCALEDIR=\"${LOCALEDIR}\"
+EXTRA_DEFINES=-DPACKAGE=\"${NAME}\" -DLOCALEDIR=\"${LOCALEDIR}\"
+
+EXTRA_CFLAGS = ${CFLAGS} ${CPPFLAGS} ${EXTRA_CXXFLAGS} $(EXTRA_WARNINGS) ${EXTRA_DEFINES}
 
 SRCS = aa_enabled.c aa_load.c
 HDRS =
@@ -145,6 +145,11 @@ cJSON.o: cJSON.c cJSON.h
 .PHONY: check
 check: check_pod_files tests
 
+.PHONY: check-includes
+check-includes:
+	# doesn't set $?, intended for manual review of the output
+	ret=0; for file in *.c *.h ; do include-what-you-use  -Xiwyu --error ${EXTRA_DEFINES} $(INCLUDE_APPARMOR) $$file || ret=$$? ; done; exit $$ret
+
 .SILENT: tests
 tests: $(BINTOOLS) $(SBINTOOLS) $(TESTS)
 	echo "no tests atm"
@@ -175,4 +180,3 @@ clean: pod_clean
 	rm -f gmon.out
 	rm -f $(BINTOOLS) $(SBINTOOLS) $(TESTS)
 	$(MAKE) -s -C po clean
-

@@ -15,18 +15,15 @@
  *   along with this program; if not, contact Canonical Ltd.
  */
 
-#include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
 #include <libintl.h>
-#include <limits.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/apparmor.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+#include <sys/apparmor_private.h>
 #include <unistd.h>
 #define _(s) gettext(s)
 
