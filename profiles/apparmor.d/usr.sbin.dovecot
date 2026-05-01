@@ -39,6 +39,7 @@ profile dovecot /usr/{bin,sbin}/dovecot flags=(attach_disconnected) {
   unix (receive, send) type=stream peer=(label=/usr/lib*/dovecot/anvil),
   unix (receive, send) type=stream peer=(label=dovecot-anvil),
 
+  / r,
   /etc/dovecot/** r,
   /etc/mtab r,
   /etc/lsb-release r,
