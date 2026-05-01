@@ -12,8 +12,8 @@
 #include <getopt.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdbool.h>
 #include <stdarg.h>
-#include <stddef.h>
 #include <fcntl.h>
 #include <string.h>
 #include <dirent.h>

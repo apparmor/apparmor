@@ -8,20 +8,18 @@
 
 #define _GNU_SOURCE /* for asprintf() */
 #include <getopt.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/wait.h>
 #include <unistd.h>
 #include <errno.h>
 #include <ctype.h>
 #include <dirent.h>
 #include <regex.h>
 #include <libintl.h>
-#include <glob.h>
 #define _(s) gettext(s)
 
 #include <sys/apparmor.h>
