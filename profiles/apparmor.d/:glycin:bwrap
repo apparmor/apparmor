@@ -1,0 +1,104 @@
+# Adapted from apparmor.d - Full set of apparmor profiles
+# Copyright (C) 2025 Alexandre Pujol <alexandre@pujol.io>
+# SPDX-License-Identifier: GPL-2.0-only
+
+# Confine glycin-loaders sandboxed with bwrap. It also confines bwrap itself.
+# for this use case.
+
+abi <abi/5.0>,
+
+include <tunables/global>
+
+@{att} = /att/glycin/
+profile :glycin:bwrap flags=(attach_disconnected,attach_disconnected.path=@{att}) {
+  include <abstractions/base>
+  include <abstractions/fonts>
+
+  # This entire block is taken from apparmor.d's abstractions/bwrap. Once that
+  # abstraction is upstreamed, it should be included above and this block
+  # should be deleted.
+  # BEGIN abstractions/bwrap
+  userns,
+  capability net_admin,
+  capability setpcap,
+  capability sys_admin,
+  capability sys_ptrace,
+  network netlink raw,
+  mount               options=(rw rbind)                              -> /newroot/{,**},
+  mount               options=(rw rbind)                /tmp/newroot/ -> /tmp/newroot/,
+  mount fstype=devpts options=(rw nosuid noexec)               devpts -> /newroot/dev/pts/,
+  mount fstype=proc   options=(rw nosuid nodev noexec)           proc -> /newroot/@{PROC}/,
+  mount fstype=tmpfs  options=(rw nosuid nodev)                 tmpfs -> /newroot/{,**},
+  mount fstype=tmpfs  options=(rw nosuid nodev)                 tmpfs -> /tmp/,
+  mount               options=(rw silent make-rslave)            /,
+  mount               options=(rw silent make-rprivate)  /oldroot/,
+  remount /newroot/{,**},
+  umount /,
+  umount /oldroot/,
+  pivot_root oldroot=/newroot/ /newroot/,
+  pivot_root oldroot=/tmp/oldroot/ /tmp/,
+  /{,usr/}bin/bwrap mr,
+  owner /newroot/{,**} w,
+  owner /tmp/newroot/ w,
+  owner /tmp/oldroot/ w,
+  owner / r,
+  @{att}/ r,
+  @{att}@{run}/.userns r,
+        @{PROC}/sys/kernel/overflowgid r,
+        @{PROC}/sys/kernel/overflowuid r,
+        @{PROC}/sys/user/max_user_namespaces r,
+        @{PROC}/sys/kernel/seccomp/actions_avail r,
+  owner @{PROC}/@{pid}/fd/ r,
+        @{att}@{PROC}/sys/user/max_user_namespaces rw,
+  owner @{att}@{PROC}/@{pid}/cgroup r,
+  owner @{att}@{PROC}/@{pid}/fd/ r,
+  owner @{att}@{PROC}/@{pid}/gid_map rw,
+  owner @{att}@{PROC}/@{pid}/mountinfo r,
+  owner @{att}@{PROC}/@{pid}/setgroups rw,
+  owner @{att}@{PROC}/@{pid}/uid_map rw,
+  # END abstractions/bwrap
+
+  # Need to be allowed for all peer because from the glycin namespace we do not
+  # see the root namespace. This is showned by 'peer=(label=---)' in the logs.
+  #
+  # As of today, we cannot specify the ns scope and view of the peer.
+  # See: https://gitlab.com/apparmor/apparmor/-/wikis/AppArmorPolicyView
+  unix (send receive) type=seqpacket,
+  unix (send receive) type=stream,
+
+  /{,usr/}bin/bwrap mr,
+
+  # To test sandbox functionalities
+  # See; https://gitlab.gnome.org/GNOME/glycin/-/blob/main/glycin/src/sandbox.rs#L676
+  /{,usr/}bin/true ix,
+
+  /usr/libexec/glycin-loaders/@{d}+/glycin-* Px -> bwrap//&loaders,
+
+  /usr/share/glycin-loaders/{,**} r,
+
+  /usr/share/gtksourceview-2.0/{,**} r,
+  /usr/share/gtksourceview-3.0/{,**} r,
+  /usr/share/gtksourceview-4/{,**} r,
+  /usr/share/gtksourceview-5/{,**} r,
+
+  owner /tmp/gdk-pixbuf-glycin-tmp.@{rand6} rw,
+  owner /tmp/user/@{uid}/gdk-pixbuf-glycin-tmp.@{rand6} rw,
+
+  # Safe deny of inherited files from parent process.
+  deny network inet dgram,
+  deny network inet6 dgram,
+  deny network inet stream,
+  deny network inet6 stream,
+  deny owner @{HOME}/.*/** rw,
+  deny owner /tmp/*/** w,
+  deny /opt/*/** rw,
+  deny @{sys}/devices/system/** r,
+  # deny owner @{PROC}/@{pid}/mountinfo r, # Glycin 2.0.8 needs access to this
+  deny /dev/shm/** rw,
+  deny /dev/dri/* rw,
+
+  include if exists <usr/ns/glycin/bwrap.d>
+  include if exists <local/ns/glycin/bwrap>
+}
+
+# vim:syntax=apparmor
