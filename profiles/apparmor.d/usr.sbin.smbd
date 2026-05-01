@@ -27,6 +27,7 @@ profile smbd /usr/{bin,sbin}/smbd {
 
   signal send set=term peer=samba-bgqd,
 
+  / r,
   /etc/mtab r,
   /etc/netgroup r,
   /etc/printcap r,
