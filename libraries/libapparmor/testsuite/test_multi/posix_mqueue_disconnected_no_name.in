@@ -1,0 +1,1 @@
+Apr 06 21:32:08 hostname kernel: audit: type=1400 audit(1775503928.412:154): apparmor="DENIED" operation="getattr" class="posix_mqueue" info="Failed name lookup - disconnected IPC path" error=-13 profile="plasmashell" pid=2111 comm="plasmashell" requested="getattr" denied="getattr" class="posix_mqueue" fsuid=1000 ouid=0
