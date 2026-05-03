@@ -20,6 +20,7 @@
 #include <getopt.h>
 #include <libintl.h>
 #include <limits.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
