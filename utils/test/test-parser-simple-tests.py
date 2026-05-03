@@ -456,6 +456,11 @@ syntax_failure = (
     'network/network_ok_46.sd',
     'network/skb/ok_setlabel_peer_1.sd',
     'network/port-torture.sd',
+
+    # : in list condition and overriding assign
+    'mount/regression1.sd',
+    'mount/regression2.sd',
+    'mount/regression3.sd',
 )
 
 

@@ -272,10 +272,17 @@ LIST_VALUE_ID_CHARS	([^ \t\n"!,]{-}[()]|\\[ ]|\\\t|\\\"|\\!|\\,|\\\(|\\\))
 LIST_VALUE_QUOTED_ID_CHARS [^\0"]|\\\"
 LIST_VALUE_ID	{LIST_VALUE_ID_CHARS}+
 QUOTED_LIST_VALUE_ID	\"{LIST_VALUE_QUOTED_ID_CHARS}+\"
-ID_CHARS_NOEQ	[^ \t\n"!,]{-}[:=)]
-LEADING_ID_CHARS_NOEQ [^ \t\n"!,]{-}[=()+&]
-ID_NOEQ		{ID_CHARS_NOEQ}|(,{ID_CHARS_NOEQ})
-IDS_NOEQ	{LEADING_ID_CHARS_NOEQ}{ID_NOEQ}*
+
+ID_CHARS_NOEQCOLON	[^ \t\n"!,]{-}[=:)]
+ID_CHARS_NOEQ		[^ \t\n"!,]{-}[=)]
+LEADING_ID_CHARS_NOEQCOLON [^ \t\n"!,]{-}[=()+&:]
+LEADING_ID_CHARS_NOEQ 	[^ \t\n"!,]{-}[=()+&]
+
+ID_NOASSIGN		({ID_CHARS_NOEQCOLON}|[:]{ID_CHARS_NOEQ}|(,{ID_CHARS_NOEQCOLON}))
+LEADING_ID_NOASSIGN	({LEADING_ID_CHARS_NOEQCOLON}|[:]{LEADING_ID_CHARS_NOEQ})
+IDS_NOASSIGN		{LEADING_ID_NOASSIGN}{ID_NOASSIGN}*
+
+
 ALLOWED_QUOTED_ID 	[^\0"]|\\\"
 QUOTED_ID	\"{ALLOWED_QUOTED_ID}*\"
 
@@ -518,7 +525,7 @@ IN_OP		in
 
 	{COMMA}		{ EAT_TOKEN("listcond: , \n"); }
 
-	{ID_CHARS_NOEQ}+	{
+	{IDS_NOASSIGN}	{
 		yylval.id = processid(yytext, yyleng);
 		RETURN_TOKEN(TOK_CONDID);
 	}
@@ -680,7 +687,7 @@ IN_OP		in
 }
 
 <MOUNT_MODE,DBUS_MODE,SIGNAL_MODE,PTRACE_MODE,UNIX_MODE,MQUEUE_MODE,IOURING_MODE,NETWORK_MODE>{
-	({IDS_NOEQ}|{LABEL}|{QUOTED_ID}) {
+	({IDS_NOASSIGN}|{LABEL}|{QUOTED_ID}) {
 		yylval.id = processid(yytext, yyleng);
 		RETURN_TOKEN(TOK_ID);
 	}
@@ -754,7 +761,7 @@ IN_OP		in
 	{LT}		{ RETURN_TOKEN(TOK_LT); }
 	{LT_EQUAL}	{ RETURN_TOKEN(TOK_LE); }
 
-	({IDS_NOEQ}|{LABEL}|{QUOTED_ID}) {
+	({IDS_NOASSIGN}|{LABEL}|{QUOTED_ID}) {
 		yylval.id = processid(yytext, yyleng);
 		RETURN_TOKEN(TOK_ID);
 	}

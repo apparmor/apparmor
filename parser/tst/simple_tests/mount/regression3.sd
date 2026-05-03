@@ -1,0 +1,12 @@
+#
+#=Description basic rules to test breaking := with an escape. Ideally this would work but the escape isn't being handled correctly
+#=EXRESULT PASS
+#=TODO
+
+@{ONE}=one
+@{TWO}=two
+@{THREE}=three
+
+/usr/bin/foo {
+  mount fstype=nfs{,4} *:\=** -> /var/snap/{@{ONE},@{TWO}}/@{THREE}/{,**},
+}

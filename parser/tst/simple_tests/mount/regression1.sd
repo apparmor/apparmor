@@ -1,0 +1,11 @@
+#
+#=Description test that mount rule list element with embedded colon parses
+#=EXRESULT PASS
+
+@{ONE}=one
+@{TWO}=two
+@{THREE}=three
+
+/usr/bin/foo {
+  mount fstype=nfs{,4} *:** -> /var/snap/{@{ONE},@{TWO}}/@{THREE}/{,**},
+}
