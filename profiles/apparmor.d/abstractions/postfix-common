@@ -2,7 +2,7 @@
 #
 #    Copyright (C) 2002-2005 Novell/SUSE
 #    Copyright (C) 2015-2018 Canonical, Ltd.
-#    Copyright (C) 2020-2021 Christian Boltz
+#    Copyright (C) 2020-2026 Christian Boltz
 #
 #    This program is free software; you can redistribute it and/or
 #    modify it under the terms of version 2 of the GNU General Public
@@ -23,6 +23,7 @@
 
   unix (send, receive) peer=(label=postfix-master),
 
+  /                     r,
   /etc/mailname         r,
   /etc/postfix/*.cf     r,
   /etc/postfix/*.db     rk,
