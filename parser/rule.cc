@@ -17,7 +17,6 @@
  */
 #include "rule.h"
 #include "parser.h"
-#include <iostream>
 
 const char *aa_class_table[] = {
 	"nullcond",

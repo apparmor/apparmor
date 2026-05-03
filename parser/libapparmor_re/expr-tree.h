@@ -34,6 +34,7 @@
 #ifndef __LIBAA_RE_EXPR_H
 #define __LIBAA_RE_EXPR_H
 
+#include <cstddef>
 #include <map>
 #include <set>
 #include <stack>
@@ -41,8 +42,8 @@
 
 #include <stdint.h>
 
+#include "../common_flags.h"  // for optflags
 #include "../perms.h"
-#include "apparmor_re.h"
 
 /*
  * transchar - representative input character for state transitions

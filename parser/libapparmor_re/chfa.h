@@ -21,9 +21,14 @@
 #ifndef __LIBAA_RE_CHFA_H
 #define __LIBAA_RE_CHFA_H
 
+#include <stddef.h>
+#include <stdint.h>
+#include <sys/types.h>
+
 #include <map>
 #include <vector>
 
+#include "expr-tree.h"
 #include "hfa.h"
 #include "../perms.h"
 

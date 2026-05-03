@@ -32,8 +32,11 @@
  * enough that it can be used with minimal overhead.
  */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <utility>
 
 #include "expr-tree.h"
 #include "apparmor_re.h"

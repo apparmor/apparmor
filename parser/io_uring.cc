@@ -15,15 +15,18 @@
  *   along with this program; if not, contact Canonical Ltd.
  */
 
-#include "common_optarg.h"
 #include "parser.h"
 #include "profile.h"
 #include "io_uring.h"
+#include "libapparmor_re/aare_rules.h"
+#include "policydb.h"
 
 #include <iomanip>
 #include <string>
 #include <iostream>
 #include <sstream>
+
+#include <string.h>
 
 void io_uring_rule::move_conditionals(struct cond_entry *conds)
 {

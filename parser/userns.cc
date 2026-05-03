@@ -16,7 +16,10 @@
  *   Ltd.
  */
 
+#include "immunix.h"
+#include "libapparmor_re/aare_rules.h"
 #include "parser.h"
+#include "policydb.h"
 #include "profile.h"
 #include "userns.h"
 

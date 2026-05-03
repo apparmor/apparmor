@@ -21,10 +21,13 @@
 
 #include <ostream>
 #include <vector>
-#include <algorithm>
+
+#include <stdlib.h>
 
 #include "parser.h"
 #include "rule.h"
+
+class Profile;
 
 
 #define MS_RDONLY	(1 << 0)

@@ -15,12 +15,6 @@
  *   along with this program; if not, contact Novell, Inc.
  */
 
-#include <search.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <linux/limits.h>
-
-
 #ifdef UNIT_TEST
 
 #include <string.h>

@@ -18,17 +18,11 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <sys/apparmor.h>
 
-#include <iomanip>
-#include <string>
 #include <iostream>
-#include <sstream>
 
 #include "network.h"
 #include "parser.h"
-#include "profile.h"
-#include "parser_yacc.h"
 #include "af_rule.h"
 
 

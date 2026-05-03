@@ -19,19 +19,25 @@
  * Create a compressed hfa from and hfa
  */
 
-#include <map>
-#include <vector>
-#include <ostream>
+#include <algorithm>
 #include <iostream>
+#include <list>
+#include <map>
+#include <ostream>
+#include <string>
+#include <vector>
+#include <utility>
 
 #include <arpa/inet.h>
 #include <stdio.h>
-#include <string.h>
+#include <stdlib.h>
 
+#include "apparmor_re.h"
 #include "hfa.h"
 #include "chfa.h"
 #include "flex-tables.h"
 
+using std::ostream;
 using namespace std;
 
 void CHFA::init_free_list(vector<pair<size_t, size_t> > &free_list,

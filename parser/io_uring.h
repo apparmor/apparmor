@@ -18,7 +18,13 @@
 #ifndef __AA_IO_URING_H
 #define __AA_IO_URING_H
 
+#include <stdlib.h>
+
+#include "sys/apparmor.h"
+
+#include "immunix.h"
 #include "parser.h"
+#include "rule.h"
 
 #define AA_IO_URING_OVERRIDE_CREDS AA_MAY_APPEND
 #define AA_IO_URING_SQPOLL AA_MAY_CREATE

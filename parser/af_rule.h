@@ -18,11 +18,11 @@
 #ifndef __AA_AF_RULE_H
 #define __AA_AF_RULE_H
 
-#include "immunix.h"
+#include <stdlib.h>
+
 #include "network.h"
 #include "parser.h"
-#include "profile.h"
-
+#include "policydb.h"
 #include "rule.h"
 
 #define AF_ANY -1

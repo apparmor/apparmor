@@ -18,11 +18,13 @@
 #ifndef __AA_AF_UNIX_H
 #define __AA_AF_UNIX_H
 
-#include "immunix.h"
-#include "network.h"
+#include <stdlib.h>
+
 #include "parser.h"
-#include "profile.h"
+#include "rule.h"
 #include "af_rule.h"
+
+class Profile;
 
 int parse_unix_perms(const char *str_mode, perm32_t *perms, int fail);
 

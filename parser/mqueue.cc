@@ -16,7 +16,9 @@
  *   Ltd.
  */
 
+#include "libapparmor_re/aare_rules.h"
 #include "parser.h"
+#include "policydb.h"
 #include "profile.h"
 #include "mqueue.h"
 
@@ -24,6 +26,12 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+
+#include <ctype.h>
+#include <endian.h>
+#include <stdio.h>
+#include <string.h>
+
 
 int parse_mqueue_perms(const char *str_perms, perm32_t *perms, int fail)
 {

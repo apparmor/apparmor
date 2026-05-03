@@ -19,22 +19,21 @@
 #ifndef __AA_NETWORK_H
 #define __AA_NETWORK_H
 
-#include <fcntl.h>
-#include <netinet/in.h>
-#include <linux/socket.h>
-#include <linux/limits.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <list>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+
+#include <list>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
+#include "immunix.h"
 #include "parser.h"
+#include "policydb.h"
 #include "rule.h"
+
+class Profile;
 
 
 #define AA_NET_WRITE		0x0002

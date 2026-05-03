@@ -22,7 +22,6 @@
 #include <string>
 
 #include "variable.h"
-#include "parser.h"
 
 class symtab {
 private:

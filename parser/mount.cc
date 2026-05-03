@@ -221,8 +221,15 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <linux/limits.h>
+#include <limits.h>
+#include <stdio.h>
 
+#include <iostream>
+#include <string>
+#include <utility>
+
+#include "immunix.h"
+#include "libapparmor_re/aare_rules.h"
 #include "parser.h"
 #include "policydb.h"
 #include "profile.h"

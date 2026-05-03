@@ -19,9 +19,10 @@
 #ifndef __AA_DBUS_H
 #define __AA_DBUS_H
 
+#include <stdlib.h>
+
 #include "parser.h"
 #include "rule.h"
-#include "profile.h"
 
 extern int parse_dbus_perms(const char *str_mode, perm32_t *mode, int fail);
 
