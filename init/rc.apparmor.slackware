@@ -18,8 +18,8 @@
 # ----------------------------------------------------------------------
 # rc.apparmor by Steve Beattie
 
-# shellcheck disable=SC2317  # Don't warn about unreachable commands in this file
-#                              since most functions get called via rc.apparmor.functions
+# shellcheck disable=SC2317,SC2329  # Don't warn about unreachable commands in this file
+#                                     since most functions get called via rc.apparmor.functions
 
 # /etc/rc.d/rc.apparmor
 APPARMOR_FUNCTIONS=/lib/apparmor/rc.apparmor.functions
