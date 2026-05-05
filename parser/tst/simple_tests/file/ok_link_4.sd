@@ -1,0 +1,28 @@
+#
+#=DESCRIPTION link target should not count towards exec transition
+#=EXRESULT PASS
+#
+
+profile test {
+  /bin/nvidia-modprobe px -> child-modprobe-nvidia,
+  /bin/dpkg               rpx -> child-dpkg,
+  /bin/pgrep              rcx -> pgrep,
+  /usr/libexec/utempter/utempter Px -> utempter,
+
+  /tmp/foo l -> /tmp/bar,
+  owner /tmp/foo l -> /tmp/bar1,
+  /tmp/foo l -> /tmp/bar2,
+  owner /tmp/foo l -> /tmp/bar3,
+  /tmp/foo l -> /tmp/bar4,
+  owner /tmp/foo l -> /tmp/bar5,
+  /tmp/foo l -> /tmp/bar6,
+  owner /tmp/foo l -> /tmp/bar7,
+  audit /tmp/foo l -> /tmp/bar8,
+  deny /tmp/foo l -> /tmp/bar9,
+  allow /tmp/foo l -> /tmp/bar10,
+  audit /tmp/foo l -> /tmp/bar11,
+  deny /tmp/foo l -> /tmp/bar12,
+  owner /tmp/foo l -> /tmp/bar13,
+  
+}
+
