@@ -395,6 +395,22 @@ def raise_privileges():
         os.seteuid(original_effective_user)
 
 
+def setpriv_prefix():
+    """Build a setpriv argv prefix that drops to the SUDO user (or nobody)
+    so the subsequent pkexec sees a non-root caller and polkit prompts for
+    authorization. Returns an empty list when not running as root."""
+    if os.geteuid() != 0:
+        return []
+    if 'SUDO_UID' in os.environ and 'SUDO_GID' in os.environ:
+        uid = os.environ['SUDO_UID']
+        gid = os.environ['SUDO_GID']
+    else:
+        nobody_user_info = pwd.getpwnam(nobody_user)
+        uid = str(nobody_user_info[2])
+        gid = str(nobody_user_info[3])
+    return ['setpriv', '--reuid', uid, '--regid', gid, '--clear-groups']
+
+
 def read_notify_conf(path, shell_config):
     """Read notify.conf."""
     try:
@@ -459,7 +475,7 @@ def create_userns_profile(name, path, ans):
         ErrorGUI(_('Cannot get profile path for {}.').format(name), False).show()
         return
 
-    command = ['pkexec', '--keep-cwd', update_profile_path, 'create_userns', template_path, name, path, profile_path, ans]
+    command = setpriv_prefix() + ['pkexec', '--keep-cwd', update_profile_path, 'create_userns', template_path, name, path, profile_path, ans]
 
     try:
         subprocess.run(command, check=True)
@@ -568,7 +584,7 @@ def add_to_profile(rule, profile_name):
         return
 
     update_profile_path = update_profile.__file__
-    command = ['pkexec', '--keep-cwd', update_profile_path,  'add_rule', rule, profile_name]
+    command = setpriv_prefix() + ['pkexec', '--keep-cwd', update_profile_path,  'add_rule', rule, profile_name]
     try:
         subprocess.run(command, check=True)
     except subprocess.CalledProcessError as e:
