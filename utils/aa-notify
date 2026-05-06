@@ -32,6 +32,7 @@
 
 import argparse
 import atexit
+import glob
 import grp
 import os
 import pwd
@@ -357,7 +358,8 @@ def drop_privileges():
     If running as root, drop privileges to USER if known, or fall-back to
     nobody_user/group.
     """
-    if os.geteuid() == 0:
+    dropped_from_root = os.geteuid() == 0
+    if dropped_from_root:
 
         if 'SUDO_USER' in os.environ.keys():
             next_username = os.environ['SUDO_USER']
@@ -380,6 +382,24 @@ def drop_privileges():
         # Set gid first, otherwise the latter step would fail on missing permissions
         os.setegid(int(next_gid))
         os.seteuid(int(next_uid))
+
+    # sudo strips session env; fill in what's missing (--xauthority etc. still win).
+    uid = os.geteuid()
+    if dropped_from_root:
+        os.environ['HOME'] = pwd.getpwuid(uid).pw_dir
+    if 'XDG_RUNTIME_DIR' not in os.environ:
+        os.environ['XDG_RUNTIME_DIR'] = '/run/user/{}'.format(uid)
+    if 'XAUTHORITY' not in os.environ:
+        for cookie in (
+            '/run/user/{}/gdm/Xauthority'.format(uid),
+            '/run/user/{}/.Xauthority'.format(uid),
+            *sorted(glob.glob('/run/user/{}/.mutter-Xwaylandauth.*'.format(uid))),
+            *sorted(glob.glob('/run/user/{}/xauth_*'.format(uid))),
+            '{}/.Xauthority'.format(os.environ.get('HOME', '')),
+        ):
+            if os.path.exists(cookie):
+                os.environ['XAUTHORITY'] = cookie
+                break
 
 
 def raise_privileges():
