@@ -25,7 +25,8 @@ profile :glycin:loaders flags=(attach_disconnected,attach_disconnected.path=@{at
   @{att}/usr/share/gtksourceview-5/{,**} r,
 
   include if exists <usr/ns/glycin/loaders.d>
-  include if exists <local/ns/glycin/loaders>
+  # dir name forced by current CI check
+  include if exists <local/glycin.loaders>
 }
 
 # vim:syntax=apparmor

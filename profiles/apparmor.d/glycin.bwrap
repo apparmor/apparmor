@@ -98,7 +98,7 @@ profile :glycin:bwrap flags=(attach_disconnected,attach_disconnected.path=@{att}
   deny /dev/dri/* rw,
 
   include if exists <usr/ns/glycin/bwrap.d>
-  include if exists <local/ns/glycin/bwrap>
+  include if exists <local/glycin.bwrap>
 }
 
 # vim:syntax=apparmor
