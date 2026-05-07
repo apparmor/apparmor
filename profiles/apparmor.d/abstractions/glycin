@@ -1,0 +1,30 @@
+# Adapted from apparmor.d - Full set of apparmor profiles
+# Copyright (C) 2021-2025 Alexandre Pujol <alexandre@pujol.io>
+# SPDX-License-Identifier: GPL-2.0-only
+
+  abi <abi/5.0>,
+
+  # Need to be allowed for all peer because from the host namespace we do not
+  # see the glycin namespace. This is showned by 'peer=(label=---)' in the logs.
+  #
+  # As of today, we cannot specify the ns scope and view of the peer.
+  # See: https://gitlab.com/apparmor/apparmor/-/wikis/AppArmorPolicyView
+  unix (send receive) type=seqpacket, # peer=(label=---), # file_inherit
+  unix (send receive) type=stream, # peer=(label=---), # file_inherit
+
+  priority=-10 /{,usr/}bin/bwrap  Px -> :glycin:bwrap,
+
+  /usr/share/glycin-loaders/{,**} r,
+
+  owner @{HOME}/.cache/glycin/ w,
+  owner @{HOME}/.cache/glycin/usr/ w,
+  owner @{HOME}/.cache/glycin/usr/lib/ w,
+  owner @{HOME}/.cache/glycin/usr/lib/glycin-loaders/ w,
+  owner @{HOME}/.cache/glycin/usr/lib/glycin-loaders/@{d}+/ w,
+  owner @{HOME}/.cache/glycin/usr/lib/glycin-loaders/@{d}+/glycin-svg/ w,
+  owner @{HOME}/.cache/glycin/usr/lib/glycin-loaders/@{d}+/glycin-svg/fontconfig/ w,
+
+  owner /tmp/gdk-pixbuf-glycin-tmp.@{rand6} rw,
+  owner /tmp/user/@{uid}/gdk-pixbuf-glycin-tmp.@{rand6} rw,
+
+  include if exists <abstractions/glycin.d>
