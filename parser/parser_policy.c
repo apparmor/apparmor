@@ -20,6 +20,7 @@
  */
 
 #include <algorithm>
+#include <vector>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,6 +28,9 @@
 #include <search.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
+#include <limits.h>
+#include <sys/stat.h>
 #include <sys/apparmor.h>
 
 #include "lib.h"
@@ -49,6 +53,8 @@ using namespace std;
 
 ProfileList policy_list;
 
+const char *dfa_cacheloc = NULL;
+int dfa_show_cache = false;
 
 void add_to_list(Profile *prof)
 {
@@ -188,15 +194,177 @@ out:
 	return ret;
 }
 
+/**
+ * DFA blob cache: reuse compiled file DFA across profiles with identical
+ * expanded file rules. Profiles that share the same template section
+ * lead to the same DFA being recreated multiple times.
+ *
+ * The cache uses a directory on disk (set via --dfa-cache-loc argument) to
+ * persist across fork() children and across parser invocations.
+ *
+ * Cache key: FNV-1a hash of all expanded cod_entry fields.
+ * Cache file format: raw DFA blob followed by perms table.
+ */
+struct dfa_perms_header {
+	uint32_t magic;
+	uint32_t version;
+	uint64_t dfa_size;
+	uint32_t perms_count;
+	uint32_t reserved;
+};
+
+#define DFA_CACHE_MAGIC 0x43414644  /* "DFAC" in little-endian */
+#define DFA_CACHE_VERSION 1
+
+/* Compute FNV-1a 64-bit hash of a profile's expanded file rules (cod_entry) */
+static uint64_t hash_profile_file_rules(Profile *profile)
+{
+	uint64_t hash = 0xcbf29ce484222325ULL;
+	struct cod_entry *entry;
+
+	list_for_each(profile->entries, entry) {
+		if (entry->name) {
+			for (const char *p = entry->name; *p; p++) {
+				hash ^= (unsigned char)*p;
+				hash *= 0x100000001b3ULL;
+			}
+		}
+		hash ^= (uint64_t)entry->perms;
+		hash *= 0x100000001b3ULL;
+		hash ^= (uint64_t)entry->audit;
+		hash *= 0x100000001b3ULL;
+		hash ^= (uint64_t)entry->rule_mode;
+		hash *= 0x100000001b3ULL;
+		hash ^= (uint64_t)entry->priority;
+		hash *= 0x100000001b3ULL;
+		if (entry->link_name) {
+			for (const char *p = entry->link_name; *p; p++) {
+				hash ^= (unsigned char)*p;
+				hash *= 0x100000001b3ULL;
+			}
+		}
+		if (entry->nt_name) {
+			for (const char *p = entry->nt_name; *p; p++) {
+				hash ^= (unsigned char)*p;
+				hash *= 0x100000001b3ULL;
+			}
+		}
+	}
+
+	return hash;
+}
+
+static bool dfa_cache_lookup_disk(Profile *profile, uint64_t key)
+{
+	if (!dfa_cacheloc)
+		return false;
+
+	char path[PATH_MAX];
+	snprintf(path, sizeof(path), "%s/%016llx.dfa", dfa_cacheloc,
+		 (unsigned long long)key);
+
+	FILE *f = fopen(path, "rb");
+	if (!f)
+		return false;
+
+	struct dfa_perms_header hdr;
+	if (fread(&hdr, sizeof(hdr), 1, f) != 1 ||
+	    hdr.magic != DFA_CACHE_MAGIC ||
+	    hdr.version != DFA_CACHE_VERSION) {
+		fclose(f);
+		return false;
+	}
+
+	void *dfa = malloc(hdr.dfa_size);
+	if (!dfa) {
+		fclose(f);
+		return false;
+	}
+
+	if (fread(dfa, 1, hdr.dfa_size, f) != hdr.dfa_size) {
+		free(dfa);
+		fclose(f);
+		return false;
+	}
+
+	std::vector<aa_perms> perms_table(hdr.perms_count);
+	if (hdr.perms_count > 0 &&
+	    fread(perms_table.data(), sizeof(aa_perms), hdr.perms_count, f) != hdr.perms_count) {
+		free(dfa);
+		fclose(f);
+		return false;
+	}
+
+	fclose(f);
+
+	profile->dfa.dfa = dfa;
+	profile->dfa.size = hdr.dfa_size;
+	profile->dfa.perms_table = perms_table;
+
+	return true;
+}
+
+static void dfa_cache_store_disk(Profile *profile, uint64_t key)
+{
+	if (!dfa_cacheloc || !profile->dfa.dfa || profile->dfa.size == 0)
+		return;
+
+	if (mkdir(dfa_cacheloc, 0755) == -1 && errno != EEXIST)
+		return;
+
+	char path[PATH_MAX];
+	char tmp_path[PATH_MAX];
+	snprintf(path, sizeof(path), "%s/%016llx.dfa", dfa_cacheloc,
+		 (unsigned long long)key);
+	snprintf(tmp_path, sizeof(tmp_path), "%s/%016llx.dfa.tmp.%d", dfa_cacheloc,
+		 (unsigned long long)key, (int)getpid());
+
+	FILE *f = fopen(tmp_path, "wb");
+	if (!f)
+		return;
+
+	struct dfa_perms_header hdr;
+	hdr.magic = DFA_CACHE_MAGIC;
+	hdr.version = DFA_CACHE_VERSION;
+	hdr.dfa_size = profile->dfa.size;
+	hdr.perms_count = profile->dfa.perms_table.size();
+	hdr.reserved = 0;
+
+	if (fwrite(&hdr, sizeof(hdr), 1, f) != 1 ||
+	    fwrite(profile->dfa.dfa, 1, profile->dfa.size, f) != profile->dfa.size ||
+	    (hdr.perms_count > 0 &&
+	     fwrite(profile->dfa.perms_table.data(), sizeof(aa_perms),
+		    hdr.perms_count, f) != hdr.perms_count)) {
+		fclose(f);
+		unlink(tmp_path);
+		return;
+	}
+
+	fclose(f);
+	rename(tmp_path, path);
+}
+
 int process_profile_rules(Profile *profile)
 {
 	int error;
+	uint64_t cache_key = 0;
+	bool file_dfa_cached = false;
 
-	error = process_profile_regex(profile);
-	if (error) {
-		PERROR(_("ERROR processing regexs for profile %s, failed to load\n"), profile->name);
-		exit(1);
-		return error;
+	if (dfa_cacheloc) {
+		cache_key = hash_profile_file_rules(profile);
+		file_dfa_cached = dfa_cache_lookup_disk(profile, cache_key);
+	}
+
+	if (!file_dfa_cached) {
+		error = process_profile_regex(profile);
+		if (error) {
+			PERROR(_("ERROR processing regexs for profile %s, failed to load\n"), profile->name);
+			exit(1);
+			return error;
+		}
+
+		if (dfa_cacheloc)
+			dfa_cache_store_disk(profile, cache_key);
 	}
 
 	error = process_profile_policydb(profile);

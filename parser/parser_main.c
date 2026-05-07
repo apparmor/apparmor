@@ -140,6 +140,7 @@ static const char *config_file = CONFDIR "/parser.conf";
 #define ARG_ESTIMATED_COMPILE_SIZE	144
 #define ARG_PROMPT_COMPAT		145
 #define ARG_PRINT_PROMPT_COMPAT		146
+#define ARG_DFA_CACHE_LOC		147
 
 /* Make sure to update BOTH the short and long_options */
 static const char *short_options = "ad::f:h::rRVvI:b:BCD:NSm:M:qQn:XKTWkL:O:po:j:c::P";
@@ -198,6 +199,7 @@ struct option long_options[] = {
 	{"estimated-compile-size", 1, 0, ARG_ESTIMATED_COMPILE_SIZE}, /* no short option, not in help */
 	{"prompt-compat",	1, 0, ARG_PROMPT_COMPAT},	/* no short option */
 	{"print-prompt-compat",	0, 0, ARG_PRINT_PROMPT_COMPAT},	/* no short option */
+	{"dfa-cache-loc",	1, 0, ARG_DFA_CACHE_LOC},	/* no short option */
 
 	{NULL, 0, 0, 0},
 };
@@ -243,6 +245,7 @@ static void display_usage(const char *command)
 	       "    --debug-cache       Debug cache file checks\n"
 	       "    --print-cache-dir	Print the cache directory path\n"
 	       "-L, --cache-loc n	Set the location of the profile caches\n"
+	       "    --dfa-cache-loc n	Set the location of the DFA blob cache\n"
 	       "-q, --quiet		Don't emit warnings\n"
 	       "-v, --verbose		Show profile names as they load\n"
 	       "-Q, --skip-kernel-load	Do everything except loading into kernel\n"
@@ -898,6 +901,9 @@ static int process_arg(int c, char *optarg)
 		print_prompt_compat_mode(stderr);
 		fprintf(stderr, "\n");
 		exit(0);
+		break;
+	case ARG_DFA_CACHE_LOC:
+		dfa_cacheloc = optarg;
 		break;
 	default:
 		/* 'unrecognized option' error message gets printed by getopt_long() */
