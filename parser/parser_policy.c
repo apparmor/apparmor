@@ -353,6 +353,10 @@ int process_profile_rules(Profile *profile)
 	if (dfa_cacheloc) {
 		cache_key = hash_profile_file_rules(profile);
 		file_dfa_cached = dfa_cache_lookup_disk(profile, cache_key);
+		if (dfa_show_cache)
+			PERROR("DFA cache %s: %s\n",
+			       file_dfa_cached ? "hit" : "miss",
+			       profile->name);
 	}
 
 	if (!file_dfa_cached) {

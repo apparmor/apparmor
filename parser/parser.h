@@ -387,6 +387,7 @@ extern FILE *ofile;
 extern int read_implies_exec;
 extern IncludeCache_t *g_includecache;
 extern const char *dfa_cacheloc;
+extern int dfa_show_cache;
 
 extern void common_warn_once(const char *name, const char *msg, const char **warned_name);
 extern bool prompt_compat_mode_supported(prompt_compat_t mode);

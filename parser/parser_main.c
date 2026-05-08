@@ -141,6 +141,7 @@ static const char *config_file = CONFDIR "/parser.conf";
 #define ARG_PROMPT_COMPAT		145
 #define ARG_PRINT_PROMPT_COMPAT		146
 #define ARG_DFA_CACHE_LOC		147
+#define ARG_SHOW_DFA_CACHE		148
 
 /* Make sure to update BOTH the short and long_options */
 static const char *short_options = "ad::f:h::rRVvI:b:BCD:NSm:M:qQn:XKTWkL:O:po:j:c::P";
@@ -200,6 +201,7 @@ struct option long_options[] = {
 	{"prompt-compat",	1, 0, ARG_PROMPT_COMPAT},	/* no short option */
 	{"print-prompt-compat",	0, 0, ARG_PRINT_PROMPT_COMPAT},	/* no short option */
 	{"dfa-cache-loc",	1, 0, ARG_DFA_CACHE_LOC},	/* no short option */
+	{"show-dfa-cache",	0, 0, ARG_SHOW_DFA_CACHE},	/* no short option */
 
 	{NULL, 0, 0, 0},
 };
@@ -246,6 +248,7 @@ static void display_usage(const char *command)
 	       "    --print-cache-dir	Print the cache directory path\n"
 	       "-L, --cache-loc n	Set the location of the profile caches\n"
 	       "    --dfa-cache-loc n	Set the location of the DFA blob cache\n"
+	       "    --show-dfa-cache	Report dfa cache hit/miss details\n"
 	       "-q, --quiet		Don't emit warnings\n"
 	       "-v, --verbose		Show profile names as they load\n"
 	       "-Q, --skip-kernel-load	Do everything except loading into kernel\n"
@@ -904,6 +907,9 @@ static int process_arg(int c, char *optarg)
 		break;
 	case ARG_DFA_CACHE_LOC:
 		dfa_cacheloc = optarg;
+		break;
+	case ARG_SHOW_DFA_CACHE:
+		dfa_show_cache = true;
 		break;
 	default:
 		/* 'unrecognized option' error message gets printed by getopt_long() */
