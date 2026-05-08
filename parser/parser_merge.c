@@ -25,6 +25,21 @@
 #include "parser.h"
 #include "profile.h"
 
+static int strrcmp(const char *a, int ta,
+		   const char *b, int tb)
+{
+	while (ta && tb) {
+		int res = (int) a[ta--] - (int) b[tb--];
+		if (res)
+			return res;
+	}
+	if (ta < tb)
+		return -1;
+	if (ta > tb)
+		return 1;
+	return 0;
+}
+
 static int file_comp(const void *c1, const void *c2)
 {
 	struct cod_entry **e1, **e2;
@@ -34,7 +49,8 @@ static int file_comp(const void *c1, const void *c2)
 
 	if ((*e1)->link_name) {
 		if ((*e2)->link_name)
-			res = strcmp((*e1)->link_name, (*e2)->link_name);
+			res = strrcmp((*e1)->link_name, (*e1)->llen,
+				      (*e2)->link_name, (*e2)->llen);
 		else
 			return 1;
 	} else if ((*e2)->link_name) {
@@ -57,7 +73,8 @@ static int file_comp(const void *c1, const void *c2)
 	if ((*e1)->priority != (*e2)->priority)
 		return (*e2)->priority - (*e1)->priority;
 
-	return strcmp((*e1)->name, (*e2)->name);
+	return strrcmp((*e1)->name, (*e1)->len,
+		       (*e2)->name, (*e2)->len);
 }
 
 static int process_file_entries(Profile *prof)
@@ -78,8 +95,11 @@ static int process_file_entries(Profile *prof)
 		return -ENOMEM;
 	}
 
-	for (cur = prof->entries, n = 0; cur; cur = cur->next, n++)
+	for (cur = prof->entries, n = 0; cur; cur = cur->next, n++) {
 		table[n] = cur;
+		cur->len = strlen(cur->name);
+		cur->llen = cur->link_name ? strlen(cur->link_name) : 0;
+	}
 	qsort(table, count, sizeof(struct cod_entry *), file_comp);
 	table[count] = NULL;
 	for (n = 0; n < count; n++)
