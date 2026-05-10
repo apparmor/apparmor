@@ -295,6 +295,8 @@ static bool dfa_cache_lookup_disk(Profile *profile, uint64_t key)
 		return false;
 	}
 
+	/* Touch DFA cache file to update mtime for cache pruning purposes. */
+	futimens(fileno(f), NULL);
 	fclose(f);
 
 	profile->dfa.dfa = dfa;
