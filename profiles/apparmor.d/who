@@ -25,6 +25,9 @@ profile who /usr/bin/who {
 
   /usr/bin/who mr,
 
+  # uutils ships Fluent localization files used for translated output
+  /usr/share/coreutils/locales/** r,
+
   # who sends the "exists" signal via kill(pid, 0)
   capability kill,
 
