@@ -90,11 +90,11 @@ do_tests()
 
 	settest net_inet_rcv
 	$generate_profile
-	do_test "$prefix - root" $expect_rcv --bind_ip $bind_ip --bind_port $bind_port --remote_ip $remote_ip --remote_port $remote_port --protocol $protocol --interface $iface --timeout 5 --sender "$sender"
+	do_test "$prefix - root" $expect_rcv --bind_ip $bind_ip --bind_port $bind_port --remote_ip $remote_ip --remote_port $remote_port --protocol $protocol --interface $iface --timeout 2 --sender "$sender"
 
 	settest -u "foo" net_inet_rcv
 	$generate_profile
-	do_test "$prefix - user" $expect_rcv --bind_ip $bind_ip --bind_port $bind_port --remote_ip $remote_ip --remote_port $remote_port --protocol $protocol --interface $iface --timeout 5 --sender "$sender"
+	do_test "$prefix - user" $expect_rcv --bind_ip $bind_ip --bind_port $bind_port --remote_ip $remote_ip --remote_port $remote_port --protocol $protocol --interface $iface --timeout 2 --sender "$sender"
 
 
 }
