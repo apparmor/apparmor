@@ -48,7 +48,6 @@ remote_ipv4=203.0.113.200
 iface=tapaatest0
 iface_policy=lo # workaround: tap interfaces show up as loopback in the kernel
 
-socat_pids=()
 ip tuntap add dev $iface mode tap
 sysctl -w net.ipv6.conf.$iface.accept_dad=0 >/dev/null # prevent ipv6 from being tentative
 ip addr add $bind_ipv4/24 dev $iface
@@ -56,12 +55,9 @@ ip addr add $remote_ipv4/24 dev $iface
 ip -6 addr add $bind_ipv6/64 dev $iface
 ip -6 addr add $remote_ipv6/64 dev $iface
 ip link set $iface up
-socat /dev/null,ignoreeof TUN,tun-name=$iface,iff-up=1,tun-type=tap 2>/dev/null &
-socat_pids+=($!)
 
 cleanup()
 {
-	for pid in ${socat_pids[@]}; do kill $pid; done
 	ip tuntap del dev $iface mode tap
 	ip link show $iface 2>/dev/null
 	if [ $? -eq 0 ]; then
