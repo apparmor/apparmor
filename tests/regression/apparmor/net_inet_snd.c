@@ -87,6 +87,7 @@ int send_udp(char *message)
 		}
 	}
 
+	shutdown(sock, SHUT_RDWR);
 	close(sock);
 	return(0);
 
@@ -160,6 +161,7 @@ int send_tcp(char *message)
 		perror("FAIL SND - Send failed: ");
 		return(-1);
 	}
+	shutdown(sock, SHUT_RDWR);
 	close(sock);
 	return(0);
 }
@@ -221,6 +223,7 @@ int send_icmp(char *message)
 	/*	close(sock); */
 	/*         return(-1); */
 	/* } */
+	shutdown(sock, SHUT_RDWR);
 	close(sock);
 	return(0);
 }
