@@ -13,13 +13,11 @@ ifdef USE_SYSTEM
 else
     ifdef USE_INTREE
         LIBAPPARMOR_BASEDIR?=$(realpath -f ../../libraries/libapparmor)
-        LIBAPPARMOR_PATH?="$(LIBAPPARMOR_BASEDIR)/src/.libs/"
-        LD_LIBRARY_PATH:="$(LIBAPPARMOR_PATH)"
     else
         LIBAPPARMOR_BASEDIR?=../../libraries/libapparmor
-        LIBAPPARMOR_PATH?="$(LIBAPPARMOR_BASEDIR)/src/.libs/"
-        LD_LIBRARY_PATH:="$(LIBAPPARMOR_PATH)"
     endif
+    LIBAPPARMOR_PATH?="$(LIBAPPARMOR_BASEDIR)/src/.libs/"
+    LD_LIBRARY_PATH:="$(LIBAPPARMOR_PATH)"
 endif
 
 ifeq ($(VERBOSE),1)
