@@ -80,30 +80,20 @@ bool valid_cached_file_version(const char *cachename)
  */
 zstd_compress_t is_valid_precompressed_profile(char *buffer, size_t buffer_size, uint8_t min_compr_level)
 {
-	const size_t need = sizeof(struct compr_user_header) + sizeof(uint32_t);
-	if (buffer_size < need)
+	if (!_aa_compressed_cache_offset(buffer, buffer_size))
 		return ZSTD_COMPRESS_NONE;
 
 	const struct compr_user_header *uh = (const struct compr_user_header *)buffer;
-	if (uh->version != COMPR_USER_HDR_VERSION)
-		return ZSTD_COMPRESS_NONE;
-
-	uint32_t magic_bytes;
-	memcpy(&magic_bytes, (const uint8_t *)buffer + sizeof(*uh), sizeof(magic_bytes));
-	magic_bytes = le32toh(magic_bytes);
-	if (magic_bytes == ZSTD_MAGICNUMBER) {
-		if (uh->compress_level >= min_compr_level)
-			return ZSTD_COMPRESS_PRECOMPRESSED;
-		if (!(parseopts.control & CONTROL_ZSTD_FLAGS_RECOMPRESS)) {
-			if (show_cache)
-				fprintf(stderr, _("Cache: Using a lower than expected compression level\n"));
-			return ZSTD_COMPRESS_PRECOMPRESSED;
-		}
+	if (uh->compress_level >= min_compr_level)
+		return ZSTD_COMPRESS_PRECOMPRESSED;
+	if (!(parseopts.control & CONTROL_ZSTD_FLAGS_RECOMPRESS)) {
 		if (show_cache)
-			fprintf(stderr, _("Cache: Recompressing cache to increase compression level\n"));
-		return ZSTD_COMPRESS_RECOMPRESS;
+			fprintf(stderr, _("Cache: Using a lower than expected compression level\n"));
+		return ZSTD_COMPRESS_PRECOMPRESSED;
 	}
-	return ZSTD_COMPRESS_NONE;
+	if (show_cache)
+		fprintf(stderr, _("Cache: Recompressing cache to increase compression level\n"));
+	return ZSTD_COMPRESS_RECOMPRESS;
 }
 
 
