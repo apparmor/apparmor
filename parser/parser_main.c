@@ -1173,24 +1173,23 @@ int process_binary(int option, aa_kernel_interface *kernel_interface,
 				file_compress_policy = is_valid_precompressed_profile(buffer, buffer_size, zstd_compress_level);
 		}
 
-		if (file_compress_policy == ZSTD_COMPRESS_PRECOMPRESSED || file_compress_policy == ZSTD_COMPRESS_RECOMPRESS) {
-			/* Strip user header before loading or recompression */
-			char *payload = buffer + sizeof(struct compr_user_header);
-			size_t payload_size = buffer_size - sizeof(struct compr_user_header);
-			if (file_compress_policy == ZSTD_COMPRESS_RECOMPRESS) {
-				buffer_size = recompress_policy_zstd(payload, payload_size, &compressed_data);
-				if (buffer_size == 0) {
-					pwarn(WARN_CACHE, _("Recompression failed, falling back to original compressed data\n"));
-					data_to_load = payload;
-					buffer_size = payload_size;
-				} else {
-					data_to_load = compressed_data;
-				}
-			} else {
+		if (file_compress_policy == ZSTD_COMPRESS_RECOMPRESS) {
+			/* Strip the user header before recompressing */
+			size_t hdr_size = _aa_compressed_cache_offset(buffer, buffer_size);
+			char *payload = buffer + hdr_size;
+			size_t payload_size = buffer_size - hdr_size;
+			buffer_size = recompress_policy_zstd(payload, payload_size, &compressed_data);
+			if (buffer_size == 0) {
+				pwarn(WARN_CACHE, _("Recompression failed, falling back to original compressed data\n"));
 				data_to_load = payload;
 				buffer_size = payload_size;
+			} else {
+				data_to_load = compressed_data;
 			}
 		} else if (file_compress_policy != ZSTD_COMPRESS_POLICY) {
+			/* precompressed or uncompressed cache: pass the buffer as-is.
+			 * The potential user-header will be removed by libapparmor.
+			 */
 			data_to_load = buffer;
 		}
 
