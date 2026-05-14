@@ -150,6 +150,8 @@ PRIVATE {
 		_aa_autoclose;
 		_aa_autofclose;
 		_aa_dirat_for_each;
+		_aa_compressed_cache_offset;
+		_aa_strip_compressed_cache_header;
 	local:
 		*;
 };

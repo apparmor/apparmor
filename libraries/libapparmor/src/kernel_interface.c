@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/apparmor.h>
+#include <sys/apparmor_private.h>
 
 #include "private.h"
 
@@ -33,6 +34,7 @@
 struct aa_kernel_interface {
 	unsigned int ref_count;
 	bool supports_setload;
+	bool supports_compression;
 	int dirfd;
 };
 
@@ -142,6 +144,13 @@ static int write_policy_buffer_to_iface(aa_kernel_interface *kernel_interface,
 {
 	autoclose int fd = -1;
 
+	/* The compr_user_header is userspace-only: strip it before sending to kernel */
+	if (_aa_strip_compressed_cache_header(&buffer, &size) &&
+	    !kernel_interface->supports_compression) {
+		errno = ENOTSUP;
+		return -1;
+	}
+
 	fd = openat(kernel_interface->dirfd, iface_file, O_WRONLY | O_CLOEXEC);
 	if (fd == -1)
 		return -1;
@@ -233,6 +242,8 @@ int aa_kernel_interface_new(aa_kernel_interface **kernel_interface,
 		return -1;
 	}
 	ki->supports_setload = aa_features_supports(kernel_features, set_load);
+	ki->supports_compression = aa_features_supports(kernel_features,
+							"policy/compressed_load");
 	aa_features_unref(kernel_features);
 
 	if (!apparmorfs) {

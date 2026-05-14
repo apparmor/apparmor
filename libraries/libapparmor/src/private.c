@@ -15,6 +15,7 @@
  */
 
 #include <dirent.h>
+#include <endian.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
@@ -29,6 +30,40 @@
 #include <unistd.h>
 
 #include "private.h"
+
+/* Defined as a magic value to avoid dependency on <zstd.h> */
+#define AA_ZSTD_MAGICNUMBER 0xFD2FB528U
+
+size_t _aa_compressed_cache_offset(const char *buf, size_t size)
+{
+	const size_t need = sizeof(struct compr_user_header) + sizeof(uint32_t);
+	struct compr_user_header uh;
+	uint32_t magic_nb;
+
+	if (!buf || size < need)
+		return 0;
+
+	memcpy(&uh, buf, sizeof(uh));
+	if (uh.version != COMPR_USER_HDR_VERSION)
+		return 0;
+
+	memcpy(&magic_nb, buf + sizeof(uh), sizeof(magic_nb));
+	if (le32toh(magic_nb) != AA_ZSTD_MAGICNUMBER)
+		return 0;
+
+	return sizeof(uh);
+}
+
+size_t _aa_strip_compressed_cache_header(const char **buf, size_t *size)
+{
+	size_t hdr = _aa_compressed_cache_offset(*buf, *size);
+
+	if (hdr) {
+		*buf += hdr;
+		*size -= hdr;
+	}
+	return hdr;
+}
 
 /**
  * Allow libapparmor to build on older systems where secure_getenv() is still
