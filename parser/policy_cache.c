@@ -24,7 +24,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <sys/types.h>
-#include <sys/uio.h>
 #include <unistd.h>
 #include <sys/stat.h>
 
@@ -329,23 +328,13 @@ void install_compressed_cache(int cachetmp, const char *cachetmpname,
 		return;
 	}
 
-	struct compr_user_header uhdr = {
-		.version = COMPR_USER_HDR_VERSION,
-		.compress_level = (uint8_t)zstd_compress_level,
-		.padding = {0},
-	};
-	struct iovec iov[2] = {
-		{ .iov_base = &uhdr,      .iov_len = sizeof(uhdr) },
-		{ .iov_base = compressed, .iov_len = compressed_size },
-	};
-
 	if (ftruncate(cachetmp, 0) == -1 || lseek(cachetmp, 0, SEEK_SET) != 0) {
 		PERROR(_("%s: Unable to rewind tmp cache file\n"), progname);
 		return;
 	}
 
-	ssize_t wsize = writev(cachetmp, iov, 2);
-	if (wsize < 0 || (size_t)wsize < sizeof(uhdr) + compressed_size) {
+	if (write_compressed_with_user_header(cachetmp, compressed, compressed_size,
+					      (uint8_t)zstd_compress_level) < 0) {
 		PERROR(_("%s: Error writing compressed cache\n"), progname);
 		unlink(cachetmpname);
 		return;

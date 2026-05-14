@@ -748,9 +748,14 @@ int __sd_serialize_profile(int option, aa_kernel_interface *kernel_interface,
 								      policy, policy_size) == -1) {
 				error = -errno;
 			}
-		} else if ((option == OPTION_STDOUT || option == OPTION_OFILE) &&
-			   aa_kernel_interface_write_policy(fd, policy, policy_size) == -1) {
-			error = -errno;
+		} else if (option == OPTION_STDOUT || option == OPTION_OFILE) {
+			if (zstd_compress_policy == ZSTD_COMPRESS_POLICY) {
+				if (write_compressed_with_user_header(fd, policy, policy_size,
+								      (uint8_t)zstd_compress_level) < 0)
+					error = -errno;
+			} else if (aa_kernel_interface_write_policy(fd, policy, policy_size) == -1) {
+				error = -errno;
+			}
 		}
 
 		if (cache_fd != -1) {
