@@ -168,10 +168,10 @@ prepare: |
     fi
     # Build libapparmor.
     make -C "$SPREAD_PATH"/libraries/libapparmor -j"$(nproc)"
-    # Build apparmor_parser.
-    make -C "$SPREAD_PATH"/parser -j"$(nproc)"
+    # Build apparmor_parser using the in-tree libapparmor
+    make -C "$SPREAD_PATH"/parser USE_INTREE=1 -j"$(nproc)"
     # Build binary utilities (aa-exec and firends).
-    make -C "$SPREAD_PATH"/binutils -j"$(nproc)"
+    make -C "$SPREAD_PATH"/binutils USE_INTREE=1 -j"$(nproc)"
     # Build python utilities.
     make -C "$SPREAD_PATH"/utils -j"$(nproc)"
     # Build apache and pam modules.
