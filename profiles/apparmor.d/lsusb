@@ -15,6 +15,7 @@ include <tunables/global>
 
 profile lsusb /usr/bin/lsusb {
   include <abstractions/base>
+  include <abstractions/consoles>
 
   /usr/bin/lsusb mr,
 
@@ -47,6 +48,7 @@ profile lsusb /usr/bin/lsusb {
 
   /dev/bus/usb/@{d}@{d}@{d}/@{d}@{d}@{d} rw,
 
+  / r,
   /dev/ r,
   /dev/bus/usb/ r,
   @{run}/udev/data/*usb:* r,
@@ -55,6 +57,9 @@ profile lsusb /usr/bin/lsusb {
   @{sys}/bus/ r,
   @{sys}/bus/usb/devices/ r,
   @{sys}/class/ r,
+
+  @{sys}/devices/@{pci_bus}/uevent r,
+  @{sys}/devices/@{pci_bus}/**/uevent r,
 
   @{sys}/devices/**/usb[0-9]**/uevent r,
   @{sys}/devices/**/usb[0-9]**/busnum r,
