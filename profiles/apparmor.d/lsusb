@@ -43,6 +43,8 @@ profile lsusb /usr/bin/lsusb {
   # can silence the denial.
   deny capability sys_admin,
 
+  /etc/udev/hwdb.bin r,
+
   /dev/bus/usb/@{d}@{d}@{d}/@{d}@{d}@{d} rw,
 
   /dev/ r,
