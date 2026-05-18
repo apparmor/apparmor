@@ -133,7 +133,7 @@ bench-parser-outputsize: test-dependencies
 	done
 
 .PHONY: check
-check: check-parser check-logprof check-abstractions.d check-tunables.d check-local
+check: check-parser check-logprof check-abstractions.d check-tunables.d check-local check-disconnected
 
 .PHONY: check-parser
 check-parser: test-dependencies
@@ -193,4 +193,24 @@ check-local:
 		include="include if exists <local/$$(basename $${file})>" ; \
 		grep -q "^  *$${include}\$$" $${file} || { echo "$${file} does not contain '$${include}'"; exit 1; } ; \
 		grep -q "^ *abi <abi/5.0>," $${file} || { echo "$${file} does not contain 'abi <abi/5.0>,'"; exit 1; } ; \
+	done
+
+.PHONY: check-disconnected
+check-disconnected:
+	@echo "*** Checking that no new profile uses attach_disconnected"
+	$(Q)for file in $$(find ${PROFILES_SOURCE} ${EXTRAS_SOURCE} -maxdepth 1 -type f) ; do \
+		case "$$file" in \
+			./apparmor.d/Xorg|./apparmor.d/babeld|./apparmor.d/bfdd|./apparmor.d/bgpd|./apparmor.d/eigrpd|./apparmor.d/fabricd|./apparmor.d/isisd|./apparmor.d/ldpd|./apparmor.d/nhrpd|./apparmor.d/ospf6d|./apparmor.d/ospfd|./apparmor.d/pathd|./apparmor.d/pbrd|./apparmor.d/php-fpm|./apparmor.d/pim6d|./apparmor.d/pimd|./apparmor.d/ripd|./apparmor.d/ripngd|./apparmor.d/sbuild|./apparmor.d/sbuild-abort|./apparmor.d/sbuild-adduser|./apparmor.d/sbuild-apt|./apparmor.d/sbuild-checkpackages|./apparmor.d/sbuild-clean|./apparmor.d/sbuild-createchroot|./apparmor.d/sbuild-destroychroot|./apparmor.d/sbuild-distupgrade|./apparmor.d/sbuild-hold|./apparmor.d/sbuild-shell|./apparmor.d/sbuild-unhold|./apparmor.d/sbuild-update|./apparmor.d/sbuild-upgrade|./apparmor.d/staticd|./apparmor.d/transmission|./apparmor.d/usr.lib.dovecot.director|./apparmor.d/usr.lib.dovecot.doveadm-server|./apparmor.d/usr.lib.dovecot.dovecot-lda|./apparmor.d/usr.lib.dovecot.log|./apparmor.d/usr.sbin.apache2|./apparmor.d/usr.sbin.avahi-daemon|./apparmor.d/usr.sbin.dnsmasq|./apparmor.d/usr.sbin.ntpd|./apparmor.d/vrrpd|./apparmor.d/wg|./apparmor.d/usr.sbin.dovecot|./apparmor.d/glycin.bwrap|./apparmor.d/glycin.loaders|./apparmor.d/wg-quick|./apparmor/profiles/extras/bwrap-userns-restrict|./apparmor/profiles/extras/chromium_browser|./apparmor/profiles/extras/unshare-userns-restrict) \
+			if ! grep -q 'attach_disconnected[^.]' "$${file}" ; then  \
+				echo "=== Profile $$file no longer contains the attach_disconnected flag, please remove it from the exception list in profiles/Makefile" ; \
+				exit 1; \
+			fi ; \
+			;; \
+		*) \
+			if grep 'attach_disconnected[^.]' "$${file}" ; then  \
+				echo "=== Profile $$file contains attach_disconnected flag, please use attach_disconnected.path=/att/PROFILE_NAME/ instead" ; \
+				exit 1; \
+			fi ; \
+			;; \
+		esac; \
 	done
