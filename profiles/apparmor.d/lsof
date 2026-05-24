@@ -36,6 +36,7 @@ profile lsof /usr/bin/lsof flags=(attach_disconnected.path=/att/lsof/) {
 
   @{PROC} r,
   @{PROC}/locks r,
+  @{PROC}/@{pids}/attr/current r,
   @{PROC}/@{pids}/fd/ r,
   @{PROC}/@{pids}/fdinfo/* r,
   @{PROC}/@{pids}/lock r,
