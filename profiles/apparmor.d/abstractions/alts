@@ -1,0 +1,58 @@
+# vim:ft=apparmor
+# ------------------------------------------------------------------
+#
+#    Copyright (C) 2026 darix
+#
+#    This program is free software; you can redistribute it and/or
+#    modify it under the terms of version 2 of the GNU General Public
+#    License published by the Free Software Foundation.
+#
+# ------------------------------------------------------------------
+
+## Usage example:
+##
+## /root/bin/test-alts
+## ```
+## #!/usr/bin/ruby
+##
+## puts "Hello world"
+## ```
+##
+## with ln -sf /usr/bin/alts /usr/bin/ruby
+##
+## /etc/apparmor.d/test-alts
+## ```
+## abi <abi/4.0>,
+##
+## include <tunables/global>
+##
+## profile test-alts /root/bin/test-alts {
+##   include <abstractions/alts>
+##
+##   /usr/bin/ruby.ruby4.0 cx -> actual_script,
+##
+##   profile actual_script {
+##     include <abstractions/base>
+##     include <abstractions/ruby>
+##     /usr/bin/ruby.ruby4.0 mr,
+##     /root/bin/test-alts r,
+##   }
+## }
+## ```
+##
+
+  abi <abi/4.0>,
+
+  include <abstractions/base>
+
+  /{,usr/}bin/alts mr,
+
+  /usr/share/libalternatives/ r,
+  /usr/share/libalternatives/*/ r,
+  /usr/share/libalternatives/*/*.conf r,
+  # system override
+  /etc/libalternatives.conf r,
+  # user override
+  owner @{HOME}/.config/libalternatives.conf r,
+
+  include if exists <abstractions/alts.d>
