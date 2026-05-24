@@ -2,7 +2,7 @@ abi <abi/5.0>,
 
 include <tunables/global>
 
-profile proftpd /usr/sbin/proftpd {
+profile proftpd /usr/sbin/proftpd flags=(attach_disconnected.path=/att/proftpd/) {
   include <abstractions/base>
   include <abstractions/nameservice>
   include <abstractions/user-tmp>
@@ -19,7 +19,7 @@ profile proftpd /usr/sbin/proftpd {
 
   mqueue getattr type=posix /,
   mqueue read type=posix /,
-
+  / r,
 
   # Configuration files
   /etc/ftpusers r,
@@ -28,18 +28,20 @@ profile proftpd /usr/sbin/proftpd {
 
   # User/Group Records
   /run/systemd/userdb/ r,
-  /run/systemd/userdb/io.systemd.DynamicUser rw,
+  /{att/proftpd/,}run/systemd/userdb/io.systemd.DynamicUser rw,
+  /att/proftpd/run/systemd/userdb/io.systemd.Machine rw,
 
   # ProFTPD logs
   /var/log/proftpd/** rw,
   owner /etc/proftpd/** rw,
+  /att/proftpd/systemd/journal/dev-log w,
 
   # Process info
   /run/proftpd.delay rwk,
   /run/proftpd.pid rwk,
   /run/proftpd.scoreboard rwk,
   /run/proftpd.scoreboard.lck rwk,
-  owner /run/proftpd/* rw,
+  /run/proftpd/* rwk,
   owner /run/test.sock w,
   owner /var/log/xferlog w,
 
