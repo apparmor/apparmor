@@ -71,7 +71,6 @@ def msg(out, output=sys.stdout):
 
 def debug(out):
     """Print debug message"""
-    global DEBUGGING
     if DEBUGGING:
         try:
             print("DEBUG: %s" % (out), file=sys.stderr)
