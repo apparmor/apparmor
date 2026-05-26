@@ -35,6 +35,7 @@ struct aa_kernel_interface {
 	unsigned int ref_count;
 	bool supports_setload;
 	bool supports_compression;
+	bool supports_extended_header;
 	int dirfd;
 };
 
@@ -144,8 +145,11 @@ static int write_policy_buffer_to_iface(aa_kernel_interface *kernel_interface,
 {
 	autoclose int fd = -1;
 
-	/* The compr_user_header is userspace-only: strip it before sending to kernel */
-	if (_aa_strip_compressed_cache_header(&buffer, &size) &&
+	/* Kernels exposing policy/extended_policy_header accept the
+	 * compr_user_header directly; strip it only for older kernels.
+	 */
+	if (!kernel_interface->supports_extended_header &&
+	    _aa_strip_compressed_cache_header(&buffer, &size) &&
 	    !kernel_interface->supports_compression) {
 		errno = ENOTSUP;
 		return -1;
@@ -244,6 +248,8 @@ int aa_kernel_interface_new(aa_kernel_interface **kernel_interface,
 	ki->supports_setload = aa_features_supports(kernel_features, set_load);
 	ki->supports_compression = aa_features_supports(kernel_features,
 							"policy/compressed_load");
+	ki->supports_extended_header = aa_features_supports(kernel_features,
+							    "policy/extended_policy_header");
 	aa_features_unref(kernel_features);
 
 	if (!apparmorfs) {
