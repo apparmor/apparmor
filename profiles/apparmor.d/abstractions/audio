@@ -88,6 +88,7 @@ owner @{HOME}/.local/share/openal/hrtf/{,**} r,
 
 # pipewire
 /usr/share/pipewire/client{,-rt}.conf r,
+/usr/share/pipewire/client.conf.d/{,*.conf} r,
 
   # Include additions to the abstraction
   include if exists <abstractions/audio.d>

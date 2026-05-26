@@ -2,7 +2,7 @@ abi <abi/5.0>,
 
 include <tunables/global>
 
-profile alsamixer /{usr,}/bin/alsamixer {
+profile alsamixer /{usr,}/bin/alsamixer flags=(attach_disconnected.path=/att/alsamixer/) {
     include <abstractions/base>
     include <abstractions/consoles>
     include <abstractions/nameservice-strict>
@@ -18,6 +18,7 @@ profile alsamixer /{usr,}/bin/alsamixer {
 
     # pipewire configs
     /usr/share/pipewire/*.conf r,
+    /usr/share/pipewire/client.conf.d/{,*.conf} r,
     # pulseaudio configs
     @{etc_ro}/pulse/*.conf r,
     @{etc_ro}/pulse/*.conf.d/ r,
@@ -27,6 +28,7 @@ profile alsamixer /{usr,}/bin/alsamixer {
     /usr/share/alsa/**/*.conf r,
     @{etc_ro}/alsa/conf.d/ r,
     @{etc_ro}/alsa/conf.d/*.conf r,
+    @{etc_ro}/alsa/conf.d/*.conf.example r,
     # alsa info files
     @{PROC}/asound/** r,
 
@@ -38,12 +40,16 @@ profile alsamixer /{usr,}/bin/alsamixer {
     /dev/snd/by-id/ r,
     /dev/snd/by-path/ r,
 
+    @{sys}/devices/virtual/dmi/id/{bios_vendor,board_vendor,product_name} r,
+
     # PulseAudio communication channels
     owner @{HOME}/.config/pulse/cookie rk,
     owner /run/user/@{uid}/pulse/ r,
 
     # Pipewire communication channels
     owner /run/user/@{uid}/pipewire-[0-9] rw,
+
+    /att/alsamixer/systemd/journal/socket w,
 
     include if exists <local/alsamixer>
 }
