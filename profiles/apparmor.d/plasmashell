@@ -2,7 +2,7 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-profile plasmashell /usr/bin/plasmashell {
+profile plasmashell /usr/bin/plasmashell flags=(attach_disconnected.path=/att/plasmashell/) {
   include <abstractions/dbus-session>
 
   capability,
@@ -24,6 +24,9 @@ profile plasmashell /usr/bin/plasmashell {
   /** pux,
 
   /{,**} mrwlk,
+
+  # even if it's covered by the very generous rules above... (to document the disconnected path)
+  /att/plasmashell/systemd/journal/socket w,
 
   profile QtWebEngineProcess {
     capability,
