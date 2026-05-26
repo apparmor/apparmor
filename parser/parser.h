@@ -140,6 +140,8 @@ struct cond_entry_list {
 struct cod_entry {
 	int priority;
 	char *name;
+	int len;
+	int llen;
 	union {
 		char *link_name;
 		char *onexec;
