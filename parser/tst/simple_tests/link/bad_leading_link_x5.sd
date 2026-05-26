@@ -1,0 +1,9 @@
+#
+#=DESCRIPTION test combined leading link and x transition
+#=EXRESULT FAIL
+#
+
+profile test {
+     lpix /link/** -> /target,
+}
+
