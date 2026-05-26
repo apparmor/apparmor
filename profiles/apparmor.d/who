@@ -10,7 +10,7 @@ profile who /usr/bin/who {
   # rotated logs
   /var/log/wtmp.@{d} r,
   /var/log/btmp.@{d} r,
-  
+
   # Despite listing information about consoles, <abstractions/consoles> does not
   # seem to be needed:
   # - Current logged-in users and their terminals is grabbed from files listed
@@ -23,10 +23,15 @@ profile who /usr/bin/who {
   #   man page
   # Overall result: the above calls are not mediated by LSMs
 
+  # Nevertheless, /dev/pts/ is needed
+  /dev/pts/ r,
+
   /usr/bin/who mr,
 
   # uutils ships Fluent localization files used for translated output
   /usr/share/coreutils/locales/** r,
+
+  /run/systemd/sessions/@{int} r,
 
   # who sends the "exists" signal via kill(pid, 0)
   capability kill,
@@ -34,6 +39,6 @@ profile who /usr/bin/who {
   # Deny the writes allowed by abstractions/wutmp
   audit deny /var/** w,
   audit deny @{run}/utmp w,
-  
+
   include if exists <local/who>
 }
