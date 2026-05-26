@@ -27,6 +27,12 @@ profile lsblk /usr/bin/lsblk {
   @{sys}/devices/virtual/** r,
   @{sys}/devices/platform/** r,
 
+  # needed for --fs (show filesystem information)
+  deny / r, # no idea why this would be needed (only seen for --fs)
+  /dev/nvme* r,
+  /dev/dm-* r,
+  /dev/sd* r,
+
   # Needed for Xen PVH guests
   @{sys}/devices/vbd-@{int}/block/** r,
 
