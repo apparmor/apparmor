@@ -32,6 +32,7 @@
 
 import argparse
 import atexit
+import glob
 import grp
 import os
 import pwd
@@ -385,7 +386,8 @@ def drop_privileges():
     If running as root, drop privileges to USER if known, or fall-back to
     nobody_user/group.
     """
-    if os.geteuid() == 0:
+    dropped_from_root = os.geteuid() == 0
+    if dropped_from_root:
 
         if 'SUDO_USER' in os.environ.keys():
             next_username = os.environ['SUDO_USER']
@@ -409,6 +411,24 @@ def drop_privileges():
         os.setegid(int(next_gid))
         os.seteuid(int(next_uid))
 
+    # sudo strips session env; fill in what's missing (--xauthority etc. still win).
+    uid = os.geteuid()
+    if dropped_from_root:
+        os.environ['HOME'] = pwd.getpwuid(uid).pw_dir
+    if 'XDG_RUNTIME_DIR' not in os.environ:
+        os.environ['XDG_RUNTIME_DIR'] = '/run/user/{}'.format(uid)
+    if 'XAUTHORITY' not in os.environ:
+        for cookie in (
+            '/run/user/{}/gdm/Xauthority'.format(uid),
+            '/run/user/{}/.Xauthority'.format(uid),
+            *sorted(glob.glob('/run/user/{}/.mutter-Xwaylandauth.*'.format(uid))),
+            *sorted(glob.glob('/run/user/{}/xauth_*'.format(uid))),
+            '{}/.Xauthority'.format(os.environ.get('HOME', '')),
+        ):
+            if os.path.exists(cookie):
+                os.environ['XAUTHORITY'] = cookie
+                break
+
     # sudo does not preserve DBUS address, so we need to guess it based on UID
     if 'DBUS_SESSION_BUS_ADDRESS' not in os.environ:
         os.environ['DBUS_SESSION_BUS_ADDRESS'] = 'unix:path=/run/user/{}/bus'.format(os.geteuid())
@@ -425,6 +445,22 @@ def raise_privileges():
 
         # os.setgid(int(next_gid))
         os.seteuid(original_effective_user)
+
+
+def setpriv_prefix():
+    """Build a setpriv argv prefix that drops to the SUDO user (or nobody)
+    so the subsequent pkexec sees a non-root caller and polkit prompts for
+    authorization. Returns an empty list when not running as root."""
+    if os.geteuid() != 0:
+        return []
+    if 'SUDO_UID' in os.environ and 'SUDO_GID' in os.environ:
+        uid = os.environ['SUDO_UID']
+        gid = os.environ['SUDO_GID']
+    else:
+        nobody_user_info = pwd.getpwnam(nobody_user)
+        uid = str(nobody_user_info[2])
+        gid = str(nobody_user_info[3])
+    return ['setpriv', '--reuid', uid, '--regid', gid, '--clear-groups']
 
 
 def read_notify_conf(path, shell_config):
@@ -486,7 +522,7 @@ def create_userns_profile(name, path, ans):
         ErrorGUI(_('Cannot get profile path for {}.').format(name), False).show()
         return
 
-    command = ['pkexec', '--keep-cwd', update_profile_path, 'create_userns', template_path, name, path, profile_path, ans]
+    command = setpriv_prefix() + ['pkexec', '--keep-cwd', update_profile_path, 'create_userns', template_path, name, path, profile_path, ans]
 
     try:
         subprocess.run(command, check=True)
@@ -620,7 +656,7 @@ def add_to_profile(rule, profile_name):
 
     update_profile_path = update_profile.__file__
 
-    command = ['pkexec', '--keep-cwd', update_profile_path, 'add_rule', args.local, rule, profile_name]
+    command = setpriv_prefix() + ['pkexec', '--keep-cwd', update_profile_path, 'add_rule', args.local, rule, profile_name]
     try:
         subprocess.run(command, check=True)
     except subprocess.CalledProcessError as e:
@@ -632,7 +668,7 @@ def add_to_profile(rule, profile_name):
 
 def create_from_file(file_path):
     update_profile_path = update_profile.__file__
-    command = ['pkexec', '--keep-cwd', update_profile_path, 'from_file', file_path]
+    command = setpriv_prefix() + ['pkexec', '--keep-cwd', update_profile_path, 'from_file', file_path]
     try:
         subprocess.run(command, check=True)
     except subprocess.CalledProcessError as e:
