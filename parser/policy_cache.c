@@ -24,7 +24,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <sys/types.h>
-#include <sys/uio.h>
 #include <unistd.h>
 #include <sys/stat.h>
 
@@ -80,30 +79,20 @@ bool valid_cached_file_version(const char *cachename)
  */
 zstd_compress_t is_valid_precompressed_profile(char *buffer, size_t buffer_size, uint8_t min_compr_level)
 {
-	const size_t need = sizeof(struct compr_user_header) + sizeof(uint32_t);
-	if (buffer_size < need)
+	if (!_aa_compressed_cache_offset(buffer, buffer_size))
 		return ZSTD_COMPRESS_NONE;
 
 	const struct compr_user_header *uh = (const struct compr_user_header *)buffer;
-	if (uh->version != COMPR_USER_HDR_VERSION)
-		return ZSTD_COMPRESS_NONE;
-
-	uint32_t magic_bytes;
-	memcpy(&magic_bytes, (const uint8_t *)buffer + sizeof(*uh), sizeof(magic_bytes));
-	magic_bytes = le32toh(magic_bytes);
-	if (magic_bytes == ZSTD_MAGICNUMBER) {
-		if (uh->compress_level >= min_compr_level)
-			return ZSTD_COMPRESS_PRECOMPRESSED;
-		if (!(parseopts.control & CONTROL_ZSTD_FLAGS_RECOMPRESS)) {
-			if (show_cache)
-				fprintf(stderr, _("Cache: Using a lower than expected compression level\n"));
-			return ZSTD_COMPRESS_PRECOMPRESSED;
-		}
+	if (uh->compress_level >= min_compr_level)
+		return ZSTD_COMPRESS_PRECOMPRESSED;
+	if (!(parseopts.control & CONTROL_ZSTD_FLAGS_RECOMPRESS)) {
 		if (show_cache)
-			fprintf(stderr, _("Cache: Recompressing cache to increase compression level\n"));
-		return ZSTD_COMPRESS_RECOMPRESS;
+			fprintf(stderr, _("Cache: Using a lower than expected compression level\n"));
+		return ZSTD_COMPRESS_PRECOMPRESSED;
 	}
-	return ZSTD_COMPRESS_NONE;
+	if (show_cache)
+		fprintf(stderr, _("Cache: Recompressing cache to increase compression level\n"));
+	return ZSTD_COMPRESS_RECOMPRESS;
 }
 
 
@@ -339,23 +328,13 @@ void install_compressed_cache(int cachetmp, const char *cachetmpname,
 		return;
 	}
 
-	struct compr_user_header uhdr = {
-		.version = COMPR_USER_HDR_VERSION,
-		.compress_level = (uint8_t)zstd_compress_level,
-		.padding = {0},
-	};
-	struct iovec iov[2] = {
-		{ .iov_base = &uhdr,      .iov_len = sizeof(uhdr) },
-		{ .iov_base = compressed, .iov_len = compressed_size },
-	};
-
 	if (ftruncate(cachetmp, 0) == -1 || lseek(cachetmp, 0, SEEK_SET) != 0) {
 		PERROR(_("%s: Unable to rewind tmp cache file\n"), progname);
 		return;
 	}
 
-	ssize_t wsize = writev(cachetmp, iov, 2);
-	if (wsize < 0 || (size_t)wsize < sizeof(uhdr) + compressed_size) {
+	if (write_compressed_with_user_header(cachetmp, compressed, compressed_size,
+					      (uint8_t)zstd_compress_level) < 0) {
 		PERROR(_("%s: Error writing compressed cache\n"), progname);
 		unlink(cachetmpname);
 		return;

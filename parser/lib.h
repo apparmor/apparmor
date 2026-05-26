@@ -18,4 +18,8 @@ long strntol(const char *str, const char **endptr, int base, long maxval,
 int strn_escseq(const char **pos, const char *chrs, size_t n);
 int str_escseq(const char **pos, const char *chrs);
 
+int write_compressed_with_user_header(int fd, const char *compressed,
+				      size_t compressed_size,
+				      uint8_t compress_level);
+
 #endif /* __AA_LIB_H_ */

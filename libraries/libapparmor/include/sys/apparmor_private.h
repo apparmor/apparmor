@@ -46,6 +46,9 @@ struct compr_user_header {
 	uint8_t padding[6];	/* force 8-byte alignment */
 } __attribute__((packed, aligned(8)));
 
+size_t _aa_compressed_cache_offset(const char *buf, size_t size);
+size_t _aa_strip_compressed_cache_header(const char **buf, size_t *size);
+
 #ifdef __cplusplus
 }
 #endif
