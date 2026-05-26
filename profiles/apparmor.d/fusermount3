@@ -55,6 +55,8 @@ profile fusermount3 /usr/bin/fusermount3 {
   @{run}/mount/utab.lock rwk,
 
   @{etc_ro}/fuse.conf r,
+  @{etc_ro}/fuse3.conf r,
+
   @{PROC}/@{pid}/{mounts,mountinfo} r,
 
   @{exec_path} mr,
