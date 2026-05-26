@@ -88,6 +88,10 @@ profile systemd-detect-virt /usr/bin/systemd-detect-virt flags=(attach_disconnec
   capability net_admin,
   @{run}/systemd/notify w,
   @{run}/systemd/journal/socket w,
+  /att/systemd-detect-virt/systemd/journal/socket w,
+
+  /dev/kmsg w,
+
   # getattr is called on /proc/@{pid}/ns/{cgroup,pid} above. However, these are
   # symlinks to magic files that do not exist on the filesystem and whose paths
   # get resolved to a disconnected "/". Until we can better mediate such magic
