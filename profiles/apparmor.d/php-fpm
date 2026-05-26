@@ -38,6 +38,7 @@ profile php-fpm /usr/{bin,sbin}/php-fpm* flags=(attach_disconnected) {
 
   # LP: #2061113
   owner @{run}/systemd/notify w,
+  /systemd/notify w,  # disconnected path
 
   # to reload
   @{exec_path} rix,
