@@ -16,10 +16,12 @@
  *   Ltd.
  */
 
+#include <errno.h>
 #include <string.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/uio.h>
 
 #include <cstdint>
 
@@ -39,6 +41,31 @@ int dirat_for_each(int dirfd, const char *name, void *data,
 		PDEBUG("dirat_for_each failed: %m\n");
 
 	return retval;
+}
+
+int write_compressed_with_user_header(int fd, const char *compressed,
+				      size_t compressed_size,
+				      uint8_t compress_level)
+{
+	struct compr_user_header uhdr = {
+		.version = COMPR_USER_HDR_VERSION,
+		.compress_level = compress_level,
+		.padding = {0},
+	};
+	struct iovec iov[2] = {
+		{ .iov_base = &uhdr,              .iov_len = sizeof(uhdr) },
+		{ .iov_base = (void *)compressed, .iov_len = compressed_size },
+	};
+	size_t total = sizeof(uhdr) + compressed_size;
+	ssize_t wsize = writev(fd, iov, 2);
+
+	if (wsize < 0)
+		return -1;
+	if ((size_t)wsize < total) {
+		errno = EIO;
+		return -1;
+	}
+	return 0;
 }
 
 /**
