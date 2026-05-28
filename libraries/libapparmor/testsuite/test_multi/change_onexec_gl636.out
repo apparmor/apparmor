@@ -1,0 +1,14 @@
+START
+File: change_onexec_gl636.in
+Event type: AA_RECORD_DENIED
+Audit ID: 1779839263.395:472
+Operation: change_onexec
+Profile: /usr/lib/snapd/snap-confine
+Name: snap.firefox.firefox
+Command: snap-confine
+Info: label not found
+ErrorCode: 2
+PID: 6209
+Class: file
+Epoch: 1779839263
+Audit subid: 472
