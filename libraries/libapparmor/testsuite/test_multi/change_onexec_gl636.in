@@ -1,0 +1,1 @@
+2026-05-26T19:47:43.396634-04:00 philippe-OMEN-25L kernel: audit: type=1400 audit(1779839263.395:472): apparmor="DENIED" operation="change_onexec" class="file" info="label not found" error=-2 profile="/usr/lib/snapd/snap-confine" name="snap.firefox.firefox" pid=6209 comm="snap-confine"

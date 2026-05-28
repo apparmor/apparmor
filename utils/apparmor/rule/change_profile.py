@@ -181,7 +181,8 @@ class ChangeProfileRule(BaseRule):
     @classmethod
     def from_hashlog(cls, hl):
         for cp in hl.keys():
-            yield cls(None, cls.ALL, cp, log_event=True)
+            if cp:  # skip events without target profile
+                yield cls(None, cls.ALL, cp, log_event=True)
 
 
 class ChangeProfileRuleset(BaseRuleset):
