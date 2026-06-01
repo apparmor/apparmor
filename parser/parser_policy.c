@@ -362,7 +362,8 @@ static void dfa_cache_store_disk(Profile *profile, uint64_t key)
 	}
 
 	fclose(f);
-	rename(tmp_path, path);
+	if (rename(tmp_path, path) != 0)
+		unlink(tmp_path);
 }
 
 int process_profile_rules(Profile *profile)
