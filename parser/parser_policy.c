@@ -28,6 +28,7 @@
 #include <search.h>
 #include <string.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <limits.h>
 #include <sys/stat.h>
@@ -323,7 +324,7 @@ static void dfa_cache_store_disk(Profile *profile, uint64_t key)
 	if (!dfa_cacheloc || !profile->dfa.dfa || profile->dfa.size == 0)
 		return;
 
-	if (mkdir(dfa_cacheloc, 0755) == -1 && errno != EEXIST)
+	if (mkdir(dfa_cacheloc, 0700) == -1 && errno != EEXIST)
 		return;
 
 	char path[PATH_MAX];
@@ -333,9 +334,15 @@ static void dfa_cache_store_disk(Profile *profile, uint64_t key)
 	snprintf(tmp_path, sizeof(tmp_path), "%s/%016llx.dfa.tmp.%d", dfa_cacheloc,
 		 (unsigned long long)key, (int)getpid());
 
-	FILE *f = fopen(tmp_path, "wb");
-	if (!f)
+	int fd = open(tmp_path, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+	if (fd == -1)
 		return;
+	FILE *f = fdopen(fd, "wb");
+	if (!f) {
+		close(fd);
+		unlink(tmp_path);
+		return;
+	}
 
 	struct dfa_perms_header hdr;
 	hdr.magic = DFA_CACHE_MAGIC;
