@@ -275,6 +275,18 @@ static bool dfa_cache_lookup_disk(Profile *profile, uint64_t key)
 		return false;
 	}
 
+	/* Sanity-check sizes from the cache file to avoid OOM on corrupt
+	 * or maliciously crafted files in a user-provided dfa_cacheloc.
+	 * DFA cache files are usually between 50kB and 150kB.
+	 * Check also for max permission count, resonable max 32k permissions */
+#define DFA_CACHE_MAX_DFA_SIZE  (1024 * 1024)
+#define DFA_CACHE_MAX_PERMS     (32 * 1024)
+	if (hdr.dfa_size == 0 || hdr.dfa_size > DFA_CACHE_MAX_DFA_SIZE ||
+	    hdr.perms_count > DFA_CACHE_MAX_PERMS) {
+		fclose(f);
+		return false;
+	}
+
 	void *dfa = malloc(hdr.dfa_size);
 	if (!dfa) {
 		fclose(f);
