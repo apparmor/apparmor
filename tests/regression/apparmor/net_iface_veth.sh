@@ -1,5 +1,5 @@
 #! /bin/bash
-#Copyright (C) 2022 Canonical, Ltd.
+#Copyright (C) 2026 Canonical, Ltd.
 #
 #This program is free software; you can redistribute it and/or
 #modify it under the terms of the GNU General Public License as
@@ -11,11 +11,12 @@
 # This test verifies if network interface mediation is working with veth interfaces
 #=END
 
-pwd=`dirname $0`
-pwd=`cd $pwd ; /bin/pwd`
+pwd=$(dirname "$0")
+pwd=$(cd "$pwd" || exit ; /bin/pwd)
 
 bin=$pwd
 
+# shellcheck source=prologue.inc
 . "$bin/prologue.inc"
 
 requires_kernel_features network_v9_skb/iface
@@ -27,7 +28,7 @@ if [ ! -e $skb_enabled_path ]; then
 	exit 0
 else
 	skb_enabled=$(cat $skb_enabled_path)
-	if [ $skb_enabled -eq 0 ]; then
+	if [ "$skb_enabled" -eq 0 ]; then
 		echo "$skb_enabled_path disabled. Skipping tests ..."
 		exit 0
 	fi
@@ -95,9 +96,9 @@ EOF
 
 killtestbg()
 {
-	if ps -p $_pid > /dev/null 2>&1
+	if ps -p "$_pid" > /dev/null 2>&1
 	then
-	    kill $_pid
+	    kill "$_pid"
 	fi
 }
 
@@ -131,19 +132,19 @@ update_test()
 do_check()
 {
 	checktestfg
-	echo -n "" > $outfile
+	echo -n "" > "$outfile"
 }
 
 default_perms="file, signal"
 
 do_test "unconfined $NS_CLIENT0" pass
 wait_listen_port "$PORT"
-$bin/client.sh "$NS_CLIENT0" "${HOST_IP_IFACE0}" "${PORT}" "$REQUEST_FILE" >> $outfile
+"$bin/client.sh" "$NS_CLIENT0" "${HOST_IP_IFACE0}" "${PORT}" "$REQUEST_FILE" >> "$outfile"
 do_check
 
 update_test "unconfined $NS_CLIENT1" pass
 wait_listen_port "$PORT"
-$bin/client.sh "$NS_CLIENT1" "${HOST_IP_IFACE1}" "${PORT}" "$REQUEST_FILE" >> $outfile
+"$bin/client.sh" "$NS_CLIENT1" "${HOST_IP_IFACE1}" "${PORT}" "$REQUEST_FILE" >> "$outfile"
 do_check
 
 # IMPORTANT NOTE: if the server, while still running, goes from
@@ -152,66 +153,66 @@ do_check
 # add a deny rule for the interfaces. Mediation starts if/when the
 # server restarts or execs itself. This could change in the future.
 
-genprofile $default_perms network qual=deny:network:interface=${VETH0} qual=deny:network:interface=${VETH1}
+genprofile "$default_perms" network qual=deny:network:interface=${VETH0} qual=deny:network:interface=${VETH1}
 
 update_test "unconfined->confined $NS_CLIENT0" pass
 wait_listen_port "$PORT"
-$bin/client.sh "$NS_CLIENT0" "${HOST_IP_IFACE0}" "${PORT}" "$REQUEST_FILE" >> $outfile
+"$bin/client.sh" "$NS_CLIENT0" "${HOST_IP_IFACE0}" "${PORT}" "$REQUEST_FILE" >> "$outfile"
 do_check
 
 update_test "unconfined->confined $NS_CLIENT1" pass
 wait_listen_port "$PORT"
-$bin/client.sh "$NS_CLIENT1" "${HOST_IP_IFACE1}" "${PORT}" "$REQUEST_FILE" >> $outfile
+"$bin/client.sh" "$NS_CLIENT1" "${HOST_IP_IFACE1}" "${PORT}" "$REQUEST_FILE" >> "$outfile"
 do_check
 
 # killing the test so we can start testing profile changes without
 # restarting the server
 killtestbg
 
-genprofile $default_perms network
+genprofile "$default_perms" network
 
 do_test "full net perms $NS_CLIENT0" pass
 wait_listen_port "$PORT"
-$bin/client.sh "$NS_CLIENT0" "${HOST_IP_IFACE0}" "${PORT}" "$REQUEST_FILE" >> $outfile
+"$bin/client.sh" "$NS_CLIENT0" "${HOST_IP_IFACE0}" "${PORT}" "$REQUEST_FILE" >> "$outfile"
 do_check
 
 update_test "full net perms $NS_CLIENT1" pass
 wait_listen_port "$PORT"
-$bin/client.sh "$NS_CLIENT1" "${HOST_IP_IFACE1}" "${PORT}" "$REQUEST_FILE" >> $outfile
+"$bin/client.sh" "$NS_CLIENT1" "${HOST_IP_IFACE1}" "${PORT}" "$REQUEST_FILE" >> "$outfile"
 do_check
 
-genprofile $default_perms qual=deny:network
+genprofile "$default_perms" qual=deny:network
 
 update_test "deny full net perms $NS_CLIENT0" fail
 wait_listen_port "$PORT"
-$bin/client.sh "$NS_CLIENT0" "${HOST_IP_IFACE0}" "${PORT}" "$REQUEST_FILE" >> $outfile
+"$bin/client.sh" "$NS_CLIENT0" "${HOST_IP_IFACE0}" "${PORT}" "$REQUEST_FILE" >> "$outfile"
 do_check
 
 update_test "deny full net perms $NS_CLIENT1" fail
 wait_listen_port "$PORT"
-$bin/client.sh "$NS_CLIENT1" "${HOST_IP_IFACE1}" "${PORT}" "$REQUEST_FILE" >> $outfile
+"$bin/client.sh" "$NS_CLIENT1" "${HOST_IP_IFACE1}" "${PORT}" "$REQUEST_FILE" >> "$outfile"
 do_check
 
-genprofile $default_perms network:interface=${VETH0}
+genprofile "$default_perms" network:interface=${VETH0}
 
 update_test "iface ${VETH0} $NS_CLIENT0" pass
 wait_listen_port "$PORT"
-$bin/client.sh "$NS_CLIENT0" "${HOST_IP_IFACE0}" "${PORT}" "$REQUEST_FILE" >> $outfile
+"$bin/client.sh" "$NS_CLIENT0" "${HOST_IP_IFACE0}" "${PORT}" "$REQUEST_FILE" >> "$outfile"
 do_check
 
 update_test "iface ${VETH0} $NS_CLIENT1" fail
 wait_listen_port "$PORT"
-$bin/client.sh "$NS_CLIENT1" "${HOST_IP_IFACE1}" "${PORT}" "$REQUEST_FILE" >> $outfile
+"$bin/client.sh" "$NS_CLIENT1" "${HOST_IP_IFACE1}" "${PORT}" "$REQUEST_FILE" >> "$outfile"
 do_check
 
-genprofile $default_perms network qual=deny:network:interface=${VETH0}
+genprofile "$default_perms" network qual=deny:network:interface=${VETH0}
 
 update_test "deny iface ${VETH0} $NS_CLIENT0" fail
 wait_listen_port "$PORT"
-$bin/client.sh "$NS_CLIENT0" "${HOST_IP_IFACE0}" "${PORT}" "$REQUEST_FILE" >> $outfile
+"$bin/client.sh" "$NS_CLIENT0" "${HOST_IP_IFACE0}" "${PORT}" "$REQUEST_FILE" >> "$outfile"
 do_check
 
 update_test "deny iface ${VETH0} $NS_CLIENT1" pass
 wait_listen_port "$PORT"
-$bin/client.sh "$NS_CLIENT1" "${HOST_IP_IFACE1}" "${PORT}" "$REQUEST_FILE" >> $outfile
+"$bin/client.sh" "$NS_CLIENT1" "${HOST_IP_IFACE1}" "${PORT}" "$REQUEST_FILE" >> "$outfile"
 do_check
