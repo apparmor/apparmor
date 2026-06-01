@@ -244,6 +244,15 @@ static uint64_t hash_profile_file_rules(Profile *profile)
 		}
 	}
 
+	/* Add global state info that affects DFA compilation so that caches
+	 * built under different kernel ABI versions, parser ABI versions,
+	 * parser control options, or permstable32 versions are not accidentallyreused. */
+	FNV1A_ADD_TO_HASH(hash, kernel_abi_version);
+	FNV1A_ADD_TO_HASH(hash, parser_abi_version);
+	FNV1A_ADD_TO_HASH(hash, parseopts.control);
+	FNV1A_ADD_TO_HASH(hash, kernel_supports_permstable32);
+	FNV1A_ADD_TO_HASH(hash, kernel_supports_permstable32_v1);
+
 	return hash;
 }
 
