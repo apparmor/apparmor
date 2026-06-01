@@ -464,7 +464,7 @@ static void warn_once_xattr(const char *name)
     common_warn_once(name, "xattr attachment conditional ignored", &warned_name);
 }
 
-static bool process_profile_name_xmatch(Profile *prof)
+bool process_profile_name_xmatch(Profile *prof)
 {
 	std::string tbuf;
 	pattern_t ptype;
@@ -766,9 +766,6 @@ bool post_process_entries(Profile *prof)
 int process_profile_regex(Profile *prof)
 {
 	int error = -1;
-
-	if (!process_profile_name_xmatch(prof))
-		goto out;
 
 	prof->dfa.rules = new aare_rules();
 	if (!prof->dfa.rules)

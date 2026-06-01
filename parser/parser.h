@@ -447,6 +447,7 @@ extern pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 extern bool build_list_val_expr(std::string& buffer, struct value_list *list);
 extern bool convert_entry(std::string& buffer, const char *entry);
 extern int clear_and_convert_entry(std::string& buffer, const char *entry);
+extern bool process_profile_name_xmatch(Profile *prof);
 extern int process_profile_regex(Profile *prof);
 extern int process_profile_policydb(Profile *prof);
 

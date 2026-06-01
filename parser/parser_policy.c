@@ -382,6 +382,14 @@ int process_profile_rules(Profile *profile)
 			       profile->name);
 	}
 
+	/* xmatch is derived from profile name/attachment, not file rules,
+	 * it must be always built, even on cache hit. */
+	if (!process_profile_name_xmatch(profile)) {
+		PERROR(_("ERROR processing xmatch for profile %s, failed to load\n"), profile->name);
+		exit(1);
+		return -1;
+	}
+
 	if (!file_dfa_cached) {
 		error = process_profile_regex(profile);
 		if (error) {
