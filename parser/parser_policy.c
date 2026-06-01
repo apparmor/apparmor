@@ -216,6 +216,8 @@ struct dfa_perms_header {
 
 #define DFA_CACHE_MAGIC 0x43414644  /* "DFAC" in little-endian */
 #define DFA_CACHE_VERSION 1
+/* FNV-1a add hash helper */
+#define FNV1A_ADD_TO_HASH(hash, val) do { (hash) ^= (uint64_t)(val); (hash) *= 0x100000001b3ULL; } while (0)
 
 /* Compute FNV-1a 64-bit hash of a profile's expanded file rules (cod_entry) */
 static uint64_t hash_profile_file_rules(Profile *profile)
@@ -225,30 +227,20 @@ static uint64_t hash_profile_file_rules(Profile *profile)
 
 	list_for_each(profile->entries, entry) {
 		if (entry->name) {
-			for (const char *p = entry->name; *p; p++) {
-				hash ^= (unsigned char)*p;
-				hash *= 0x100000001b3ULL;
-			}
+			for (const char *p = entry->name; *p; p++)
+				FNV1A_ADD_TO_HASH(hash, (unsigned char)*p);
 		}
-		hash ^= (uint64_t)entry->perms;
-		hash *= 0x100000001b3ULL;
-		hash ^= (uint64_t)entry->audit;
-		hash *= 0x100000001b3ULL;
-		hash ^= (uint64_t)entry->rule_mode;
-		hash *= 0x100000001b3ULL;
-		hash ^= (uint64_t)entry->priority;
-		hash *= 0x100000001b3ULL;
+		FNV1A_ADD_TO_HASH(hash, entry->perms);
+		FNV1A_ADD_TO_HASH(hash, entry->audit);
+		FNV1A_ADD_TO_HASH(hash, entry->rule_mode);
+		FNV1A_ADD_TO_HASH(hash, entry->priority);
 		if (entry->link_name) {
-			for (const char *p = entry->link_name; *p; p++) {
-				hash ^= (unsigned char)*p;
-				hash *= 0x100000001b3ULL;
-			}
+			for (const char *p = entry->link_name; *p; p++)
+				FNV1A_ADD_TO_HASH(hash, (unsigned char)*p);
 		}
 		if (entry->nt_name) {
-			for (const char *p = entry->nt_name; *p; p++) {
-				hash ^= (unsigned char)*p;
-				hash *= 0x100000001b3ULL;
-			}
+			for (const char *p = entry->nt_name; *p; p++)
+				FNV1A_ADD_TO_HASH(hash, (unsigned char)*p);
 		}
 	}
 
