@@ -63,7 +63,7 @@ profile tnftp /usr/bin/tnftp {
   # required for the ! command to work.
   # here we are restricting execution to files in a limited set of
   # directories, for which we also deny write access.
-  file Cx @{tnftp_rx}/* -> cmds,
+  priority=1 file Cx @{tnftp_rx}/* -> cmds,
   audit deny file w @{tnftp_rx}/*,
   
   profile cmds {
