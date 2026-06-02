@@ -369,55 +369,6 @@ def resolve_variables(s, var_dict):
     return expand_string(s, var_dict, set())
 
 
-# This function could be replaced by braceexpand.braceexpand
-# It exists to avoid relying on an external python package.
-def expand_braces(s):
-    i = s.find('{')
-    if i == -1:
-        if '}' in s:
-            raise AppArmorException('Unbalanced braces in pattern {}'.format(s))
-        return {s}
-
-    level = 0
-    for j in range(i, len(s)):
-        if s[j] == '{':
-            level += 1
-        elif s[j] == '}':
-            level -= 1
-            if level == 0:
-                break
-    else:
-        raise AppArmorException('Unbalanced braces in pattern {}'.format(s))
-
-    prefix = s[:i]
-    group = s[i + 1:j]
-    suffix = s[j + 1:]
-
-    # Split group on commas at the top level (i.e. not inside nested braces)
-    alts = []
-    curr = ''
-    nested = 0
-    for char in group:
-        if char == ',' and nested == 0:
-            alts.append(curr)
-            curr = ""
-        else:
-            if char == '{':
-                nested += 1
-            elif char == '}':
-                nested -= 1
-            curr += char
-    alts.append(curr)
-
-    # Recursively combine prefix, each alternative, and suffix
-    results = set()
-    for alt in alts:
-        results.update(expand_braces(prefix + alt + suffix))
-    if len(results) <= 1:
-        raise AppArmorException('Braces should provide at least two alternatives, found {}: {}'.format(len(results), s))
-    return results
-
-
 def expand_path_braces(pattern, max_path=1000):
     """Expand only brace alternations containing a '/'; these change the path
     depth (e.g. @{bin}=/{,usr/}bin) so a single glob cannot express them.
