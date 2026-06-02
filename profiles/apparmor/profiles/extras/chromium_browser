@@ -150,6 +150,7 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   /sys/devices/**/uevent r,
   /sys/devices/system/cpu/cpufreq/policy*/cpuinfo_max_freq r,
   /sys/devices/system/cpu/cpu*/cpufreq/cpuinfo_max_freq r,
+  /sys/devices/system/cpu/cpu*/microcode/version r,
   /sys/devices/system/cpu/kernel_max r,
   /sys/devices/system/cpu/possible r,
   /sys/devices/system/cpu/present r,
@@ -249,10 +250,8 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
   owner @{HOME}/.pki/nssdb/* rwk,
   owner @{HOME}/.cache/chromium/ rw,
   owner @{HOME}/.cache/chromium/** rw,
-  owner @{HOME}/.cache/chromium/Cache/* mr,
   owner @{HOME}/.config/chromium/ rw,
   owner @{HOME}/.config/chromium/** rwk,
-  owner @{HOME}/.config/chromium/**/Cache/* mr,
   owner @{HOME}/.config/chromium/Dictionaries/*.bdic mr,
   owner @{HOME}/.config/chromium/**/Dictionaries/*.bdic mr,
 
@@ -281,6 +280,7 @@ profile chromium_browser /usr/lib/@{chromium}/@{chromium} flags=(attach_disconne
 
   # GVfs
   owner @{run}/user/[0-9]*/gvfsd/socket-* rw,
+  owner @{HOME}/.local/share/gvfs-metadata/** r,
 
   # Magnet links
   /usr/bin/gio ixr,

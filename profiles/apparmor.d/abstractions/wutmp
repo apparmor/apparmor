@@ -15,12 +15,12 @@
   # some services update wtmp, utmp, and lastlog with per-user
   # connection information
   /var/lib/lastlog/lastlog2.db{,-journal} rwlk,
-  /var/lib/wtmpdb/  r,
+  /var/lib/wtmpdb/    r,
   /var/lib/wtmpdb/wtmp.db{,-journal} rwlk,
-  /var/log/lastlog  rwk,
-  /var/log/wtmp     rwk,
-  /var/log/btmp     rwk,
-  @{run}/utmp       rwk,
+  /var/log/lastlog    rwk,
+  /var/log/wtmp{,.db} rwk,
+  /var/log/btmp       rwk,
+  @{run}/utmp         rwk,
 
   # Some read the list of sessions from systemd
   /run/systemd/sessions/ r,
