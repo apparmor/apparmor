@@ -38,6 +38,7 @@ profile Xorg /usr/lib/xorg/Xorg flags=(attach_disconnected, complain) {
   include <abstractions/fonts>
   include <abstractions/mesa>
   include <abstractions/nameservice>
+  include <abstractions/opengl>
   include <abstractions/vulkan>
   include <abstractions/X>
 

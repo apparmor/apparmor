@@ -30,6 +30,7 @@ profile firefox @{MOZ_LIBDIR}/@{MOZ_APP_NAME}{,*[^s][^h]} {
   include <abstractions/dconf>
   include <abstractions/fcitx>
   include <abstractions/fonts>
+  include if exists <abstractions/glycin>
   include <abstractions/gnome>
   include <abstractions/ibus>
   include <abstractions/mesa>
@@ -110,6 +111,13 @@ profile firefox @{MOZ_LIBDIR}/@{MOZ_APP_NAME}{,*[^s][^h]} {
        member=GetAll
        peer=(label=unconfined),
 
+  dbus (send)
+       bus=session
+       path=/org/gtk/vfs/metadata
+       interface=org.gtk.vfs.Metadata
+       member={GetTreeFromDevice,Remove}
+       peer=(label=unconfined),
+
   unix (bind, listen) type=seqpacket addr="@gecko-crash-helper-pipe.*",
 
   @{exec_path} mr,
@@ -180,7 +188,7 @@ profile firefox @{MOZ_LIBDIR}/@{MOZ_APP_NAME}{,*[^s][^h]} {
   /usr/bin/dirname ixr,
   /usr/bin/pwd ixr,
   /{usr/,}sbin/killall5 ixr,
-  /{usr/,}bin/which ixr,
+  /{usr/,}bin/which{,.*} ixr,
   /usr/bin/tr ixr,
   @{PROC}/ r,
   owner @{PROC}/@{pid}/cmdline r,
@@ -196,7 +204,8 @@ profile firefox @{MOZ_LIBDIR}/@{MOZ_APP_NAME}{,*[^s][^h]} {
   @{PROC}/filesystems r,
   @{PROC}/pressure/{cpu,io,memory} r,
   @{PROC}/sys/vm/overcommit_memory r,
-  @{sys}/fs/cgroup/user.slice/user-[0-9]*.slice/session-{,c}[0-9]*.scope/cpu.max r,
+  @{sys}/fs/cgroup/user.slice/cpu.max r,
+  @{sys}/fs/cgroup/user.slice/user-[0-9]*.slice/{,session-{,c}[0-9]*.scope/}cpu.max r,
   /sys/devices/**/uevent r,
   # prevent crash LP: #1931602
   /sys/devices/@{pci_bus}/**/{resource,irq,class} r,
@@ -243,11 +252,12 @@ profile firefox @{MOZ_LIBDIR}/@{MOZ_APP_NAME}{,*[^s][^h]} {
   owner @{HOME}/.thumbnails/*/*.png r,
 
   # per-user firefox configuration
-  owner @{HOME}/.{firefox,mozilla}/ rw,
-  owner @{HOME}/.{firefox,mozilla}/** rw,
-  owner @{HOME}/.{firefox,mozilla}/**/*.{db,parentlock,sqlite}* k,
-  owner @{HOME}/.{firefox,mozilla}/plugins/** rm,
-  owner @{HOME}/.{firefox,mozilla}/**/plugins/** rm,
+  owner @{HOME}/.{,config/}{firefox,mozilla}/ rw,
+  owner @{HOME}/.{,config/}{firefox,mozilla}/** rw,
+  owner @{HOME}/.{,config/}{firefox,mozilla}/**/*.{db,parentlock,sqlite}* k,
+  owner @{HOME}/.{,config/}{firefox,mozilla}/plugins/** rm,
+  owner @{HOME}/.{,config/}{firefox,mozilla}/**/plugins/** rm,
+  owner @{HOME}/.{,config/}{firefox,mozilla}/**/crashping.pid k,
   owner @{HOME}/.gnome2/firefox* rwk,
   owner @{HOME}/.cache/mozilla/{,@{MOZ_APP_NAME}/} rw,
   owner @{HOME}/.cache/mozilla/@{MOZ_APP_NAME}/** rw,
