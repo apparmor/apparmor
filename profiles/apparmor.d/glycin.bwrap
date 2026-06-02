@@ -70,7 +70,7 @@ profile :glycin:bwrap flags=(attach_disconnected,attach_disconnected.path=@{att}
 
   # To test sandbox functionalities
   # See; https://gitlab.gnome.org/GNOME/glycin/-/blob/main/glycin/src/sandbox.rs#L676
-  /{,usr/}bin/true ix,
+  /{,usr/}bin/{,gnu}true ix,
 
   /usr/libexec/glycin-loaders/@{d}+/glycin-* Px -> bwrap//&loaders,
 
