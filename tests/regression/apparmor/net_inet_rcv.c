@@ -345,6 +345,9 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
+	shutdown(sockfd, SHUT_RDWR);
+	close(sockfd);
+	
 	if (ret == -1) {
 		printf("FAIL - Receive message failed.\n");
 		exit(1);
