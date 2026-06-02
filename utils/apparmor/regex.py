@@ -416,3 +416,54 @@ def expand_braces(s):
     if len(results) <= 1:
         raise AppArmorException('Braces should provide at least two alternatives, found {}: {}'.format(len(results), s))
     return results
+
+
+def expand_path_braces(pattern):
+    """Expand only brace alternations containing a '/'; these change the path
+    depth (e.g. @{bin}=/{,usr/}bin) so a single glob cannot express them.
+    Within-segment braces are left untouched (the caller turns them into a glob
+    wildcard or regex). Returns a set of path-shape variants."""
+    i = pattern.find('{')
+    while i != -1:
+        # Find the '}' that closes the '{' at index i.
+        # When the loop breaks, j holds the index of that matching '}'.
+        depth = 0
+        for j in range(i, len(pattern)):
+            if pattern[j] == '{':
+                depth += 1
+            elif pattern[j] == '}':
+                depth -= 1
+                if depth == 0:
+                    break
+        else:
+            break  # unbalanced; leave the rest untouched
+
+        # Split the brace body pattern[i+1:j] on its top-level commas into the
+        # list of alternatives, remembering whether any of them contains a '/'.
+        # TODO: '\,' is wrongly treated as a separator.
+        alts = []
+        cur = ''
+        nested = 0  # depth of braces nested inside this pattern
+        has_slash = False
+        for ch in pattern[i + 1:j]:
+            if ch == ',' and nested == 0:
+                alts.append(cur)
+                cur = ''
+            else:
+                if ch == '{':
+                    nested += 1
+                elif ch == '}':
+                    nested -= 1
+                elif ch == '/':
+                    has_slash = True
+                cur += ch
+        alts.append(cur)
+
+        if has_slash:
+            # A '/' in an alternative can change the path depth: recurse on it.
+            variants = set()
+            for alt in alts:
+                variants |= expand_path_braces(pattern[:i] + alt + pattern[j + 1:])
+            return variants
+        i = pattern.find('{', j + 1)  # within-segment brace: skip, look further
+    return {pattern}
