@@ -2,7 +2,7 @@ abi <abi/5.0>,
 
 include <tunables/global>
 
-profile plasmashell /usr/bin/plasmashell flags=(attach_disconnected.path=/att/plasmashell/) {
+profile plasmashell /usr/bin/plasmashell flags=(attach_disconnected.path=/att/plasmashell/ mediate_deleted) {
   include <abstractions/dbus-session>
 
   capability,
