@@ -57,6 +57,8 @@ profile fusermount3 /usr/bin/fusermount3 {
   @{etc_ro}/fuse.conf r,
   @{etc_ro}/fuse3.conf r,
 
+  /etc/machine-id r,
+
   @{PROC}/@{pid}/{mounts,mountinfo} r,
 
   @{exec_path} mr,
