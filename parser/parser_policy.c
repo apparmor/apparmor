@@ -55,7 +55,7 @@ using namespace std;
 ProfileList policy_list;
 
 const char *dfa_cacheloc = NULL;
-int dfa_show_cache = false;
+bool dfa_show_cache = false;
 
 void add_to_list(Profile *prof)
 {
@@ -237,6 +237,7 @@ static uint64_t hash_profile_file_rules(Profile *profile)
 		if (entry->link_name) {
 			for (const char *p = entry->link_name; *p; p++)
 				FNV1A_ADD_TO_HASH(hash, (unsigned char)*p);
+			FNV1A_ADD_TO_HASH(hash, entry->subset);
 		}
 		if (entry->nt_name) {
 			for (const char *p = entry->nt_name; *p; p++)
@@ -289,6 +290,18 @@ static bool dfa_cache_lookup_disk(Profile *profile, uint64_t key)
 		return false;
 	}
 
+	size_t save = ftell(f);
+	fseek(f, 0L, SEEK_END);
+	size_t sz = ftell(f);
+	fseek(f, save, SEEK_SET);
+	sz -= save;
+
+	if (hdr.dfa_size > sz) {
+		fclose(f);
+		return false;
+	}
+	sz -= hdr.dfa_size;
+
 	void *dfa = malloc(hdr.dfa_size);
 	if (!dfa) {
 		fclose(f);
@@ -301,6 +314,11 @@ static bool dfa_cache_lookup_disk(Profile *profile, uint64_t key)
 		return false;
 	}
 
+	if ((sizeof(aa_perms) * hdr.perms_count) > sz) {
+		free(dfa);
+		fclose(f);
+		return false;
+	}
 	std::vector<aa_perms> perms_table(hdr.perms_count);
 	if (hdr.perms_count > 0 &&
 	    fread(perms_table.data(), sizeof(aa_perms), hdr.perms_count, f) != hdr.perms_count) {
