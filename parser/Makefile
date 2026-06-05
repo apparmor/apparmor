@@ -60,6 +60,10 @@ CXX_WARNINGS = ${WARNINGS} ${EXTRA_WARNINGS}
 ifndef CXXFLAGS
 CXXFLAGS	= -g -O2 -pipe
 
+ifdef USE_DFA_CACHE
+CXXFLAGS += -D USE_DFA_CACHE
+endif
+
 ifdef DEBUG
 CXXFLAGS += -pg -D DEBUG
 endif

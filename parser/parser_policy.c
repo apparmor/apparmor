@@ -20,7 +20,9 @@
  */
 
 #include <algorithm>
+#ifdef USE_DFA_CACHE
 #include <vector>
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,10 +30,12 @@
 #include <search.h>
 #include <string.h>
 #include <errno.h>
+#ifdef USE_DFA_CACHE
 #include <fcntl.h>
 #include <unistd.h>
 #include <limits.h>
 #include <sys/stat.h>
+#endif
 #include <sys/apparmor.h>
 
 #include "lib.h"
@@ -54,8 +58,10 @@ using namespace std;
 
 ProfileList policy_list;
 
+#ifdef USE_DFA_CACHE
 const char *dfa_cacheloc = NULL;
 bool dfa_show_cache = false;
+#endif
 
 void add_to_list(Profile *prof)
 {
@@ -195,6 +201,7 @@ out:
 	return ret;
 }
 
+#ifdef USE_DFA_CACHE
 /**
  * DFA blob cache: reuse compiled file DFA across profiles with identical
  * expanded file rules. Profiles that share the same template section
@@ -384,12 +391,14 @@ static void dfa_cache_store_disk(Profile *profile, uint64_t key)
 	if (rename(tmp_path, path) != 0)
 		unlink(tmp_path);
 }
+#endif
 
 int process_profile_rules(Profile *profile)
 {
 	int error;
-	uint64_t cache_key = 0;
 	bool file_dfa_cached = false;
+#ifdef USE_DFA_CACHE
+	uint64_t cache_key = 0;
 
 	if (dfa_cacheloc) {
 		cache_key = hash_profile_file_rules(profile);
@@ -399,6 +408,7 @@ int process_profile_rules(Profile *profile)
 			       file_dfa_cached ? "hit" : "miss",
 			       profile->name);
 	}
+#endif
 
 	/* xmatch is derived from profile name/attachment, not file rules,
 	 * it must be always built, even on cache hit. */
@@ -416,8 +426,10 @@ int process_profile_rules(Profile *profile)
 			return error;
 		}
 
+#ifdef USE_DFA_CACHE
 		if (dfa_cacheloc)
 			dfa_cache_store_disk(profile, cache_key);
+#endif
 	}
 
 	error = process_profile_policydb(profile);
