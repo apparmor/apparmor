@@ -997,6 +997,7 @@ struct cod_entry *new_entry(char *id, perm32_t perms, char *link_id)
 	entry->pattern_type = ePatternInvalid;
 	entry->pat.regex = NULL;
 
+	entry->subset = false;
 	entry->next = NULL;
 
 	PDEBUG(" Insertion of: (%s)\n", entry->name);
@@ -1024,6 +1025,7 @@ struct cod_entry *copy_cod_entry(struct cod_entry *orig)
 	entry->pat.regex = NULL;
 
 	entry->next = orig->next;
+	entry->subset = orig->subset;
 
 	return entry;
 
@@ -1090,7 +1092,7 @@ void debug_cod_entries(struct cod_entry *list)
 			printf("\tName:\tNULL\n");
 
 		if (AA_LINK_BITS & item->perms)
-			printf("\tlink:\t(%s)\n", item->link_name ? item->link_name : "/**");
+			printf("\tlink: subset=%d\t(%s)\n", item->subset, item->link_name ? item->link_name : "/**");
 
 	}
 }
