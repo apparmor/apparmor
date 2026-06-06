@@ -58,6 +58,7 @@ profile smbd /usr/{bin,sbin}/smbd flags=(attach_disconnected.path=/att/smbd/) {
   @{run}/samba/** rk,
   @{run}/samba/ncalrpc/ rw,
   @{run}/samba/ncalrpc/** rw,
+  @{run}/samba/winbindd/pipe rw,
   /var/spool/samba/** rw,
 
   @{HOMEDIRS}/** lrwk,
