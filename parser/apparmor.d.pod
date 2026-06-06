@@ -458,7 +458,7 @@ AppArmor profiles have the ability to target files based on their xattr(7)
 values in addition to their path. For example, the following profile matches
 files in /usr/bin with the attribute "security.apparmor" and value "trusted":
 
-  /usr/bin/* xattrs(security.apparmor="trusted") {
+  /usr/bin/* xattrs=(security.apparmor="trusted") {
     # ...
   }
 
