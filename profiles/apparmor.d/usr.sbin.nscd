@@ -11,8 +11,9 @@
 
 abi <abi/5.0>,
 
+@{att}=/att/nscd/
 include <tunables/global>
-profile nscd /usr/{bin,sbin}/nscd flags=(attach_disconnected.path=/att/nscd/) {
+profile nscd /usr/{bin,sbin}/nscd flags=(attach_disconnected.path=@{att}) {
   include <abstractions/base>
   include <abstractions/consoles>
   include <abstractions/nameservice>
@@ -31,7 +32,7 @@ profile nscd /usr/{bin,sbin}/nscd flags=(attach_disconnected.path=/att/nscd/) {
   @{run}/nscd/ rw,
   @{run}/nscd/db* rwl,
   @{run}/nscd/socket wl,
-  @{run}/nslcd/socket rw,
+  @{att}/@{run}/nslcd/socket rw,
   /{var/cache,var/db,var/lib,var/run,run}/nscd/{passwd,group,services,hosts,netgroup} rw,
   @{run}/{nscd/,}nscd.pid rwl,
   /var/lib/libvirt/dnsmasq/ r,
