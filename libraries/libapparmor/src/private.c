@@ -349,6 +349,7 @@ static ssize_t readdirfd(int dirfd, struct dirent ***out,
 		goto fail;
 
 	for (i = 0; i < n; ) {
+		size_t len;
 		if ((dent = readdir(dir)) == NULL) {
 			PDEBUG("readdir of entry[%d] failed: %m\n", i);
 			goto fail;
@@ -357,10 +358,12 @@ static ssize_t readdirfd(int dirfd, struct dirent ***out,
 		if (!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, ".."))
 			continue;
 
-		dents[i] = malloc(sizeof(*dents[i]));
+		len = offsetof(struct dirent, d_name) + strlen(dent->d_name) + 1;
+
+		dents[i] = calloc(1, sizeof(*dents[i]));
 		if (!dents[i])
 			goto fail;
-		memcpy(dents[i], dent, sizeof(*dent));
+		memcpy(dents[i], dent, len);
 		i++;
 	}
 
