@@ -210,15 +210,134 @@ out:
  * The cache uses a directory on disk (set via --dfa-cache-loc argument) to
  * persist across fork() children and across parser invocations.
  *
- * Cache key: FNV-1a hash of all expanded cod_entry fields.
- * Cache file format: raw DFA blob followed by perms table.
+ * Cache key: FNV-1a hash of all expanded cod_entry fields (filename addressing).
+ * Cache validation: SHA-256 of the serialized rule input stored in the header.
+ * Cache file format: header + raw DFA blob + perms table.
  */
+
+/* Minimal self-contained SHA-256 implementation (FIPS 180-4) */
+struct sha256_ctx {
+	uint32_t state[8];
+	uint64_t count;
+	uint8_t buf[64];
+};
+
+static const uint32_t sha256_k[64] = {
+	0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
+	0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+	0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
+	0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+	0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
+	0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+	0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
+	0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+	0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+	0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+	0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
+	0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+	0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
+	0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+	0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+	0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+};
+
+static inline uint32_t sha256_rotr(uint32_t x, int n) { return (x >> n) | (x << (32 - n)); }
+
+static void sha256_transform(uint32_t state[8], const uint8_t block[64])
+{
+	uint32_t w[64], a, b, c, d, e, f, g, h, t1, t2;
+	int i;
+
+	for (i = 0; i < 16; i++)
+		w[i] = ((uint32_t)block[i*4] << 24) | ((uint32_t)block[i*4+1] << 16) |
+		       ((uint32_t)block[i*4+2] << 8) | (uint32_t)block[i*4+3];
+	for (i = 16; i < 64; i++) {
+		uint32_t s0 = sha256_rotr(w[i-15], 7) ^ sha256_rotr(w[i-15], 18) ^ (w[i-15] >> 3);
+		uint32_t s1 = sha256_rotr(w[i-2], 17) ^ sha256_rotr(w[i-2], 19) ^ (w[i-2] >> 2);
+		w[i] = w[i-16] + s0 + w[i-7] + s1;
+	}
+
+	a = state[0]; b = state[1]; c = state[2]; d = state[3];
+	e = state[4]; f = state[5]; g = state[6]; h = state[7];
+
+	for (i = 0; i < 64; i++) {
+		t1 = h + (sha256_rotr(e, 6) ^ sha256_rotr(e, 11) ^ sha256_rotr(e, 25)) +
+		     ((e & f) ^ (~e & g)) + sha256_k[i] + w[i];
+		t2 = (sha256_rotr(a, 2) ^ sha256_rotr(a, 13) ^ sha256_rotr(a, 22)) +
+		     ((a & b) ^ (a & c) ^ (b & c));
+		h = g; g = f; f = e; e = d + t1;
+		d = c; c = b; b = a; a = t1 + t2;
+	}
+
+	state[0] += a; state[1] += b; state[2] += c; state[3] += d;
+	state[4] += e; state[5] += f; state[6] += g; state[7] += h;
+}
+
+static void sha256_init(struct sha256_ctx *ctx)
+{
+	ctx->state[0] = 0x6a09e667; ctx->state[1] = 0xbb67ae85;
+	ctx->state[2] = 0x3c6ef372; ctx->state[3] = 0xa54ff53a;
+	ctx->state[4] = 0x510e527f; ctx->state[5] = 0x9b05688c;
+	ctx->state[6] = 0x1f83d9ab; ctx->state[7] = 0x5be0cd19;
+	ctx->count = 0;
+}
+
+static void sha256_update(struct sha256_ctx *ctx, const void *data, size_t len)
+{
+	const uint8_t *p = (const uint8_t *)data;
+	size_t buffered = ctx->count % 64;
+	ctx->count += len;
+
+	if (buffered && buffered + len >= 64) {
+		size_t fill = 64 - buffered;
+		memcpy(ctx->buf + buffered, p, fill);
+		sha256_transform(ctx->state, ctx->buf);
+		p += fill;
+		len -= fill;
+		buffered = 0;
+	}
+	while (len >= 64) {
+		sha256_transform(ctx->state, p);
+		p += 64;
+		len -= 64;
+	}
+	if (len > 0)
+		memcpy(ctx->buf + buffered, p, len);
+}
+
+static void sha256_final(struct sha256_ctx *ctx, uint8_t digest[32])
+{
+	uint64_t bits = ctx->count * 8;
+	size_t buffered = ctx->count % 64;
+	int i;
+
+	ctx->buf[buffered++] = 0x80;
+	if (buffered > 56) {
+		memset(ctx->buf + buffered, 0, 64 - buffered);
+		sha256_transform(ctx->state, ctx->buf);
+		buffered = 0;
+	}
+	memset(ctx->buf + buffered, 0, 56 - buffered);
+	for (i = 0; i < 8; i++)
+		ctx->buf[56 + i] = (uint8_t)(bits >> (56 - i * 8));
+	sha256_transform(ctx->state, ctx->buf);
+
+	for (i = 0; i < 8; i++) {
+		digest[i*4]   = (uint8_t)(ctx->state[i] >> 24);
+		digest[i*4+1] = (uint8_t)(ctx->state[i] >> 16);
+		digest[i*4+2] = (uint8_t)(ctx->state[i] >> 8);
+		digest[i*4+3] = (uint8_t)(ctx->state[i]);
+	}
+}
+/* End of SHA-256 implementation */
+
 struct dfa_perms_header {
 	uint32_t magic;
 	uint32_t version;
 	uint64_t dfa_size;
 	uint32_t perms_count;
 	uint32_t reserved;
+	uint8_t  content_sha256[32]; /* SHA-256 of serialized rule input */
 };
 
 #define DFA_CACHE_MAGIC 0x43414644  /* "DFAC" in little-endian */
@@ -226,7 +345,8 @@ struct dfa_perms_header {
 /* FNV-1a add hash helper */
 #define FNV1A_ADD_TO_HASH(hash, val) do { (hash) ^= (uint64_t)(val); (hash) *= 0x100000001b3ULL; } while (0)
 
-/* Compute FNV-1a 64-bit hash of a profile's expanded file rules (cod_entry) */
+/* Compute FNV-1a 64-bit hash of a profile's expanded file rules (cod_entry).
+ * Used as the cache filename (fast addressing). */
 static uint64_t hash_profile_file_rules(Profile *profile)
 {
 	uint64_t hash = 0xcbf29ce484222325ULL;
@@ -264,7 +384,58 @@ static uint64_t hash_profile_file_rules(Profile *profile)
 	return hash;
 }
 
-static bool dfa_cache_lookup_disk(Profile *profile, uint64_t key)
+/* Compute SHA-256 content hash of a profile's file rules for cache validation.
+ * This provides cryptographic-strength collision resistance (2^128 for
+ * collision, 2^256 for preimage) independent of the FNV-1a filename hash. */
+static void compute_content_hash(Profile *profile, uint8_t digest[32])
+{
+	struct sha256_ctx ctx;
+	struct cod_entry *entry;
+	uint8_t sep = 0xff; /* field separator */
+	uint8_t null_marker = 0x00; /* marks a NULL field */
+
+	sha256_init(&ctx);
+
+	list_for_each(profile->entries, entry) {
+		if (entry->name)
+			sha256_update(&ctx, entry->name, strlen(entry->name) + 1);
+		else
+			sha256_update(&ctx, &null_marker, 1);
+		sha256_update(&ctx, &sep, 1);
+
+		sha256_update(&ctx, &entry->perms, sizeof(entry->perms));
+		sha256_update(&ctx, &entry->audit, sizeof(entry->audit));
+		sha256_update(&ctx, &entry->rule_mode, sizeof(entry->rule_mode));
+		sha256_update(&ctx, &entry->priority, sizeof(entry->priority));
+		sha256_update(&ctx, &sep, 1);
+
+		if (entry->link_name)
+			sha256_update(&ctx, entry->link_name, strlen(entry->link_name) + 1);
+		else
+			sha256_update(&ctx, &null_marker, 1);
+		sha256_update(&ctx, &sep, 1);
+
+		if (entry->nt_name)
+			sha256_update(&ctx, entry->nt_name, strlen(entry->nt_name) + 1);
+		else
+			sha256_update(&ctx, &null_marker, 1);
+		sha256_update(&ctx, &sep, 1);
+	}
+
+	/* Include global state that affects DFA compilation */
+	sha256_update(&ctx, &kernel_abi_version, sizeof(kernel_abi_version));
+	sha256_update(&ctx, &parser_abi_version, sizeof(parser_abi_version));
+	sha256_update(&ctx, &parseopts.control, sizeof(parseopts.control));
+	sha256_update(&ctx, &kernel_supports_permstable32,
+		      sizeof(kernel_supports_permstable32));
+	sha256_update(&ctx, &kernel_supports_permstable32_v1,
+		      sizeof(kernel_supports_permstable32_v1));
+
+	sha256_final(&ctx, digest);
+}
+
+static bool dfa_cache_lookup_disk(Profile *profile, uint64_t key,
+				  const uint8_t content_hash[32])
 {
 	if (!dfa_cacheloc)
 		return false;
@@ -281,6 +452,15 @@ static bool dfa_cache_lookup_disk(Profile *profile, uint64_t key)
 	if (fread(&hdr, sizeof(hdr), 1, f) != 1 ||
 	    hdr.magic != DFA_CACHE_MAGIC ||
 	    hdr.version != DFA_CACHE_VERSION) {
+		fclose(f);
+		return false;
+	}
+
+	/* Validate content hash to detect hash collisions or corruption */
+	if (memcmp(hdr.content_sha256, content_hash, 32) != 0) {
+		if (dfa_show_cache)
+			PERROR("DFA cache collision detected for %016llx\n",
+			       (unsigned long long)key);
 		fclose(f);
 		return false;
 	}
@@ -345,7 +525,8 @@ static bool dfa_cache_lookup_disk(Profile *profile, uint64_t key)
 	return true;
 }
 
-static void dfa_cache_store_disk(Profile *profile, uint64_t key)
+static void dfa_cache_store_disk(Profile *profile, uint64_t key,
+				 const uint8_t content_hash[32])
 {
 	if (!dfa_cacheloc || !profile->dfa.dfa || profile->dfa.size == 0)
 		return;
@@ -376,6 +557,7 @@ static void dfa_cache_store_disk(Profile *profile, uint64_t key)
 	hdr.dfa_size = profile->dfa.size;
 	hdr.perms_count = profile->dfa.perms_table.size();
 	hdr.reserved = 0;
+	memcpy(hdr.content_sha256, content_hash, 32);
 
 	if (fwrite(&hdr, sizeof(hdr), 1, f) != 1 ||
 	    fwrite(profile->dfa.dfa, 1, profile->dfa.size, f) != profile->dfa.size ||
@@ -396,13 +578,16 @@ static void dfa_cache_store_disk(Profile *profile, uint64_t key)
 int process_profile_rules(Profile *profile)
 {
 	int error;
-	bool file_dfa_cached = false;
 #ifdef USE_DFA_CACHE
 	uint64_t cache_key = 0;
+	bool file_dfa_cached = false;
+
+	uint8_t content_hash[32] = {0};
 
 	if (dfa_cacheloc) {
 		cache_key = hash_profile_file_rules(profile);
-		file_dfa_cached = dfa_cache_lookup_disk(profile, cache_key);
+		compute_content_hash(profile, content_hash);
+		file_dfa_cached = dfa_cache_lookup_disk(profile, cache_key, content_hash);
 		if (dfa_show_cache)
 			PERROR("DFA cache %s: %s\n",
 			       file_dfa_cached ? "hit" : "miss",
@@ -428,7 +613,7 @@ int process_profile_rules(Profile *profile)
 
 #ifdef USE_DFA_CACHE
 		if (dfa_cacheloc)
-			dfa_cache_store_disk(profile, cache_key);
+			dfa_cache_store_disk(profile, cache_key, content_hash);
 #endif
 	}
 
