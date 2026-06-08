@@ -418,7 +418,7 @@ def expand_braces(s):
     return results
 
 
-def expand_path_braces(pattern):
+def expand_path_braces(pattern, max_path=1000):
     """Expand only brace alternations containing a '/'; these change the path
     depth (e.g. @{bin}=/{,usr/}bin) so a single glob cannot express them.
     Within-segment braces are left untouched (the caller turns them into a glob
@@ -463,7 +463,9 @@ def expand_path_braces(pattern):
             # A '/' in an alternative can change the path depth: recurse on it.
             variants = set()
             for alt in alts:
-                variants |= expand_path_braces(pattern[:i] + alt + pattern[j + 1:])
+                variants |= expand_path_braces(pattern[:i] + alt + pattern[j + 1:], max_path)
+                if len(variants) > max_path:
+                    raise AppArmorException(_('Pattern %(pattern)s expands to more than %(max)d path variants. Please clean it up.') % {'pattern': pattern, 'max': max_path})
             return variants
         i = pattern.find('{', j + 1)  # within-segment brace: skip, look further
     return {pattern}

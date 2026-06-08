@@ -22,6 +22,7 @@ import sys
 import os
 
 from apparmor import aa
+from apparmor.common import AppArmorException
 from apparmor.translations import init_translation
 from apparmor.regex import expand_path_braces, resolve_variables
 from apparmor.aare import convert_regexp
@@ -63,7 +64,13 @@ def has_matching_file(pattern, xattrs=None):
     candidates and keep those matching the exact regex without enumerating the
     {X,} character runs (which could expand to billions of strings)."""
     regex = re.compile(convert_regexp(pattern))
-    for variant in expand_path_braces(pattern):
+    try:
+        variants = expand_path_braces(pattern)
+    except AppArmorException as e:
+        # Only a pathological pattern reaches this, should never happen.
+        sys.stderr.write(_('aa-show-usage: {}\n').format(e.value))
+        sys.exit(-1)
+    for variant in variants:
         for path in glob.iglob(glob_superset(variant), recursive=True):
             if not regex.match(path):
                 continue
