@@ -209,14 +209,13 @@ Display AppArmor notifications or messages for DENIED entries.
   -p, --poll            poll AppArmor logs and display notifications
   --display DISPLAY     set the DISPLAY environment variable (might be needed if
                         sudo resets $DISPLAY)
-  -f FILE, --file FILE  search FILE for AppArmor messages
+  -f, --file FILE       search FILE for AppArmor messages
   -l, --since-last      display stats since last login
-  -s NUM, --since-days NUM
-                        show stats for last NUM days (can be used alone or with
+  -s, --since-days NUM  show stats for last NUM days (can be used alone or with
                         -p)
   -v, --verbose         show messages with stats
-  -u USER, --user USER  user to drop privileges to when not using sudo
-  -w NUM, --wait NUM    wait NUM seconds before displaying notifications (with
+  -u, --user USER       user to drop privileges to when not using sudo
+  -w, --wait NUM        wait NUM seconds before displaying notifications (with
                         -p)
   --debug               debug mode
 
@@ -236,6 +235,28 @@ Filtering options:
   --filter.socket SOCKET
                         regular expression to match the network socket type
 '''
+
+        if sys.version_info[:2] < (3, 13):
+            # Python 3.13 tweaked argparse output [1]. When running on older
+            # Python versions, we adapt the expected output to match.
+            #
+            # https://github.com/python/cpython/pull/103372
+            patches = [(
+                '  -f, --file FILE       search FILE for AppArmor messages',
+                '  -f FILE, --file FILE  search FILE for AppArmor messages',
+            ), (
+                '  -s, --since-days NUM  show stats for last NUM days (can be used alone or with',
+                '  -s NUM, --since-days NUM\n'
+                + '                        show stats for last NUM days (can be used alone or with',
+            ), (
+                '  -u, --user USER       user to drop privileges to when not using sudo',
+                '  -u USER, --user USER  user to drop privileges to when not using sudo',
+            ), (
+                '  -w, --wait NUM        wait NUM seconds before displaying notifications (with',
+                '  -w NUM, --wait NUM    wait NUM seconds before displaying notifications (with',
+            )]
+            for patch in patches:
+                expected_output_2 = expected_output_2.replace(patch[0], patch[1])
 
         return_code, output = cmd(aanotify_bin + ['--help'])
         result = 'Got return code {}, expected {}\n'.format(return_code, expected_return_code)
