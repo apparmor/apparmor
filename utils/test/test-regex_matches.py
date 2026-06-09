@@ -17,7 +17,7 @@ from apparmor.regex import (
     RE_PROFILE_CAP, RE_PROFILE_DBUS, RE_PROFILE_MOUNT, RE_PROFILE_PTRACE, RE_PROFILE_SIGNAL,
     RE_PROFILE_START, parse_profile_start_line, re_match_include, RE_PROFILE_UNIX,
     RE_PROFILE_PIVOT_ROOT,
-    re_match_include_parse, strip_parenthesis, strip_quotes, resolve_variables, expand_braces,
+    re_match_include_parse, strip_parenthesis, strip_quotes, resolve_variables, expand_path_braces,
     expand_var, expand_string, re_print_dict, re_parse_dict)
 from common_test import AATest, setup_aa, setup_all_loops
 
@@ -725,45 +725,46 @@ class TestStripQuotes(AATest):
         self.assertEqual(strip_quotes(params), expected)
 
 
-class TestExpandBraces(AATest):
+class TestExpandPathBraces(AATest):
     tests = (
-        ('foo',                     {'foo'}),
-        ('/{,foo}',                 {'/', '/foo'}),
-        ('/{,foo,bar}',             {'/', '/foo', '/bar'}),
-        ('/{bin,sbin}/runc',        {'/bin/runc', '/sbin/runc'}),
-        ('/{,usr/}{,s}bin/runc',    {'/bin/runc', '/sbin/runc', '/usr/bin/runc', '/usr/sbin/runc'}),
-        ('/{,usr/{,s}}bin/runc',    {'/bin/runc', '/usr/bin/runc', '/usr/sbin/runc'}),
-        ('{{a,b},{c,{d,e}},f}',     {'a', 'b', 'c', 'd', 'e', 'f'}),
-        ('{,b}{d,e}',               {'d', 'e', 'bd', 'be'}),
-        ('{aa,b}{d,e}',             {'aad', 'aae', 'bd', 'be'}),
-        ('{{foo,bar},{baz,qux}}',   {'foo', 'bar', 'baz', 'qux'}),
-        # Naive expansion as a list would cause exponential blowup
-        # 2^4=16 possibilities when there are in reality 5 distinct strings
-        ('{,a}{,a}{,a}{,a}',        {'', 'a', 'aa', 'aaa', 'aaaa'}),
+        # No braces: returned unchanged.
+        ('/usr/bin/dmesg',          {'/usr/bin/dmesg'}),
+        # Within-segment braces (no '/' in any alternative) are left untouched
+        # for the caller to turn into a glob wildcard / regex -- NOT expanded.
+        ('/usr/bin/foo{,bar}',      {'/usr/bin/foo{,bar}'}),
+        ('/usr/lib{,exec,32,64}/x', {'/usr/lib{,exec,32,64}/x'}),
+        ('/{bin,sbin}/runc',        {'/{bin,sbin}/runc'}),
+        # Structural braces (a '/' inside an alternative) change the path depth
+        # and ARE expanded, one variant per alternative.
+        ('/{,usr/}bin/runc',        {'/bin/runc', '/usr/bin/runc'}),
+        # Mixed: the structural brace expands; the within-segment one stays.
+        ('/{,usr/}{,s}bin/runc',    {'/{,s}bin/runc', '/usr/{,s}bin/runc'}),
+        # Nested: only the '/'-containing outer brace expands.
+        ('/{,usr/{,s}}bin/runc',    {'/bin/runc', '/usr/{,s}bin/runc'}),
+        # Overlapping alternatives are de-duplicated (a set, not a list), so this
+        # stays linear instead of producing 2**N entries.
+        ('/{,x/}{,x/}bin',          {'/bin', '/x/bin', '/x/x/bin'}),
+        # Lenient on malformed/degenerate input: returned unchanged, no raise.
+        ('/{',                      {'/{'}),
+        ('/{foo}',                  {'/{foo}'}),
     )
 
     def _run_test(self, params, expected):
-        self.assertEqual(expand_braces(params), expected)
+        self.assertEqual(expand_path_braces(params), expected)
 
+    def test_overlapping_alternatives_stay_bounded(self):
+        # {a/,} repeated. Collapes to 9 distinct shapes ('', 'a/', ..., 'a/'*8)
+        result = expand_path_braces('{a/,}' * 8, max_path=16)
+        self.assertEqual(result, {'a/' * k for k in range(9)})
 
-class TestInvalidExpandBraces(AATest):
-    tests = (
-        # Malformed expressions
-        ('/{',              AppArmorException),
-        ('/{}}{',           AppArmorException),
-        ('/}',              AppArmorException),
-        ('/{foo,bar}}',     AppArmorException),
-        ('/{a,b},{c,d}}',   AppArmorException),
-        # Braces should always provide at least 2 alternatives
-        ('{foo}',           AppArmorException),
-        ('/{foo}/',         AppArmorException),
-        ('/{,foo}{bar}',    AppArmorException),
+    def test_too_many_variants_raises(self):
+        # {a/,b/} repeated, no dedup: 32 cases > 16 ==> should raise an exception.
+        with self.assertRaises(AppArmorException):
+            expand_path_braces('{a/,b/}' * 5, max_path=16)
 
-    )
-
-    def _run_test(self, params, expected):
-        with self.assertRaises(expected):
-            expand_braces(params)
+    def test_under_cap_does_not_raise(self):
+        # 2**4 = 16 cases is exactly at the cap, so it must not raise.
+        self.assertEqual(len(expand_path_braces('{a/,b/}' * 4, max_path=16)), 16)
 
 
 var_dict = {

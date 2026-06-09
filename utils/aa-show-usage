@@ -22,17 +22,58 @@ import sys
 import os
 
 from apparmor import aa
+from apparmor.common import AppArmorException
 from apparmor.translations import init_translation
-from apparmor.regex import expand_braces, resolve_variables
+from apparmor.regex import expand_path_braces, resolve_variables
+from apparmor.aare import convert_regexp
 
 _ = init_translation()
 
 MAX_RECURSION = 10
 
 
+def glob_superset(pattern):
+    """Build a glob whose matches are a superset: replace each remaining
+    (within-segment) brace group with '*', keeping '*', '?', '[...]' and '**'.
+    The exact regex discards the over-matches afterwards."""
+    out, i = [], 0
+    while i < len(pattern):
+        if pattern[i] == '{':
+            depth = 0
+            for j in range(i, len(pattern)):
+                if pattern[j] == '{':
+                    depth += 1
+                elif pattern[j] == '}':
+                    depth -= 1
+                    if depth == 0:
+                        break
+            else:
+                out.append(pattern[i:])
+                break
+            out.append('*')
+            i = j + 1
+        else:
+            out.append(pattern[i])
+            i += 1
+    return ''.join(out)
+
+
 def has_matching_file(pattern, xattrs=None):
-    for p in expand_braces(pattern):
-        for path in glob.iglob(p, recursive=True):
+    """Return the first existing non-symlinked path the attachment matches, or
+    None. The kernel matches attachments as a regex, so glob a cheap superset of
+    candidates and keep those matching the exact regex without enumerating the
+    {X,} character runs (which could expand to billions of strings)."""
+    regex = re.compile(convert_regexp(pattern))
+    try:
+        variants = expand_path_braces(pattern)
+    except AppArmorException as e:
+        # Only a pathological pattern reaches this, should never happen.
+        sys.stderr.write(_('aa-show-usage: {}\n').format(e.value))
+        sys.exit(-1)
+    for variant in variants:
+        for path in glob.iglob(glob_superset(variant), recursive=True):
+            if not regex.match(path):
+                continue
             if os.path.realpath(path) != os.path.abspath(path):  # remove symlinks
                 continue
             if not xattrs or all(os.getxattr(path, name) == val for name, val in xattrs.items()):
