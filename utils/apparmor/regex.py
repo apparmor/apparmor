@@ -369,50 +369,54 @@ def resolve_variables(s, var_dict):
     return expand_string(s, var_dict, set())
 
 
-# This function could be replaced by braceexpand.braceexpand
-# It exists to avoid relying on an external python package.
-def expand_braces(s):
-    i = s.find('{')
-    if i == -1:
-        if '}' in s:
-            raise AppArmorException('Unbalanced braces in pattern {}'.format(s))
-        return {s}
-
-    level = 0
-    for j in range(i, len(s)):
-        if s[j] == '{':
-            level += 1
-        elif s[j] == '}':
-            level -= 1
-            if level == 0:
-                break
-    else:
-        raise AppArmorException('Unbalanced braces in pattern {}'.format(s))
-
-    prefix = s[:i]
-    group = s[i + 1:j]
-    suffix = s[j + 1:]
-
-    # Split group on commas at the top level (i.e. not inside nested braces)
-    alts = []
-    curr = ''
-    nested = 0
-    for char in group:
-        if char == ',' and nested == 0:
-            alts.append(curr)
-            curr = ""
+def expand_path_braces(pattern, max_path=1000):
+    """Expand only brace alternations containing a '/'; these change the path
+    depth (e.g. @{bin}=/{,usr/}bin) so a single glob cannot express them.
+    Within-segment braces are left untouched (the caller turns them into a glob
+    wildcard or regex). Returns a set of path-shape variants."""
+    i = pattern.find('{')
+    while i != -1:
+        # Find the '}' that closes the '{' at index i.
+        # When the loop breaks, j holds the index of that matching '}'.
+        depth = 0
+        for j in range(i, len(pattern)):
+            if pattern[j] == '{':
+                depth += 1
+            elif pattern[j] == '}':
+                depth -= 1
+                if depth == 0:
+                    break
         else:
-            if char == '{':
-                nested += 1
-            elif char == '}':
-                nested -= 1
-            curr += char
-    alts.append(curr)
+            break  # unbalanced; leave the rest untouched
 
-    # Recursively combine prefix, each alternative, and suffix
-    results = set()
-    for alt in alts:
-        results.update(expand_braces(prefix + alt + suffix))
-    if len(results) <= 1:
-        raise AppArmorException('Braces should provide at least two alternatives, found {}: {}'.format(len(results), s))
-    return results
+        # Split the brace body pattern[i+1:j] on its top-level commas into the
+        # list of alternatives, remembering whether any of them contains a '/'.
+        # TODO: '\,' is wrongly treated as a separator.
+        alts = []
+        cur = ''
+        nested = 0  # depth of braces nested inside this pattern
+        has_slash = False
+        for ch in pattern[i + 1:j]:
+            if ch == ',' and nested == 0:
+                alts.append(cur)
+                cur = ''
+            else:
+                if ch == '{':
+                    nested += 1
+                elif ch == '}':
+                    nested -= 1
+                elif ch == '/':
+                    has_slash = True
+                cur += ch
+        alts.append(cur)
+
+        if has_slash:
+            # A '/' in an alternative can change the path depth: recurse on it.
+            variants = set()
+            for alt in alts:
+                variants |= expand_path_braces(pattern[:i] + alt + pattern[j + 1:], max_path)
+                if len(variants) > max_path:
+                    raise AppArmorException(_('Pattern %(pattern)s expands to more than %(max)d path variants. Please clean it up.') % {'pattern': pattern, 'max': max_path})
+            return variants
+        i = pattern.find('{', j + 1)  # within-segment brace: skip, look further
+    return {pattern}
