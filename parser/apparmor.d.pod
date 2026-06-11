@@ -1386,7 +1386,7 @@ must be used.
 
 =head5 Explicit labeling
 
-AppArmor allows specifying an explit label for both the socket and
+AppArmor allows specifying an explicit label for both the socket and
 the packet, using the assignment conditional.
 
 =head6 explicit socket labeling
