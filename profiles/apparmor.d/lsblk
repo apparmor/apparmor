@@ -28,7 +28,7 @@ profile lsblk /usr/bin/lsblk {
   @{sys}/devices/platform/** r,
 
   # needed for --fs (show filesystem information)
-  deny / r, # no idea why this would be needed (only seen for --fs)
+  / r, # needed for FSTYPE and UUID, see https://bugzilla.opensuse.org/show_bug.cgi?id=1267853
   /dev/nvme* r,
   /dev/dm-* r,
   /dev/sd* r,
