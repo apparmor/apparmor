@@ -67,6 +67,9 @@ minimize: $(PARSER)
 
 equality: $(PARSER)
 	LANG=C LD_LIBRARY_PATH="$(LD_LIBRARY_PATH)" APPARMOR_PARSER="$(PARSER) $(PARSER_ARGS)" ./equality.sh
+ifdef USE_DFA_CACHE
+	LANG=C LD_LIBRARY_PATH="$(LD_LIBRARY_PATH)" APPARMOR_PARSER="$(PARSER) $(PARSER_ARGS)" ./equality.sh --dfa-cache-loc /tmp/equality-dfa-cache-$$
+endif
 
 dirtest: $(PARSER)
 	LANG=C LD_LIBRARY_PATH="$(LD_LIBRARY_PATH)" APPARMOR_PARSER="$(PARSER) $(PARSER_ARGS)" ./dirtest.sh
