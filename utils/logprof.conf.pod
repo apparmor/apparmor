@@ -47,7 +47,7 @@ inherit the parent profile rather than having their own profile or
 running unconfined, so for them we can specify that only (I)nherit and
 (D)eny are the allowed options.
 
-Any programs that are not listed in the qualifiers section get the full
+Any programs that are not listed in the [qualifiers] section get the full
 (I)nherit / (P)rofile / (U)nconstrained / (D)eny option set.
 
 If the user is doing something tricky and wants different behavior,
