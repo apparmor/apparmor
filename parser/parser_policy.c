@@ -578,9 +578,9 @@ static void dfa_cache_store_disk(Profile *profile, uint64_t key,
 int process_profile_rules(Profile *profile)
 {
 	int error;
+	bool file_dfa_cached = false;
 #ifdef USE_DFA_CACHE
 	uint64_t cache_key = 0;
-	bool file_dfa_cached = false;
 
 	uint8_t content_hash[32] = {0};
 
