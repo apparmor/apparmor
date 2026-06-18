@@ -70,7 +70,8 @@ public:
 	int merge_duplicated_rules(void);
 	block_rules *consolidate_block_rules(void);
 	ostream &dump(ostream &os) override;
-	rule_result_t gen_policy_re(Profile &prof aa_unused) override { return rule_result_t::NOT_SUPPORTED; };
+	rule_result_t gen_policy_re(Profile &prof) override;
+	void post_parse_profile(Profile &prof) override;
 	void add_implied_rules(Profile &prof) override;
 	rule_t* clone() const { return NULL; }
 

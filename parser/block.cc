@@ -82,6 +82,33 @@ block_rules *block::consolidate_block_rules(void)
 	return consolidated_br;
 }
 
+rule_result_t block::gen_policy_re(Profile &prof)
+{
+	process_result_t err;
+	err = rules.post_process(&prof);
+	if (err == process_result_t::REGEX_ERR) {
+		PERROR(_("ERROR processing regexs for profile %s, "
+			 "failed to load\n"), prof.name);
+		return rule_result_t::ERROR;
+	} else if (err == process_result_t::POLICYDB_ERR) {
+		PERROR(_("ERROR processing policydb rules for profile %s, "
+			 "failed to load\n"), prof.name);
+		return rule_result_t::ERROR;
+	}
+	for (block *sb : subblocks) {
+		if (sb->gen_policy_re(prof) == rule_result_t::ERROR)
+			return rule_result_t::ERROR;
+	}
+	for (cond_expr_set *ces : conds) {
+		if (ces->set_block) {
+			if (ces->set_block->gen_policy_re(prof) == rule_result_t::ERROR)
+				return rule_result_t::ERROR;
+		}
+	}
+	return rule_result_t::OK;
+};
+
+
 void block::add_entry(struct cod_entry *entry)
 {
 	rules.add_entry(entry);
@@ -127,6 +154,10 @@ void block::add_hat(Profile *hat)
 	hats.insert(hat);
 }
 
+/* note for add_subblock and add_cond_set:
+ * since rules such as caps, rlimits, compat_net and uses_prompt_rules
+ * are encoded per profile in parser_interface, we merge them when
+ * adding the subblock, similarly to what's done for defined_hats */
 bool block::add_subblock(block *sb, const char *&error)
 {
 	const prefixes *prefix = this;
@@ -136,6 +167,8 @@ bool block::add_subblock(block *sb, const char *&error)
 	if (!sb->add_prefix(*prefix, error))
 		return false;
 	subblocks.push_back(sb);
+
+	rules.merge_compat_rules(&(sb->rules));
 	return true;
 }
 
@@ -143,9 +176,9 @@ void block::add_cond_set(cond_expr_set *ces)
 {
 	if (ces->set_block) {
 		for (Profile *p : ces->set_block->defined_hats) {
-			//printf("adding hat %s\n", p->name);
 			add_to_known_hats(p);
 		}
+		rules.merge_compat_rules(&(ces->set_block->rules));
 	}
 	conds.push_back(ces);
 }
@@ -274,6 +307,17 @@ int block::merge_duplicated_rules(void)
 	return for_each_recursive([](block *b) {
 		return b->rules.merge_duplicated_rules(b->parent->name);
 	}, false, false);
+}
+
+void block::post_parse_profile(Profile &prof)
+{
+	bool result = for_each_recursive([&](block *b) {
+		return b->rules.post_parse_profile(&prof);
+	}, true, false);
+	if (result) {
+		/* error message has been displayed already */
+		exit(1);
+	}
 }
 
 void block::add_implied_rules(Profile &prof)

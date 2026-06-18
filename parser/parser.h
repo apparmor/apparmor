@@ -473,7 +473,7 @@ extern const char *local_name(const char *name);
 
 /* parser_variable.c */
 extern int expand_entry_variables(char **name);
-extern int process_profile_variables(Profile *prof, int debug_only);
+extern int process_profile_variables(Profile *prof);
 
 /* parser_misc.c */
 extern void warn_uppercase(void);
@@ -518,7 +518,7 @@ extern long long convert_time_units(long long value, long long base, const char 
 /* parser_alias.c */
 extern int new_alias(const char *from, const char *to);
 extern int replace_entries_aliases(Profile *prof, struct cod_entry *entries);
-extern int replace_profile_aliases(Profile *prof, int debug_only);
+extern int replace_profile_aliases(Profile *prof);
 extern void free_aliases(void);
 
 /* parser_interface.c */

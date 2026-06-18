@@ -203,20 +203,20 @@ static void writeu16(std::ostringstream &o, int v)
 
 void unix_rule::downgrade_rule(Profile &prof) {
 	perm32_t mask = (perm32_t) -1;
-
-	if (!prof.rules->net.allow && !prof.rules->net.alloc_net_table())
+	network_rule *compat_net = &(prof.main_block->rules.net);
+	if (!compat_net->allow && !compat_net->alloc_net_table())
 		yyerror(_("Memory allocation error."));
 	if (sock_type_n != -1)
 		mask = 1U << sock_type_n;
 	if (rule_mode != rule_mode_t::DENY) {
-		prof.rules->net.allow[AF_UNIX] |= mask;
+		compat_net->allow[AF_UNIX] |= mask;
 		if (audit == audit_t::FORCE)
-			prof.rules->net.audit[AF_UNIX] |= mask;
+			compat_net->audit[AF_UNIX] |= mask;
 		const char *error;
 		network_rule *netv8 = new network_rule(perms, AF_UNIX, sock_type_n);
 		if(!netv8->add_prefix({0, audit, rule_mode, owner}, error))
 			yyerror("%s", error);
-		prof.rules->add_rule(netv8);
+		prof.main_block->add_rule(netv8);
 	} else {
 		/* deny rules have to be dropped because the downgrade makes
 		 * the rule less specific meaning it will make the profile more

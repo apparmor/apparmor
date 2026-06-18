@@ -481,6 +481,8 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 			 int flattened)
 {
 	uint64_t allowed_caps;
+	/* get static members to serialize */
+	block_rules *rules = &(profile->main_block->rules);
 
 	sd_write_struct(buf, "profile");
 	if (flattened) {
@@ -544,16 +546,16 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 
 #define low_caps(X) ((u32) ((X) & 0xffffffff))
 #define high_caps(X) ((u32) (((X) >> 32) & 0xffffffff))
-	allowed_caps = (profile->rules->caps.allow) & ~profile->rules->caps.deny;
+	allowed_caps = (rules->caps.allow) & ~rules->caps.deny;
 	sd_write_uint32(buf, low_caps(allowed_caps));
-	sd_write_uint32(buf, low_caps(allowed_caps & profile->rules->caps.audit));
-	sd_write_uint32(buf, low_caps(profile->rules->caps.deny & profile->rules->caps.quiet));
+	sd_write_uint32(buf, low_caps(allowed_caps & rules->caps.audit));
+	sd_write_uint32(buf, low_caps(rules->caps.deny & rules->caps.quiet));
 	sd_write_uint32(buf, 0);
 
 	sd_write_struct(buf, "caps64");
 	sd_write_uint32(buf, high_caps(allowed_caps));
-	sd_write_uint32(buf, high_caps(allowed_caps & profile->rules->caps.audit));
-	sd_write_uint32(buf, high_caps(profile->rules->caps.deny & profile->rules->caps.quiet));
+	sd_write_uint32(buf, high_caps(allowed_caps & rules->caps.audit));
+	sd_write_uint32(buf, high_caps(rules->caps.deny & rules->caps.quiet));
 	sd_write_uint32(buf, 0);
 	sd_write_structend(buf);
 
@@ -562,23 +564,23 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 
 	sd_serialize_xattrs(buf, profile->xattrs);
 
-	sd_serialize_rlimits(buf, &profile->rules->rlimits);
+	sd_serialize_rlimits(buf, &rules->rlimits);
 
 	/* choice to support / downgrade needs to already have been made */
 	if (features_supports_network_policydb) {
 		/* nothing - encoded in policydb */
-	} else if (profile->rules->net.allow && features_supports_network) {
+	} else if (rules->net.allow && features_supports_network) {
 		size_t i;
 		sd_write_array(buf, "net_allowed_af", get_af_max());
 		for (i = 0; i < get_af_max(); i++) {
-			u16 allowed = profile->rules->net.allow[i] &
-				~profile->rules->net.deny[i];
+			u16 allowed = rules->net.allow[i] &
+				~rules->net.deny[i];
 			sd_write_uint16(buf, allowed);
-			sd_write_uint16(buf, allowed & profile->rules->net.audit[i]);
-			sd_write_uint16(buf, profile->rules->net.deny[i] & profile->rules->net.quiet[i]);
+			sd_write_uint16(buf, allowed & rules->net.audit[i]);
+			sd_write_uint16(buf, rules->net.deny[i] & rules->net.quiet[i]);
 		}
 		sd_write_arrayend(buf);
-	} else if (profile->rules->net.allow)
+	} else if (rules->net.allow)
 		pwarn(WARN_RULE_NOT_ENFORCED, _("profile %s network rules not enforced\n"), profile->name);
 
 	if (profile->policy.dfa) {
@@ -586,7 +588,7 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 		sd_serialize_dfa(buf, profile->policy.dfa, profile->policy.size,
 				 profile->policy.perms_table, false);
 		if (kernel_supports_permstable32) {
-			sd_serialize_xtable(buf, profile->rules->exec_table);
+			sd_serialize_xtable(buf, rules->exec_table);
 
 		}
 		sd_write_structend(buf);
@@ -596,7 +598,7 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 			 profile->dfa.perms_table, true);
 	if (profile->dfa.dfa) {
 		// fprintf(stderr, "profile %s: dfa xtable\n", profile->name);
-		sd_serialize_xtable(buf, profile->rules->exec_table);
+		sd_serialize_xtable(buf, rules->exec_table);
 	}
 	sd_write_structend(buf);
 }

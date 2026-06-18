@@ -198,18 +198,12 @@ int replace_entries_aliases(Profile *prof, struct cod_entry *entries)
 	return 0;
 }
 
-int replace_profile_aliases(Profile *prof, int debug_only)
+int replace_profile_aliases(Profile *prof)
 {
 	target_prof = prof;
 	twalk(alias_table, process_name);
 
-	if (prof->rules->entries) {
-		replace_entries_aliases(prof, prof->rules->entries);
-	}
-
-	if (debug_only) {
-		prof->main_block->apply_aliases();
-	}
+	prof->main_block->apply_aliases();
 
 	return 0;
 }

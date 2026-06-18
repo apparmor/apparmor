@@ -928,7 +928,7 @@ static uint64_t hash_profile_file_rules(Profile *profile)
 	uint64_t hash = 0xcbf29ce484222325ULL;
 	struct cod_entry *entry;
 
-	list_for_each(profile->rules->entries, entry) {
+	list_for_each(profile->main_block->rules.entries, entry) {
 		if (entry->name) {
 			for (const char *p = entry->name; *p; p++)
 				FNV1A_ADD_TO_HASH(hash, (unsigned char)*p);
@@ -971,7 +971,7 @@ static void compute_content_hash(Profile *profile, uint8_t digest[32])
 
 	sha256_init(&ctx);
 
-	list_for_each(profile->rules->entries, entry) {
+	list_for_each(profile->main_block->rules.entries, entry) {
 		if (entry->name)
 			sha256_update(&ctx, entry->name, strlen(entry->name) + 1);
 		else
@@ -1194,11 +1194,9 @@ int process_profile_rules(Profile *prof)
 		goto policydb_err;
 
 	/* compile rules */
-	err = (int) prof->rules->post_process(prof);
-	if ((process_result_t) err == process_result_t::REGEX_ERR)
-		goto regex_err;
-	else if ((process_result_t) err == process_result_t::POLICYDB_ERR)
-		goto policydb_err;
+	if (prof->main_block->gen_policy_re(*prof) != rule_result_t::OK) {
+		exit(1);
+	}
 
 
 	if (!file_dfa_cached) {

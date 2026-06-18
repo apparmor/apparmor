@@ -403,7 +403,6 @@ profile_base: TOK_ID opt_id_or_var opt_cond_list identities flags TOK_OPEN
 		if (!prof) {
 			yyerror(_("Memory allocation error."));
 		}
-		prof->add_block($8);
 
 		parse_label(&self_stack, &prof->ns, &prof->name, $1, true);
 		free($1);
@@ -447,8 +446,7 @@ profile_base: TOK_ID opt_id_or_var opt_cond_list identities flags TOK_OPEN
 			 */
 			prof->flags.mode = profile_mode::COMPLAIN;
 
-		/* get policy from block, subblocks, conditions, etc */
-		prof->rules = prof->main_block->consolidate_block_rules();
+		prof->add_block($8);
 		prof->post_parse_profile();
 		prof->flags.debug(cerr);
 

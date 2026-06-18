@@ -114,9 +114,9 @@ void dump_policy_names(void)
 }
 
 
-int profile_merge_rules(Profile *prof, int debug_only)
+int profile_merge_rules(Profile *prof)
 {
-	int res = prof->merge_rules(debug_only);
+	int res = prof->merge_rules();
 	if (res < 0)
 		return -res;
 
@@ -130,20 +130,20 @@ int post_process_profile(Profile *profile, int debug_only)
 
 	profile->add_implied_rules();
 
-	error = process_profile_variables(profile, debug_only);
+	error = process_profile_variables(profile);
 	if (error) {
 		PERROR(_("ERROR expanding variables for profile %s, failed to load\n"), profile->name);
 		exit(1);
 		return error;
 	}
 
-	error = replace_profile_aliases(profile, debug_only);
+	error = replace_profile_aliases(profile);
 	if (error) {
 		PERROR(_("ERROR replacing aliases for profile %s, failed to load\n"), profile->name);
 		return error;
 	}
 
-	error = profile_merge_rules(profile, debug_only);
+	error = profile_merge_rules(profile);
 	if (error) {
 		PERROR(_("ERROR merging rules for profile %s, failed to load\n"), profile->name);
 		exit(1);
@@ -158,7 +158,7 @@ int post_process_profile(Profile *profile, int debug_only)
 
 	error = post_process_policy_list(profile->main_block->defined_hats, debug_only);
 
-	if (prompt_compat_mode == prompt_compat_t::FLAG && profile->rules->uses_prompt_rules)
+	if (prompt_compat_mode == prompt_compat_t::FLAG && profile->main_block->rules.uses_prompt_rules)
 		profile->flags.mode = profile_mode::PROMPT;
 
 	return error;

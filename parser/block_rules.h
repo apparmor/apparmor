@@ -118,16 +118,16 @@ struct capabilities {
 class block_rules {
 public:
 	char *exec_table[AA_EXEC_COUNT];
-	struct cod_entry *entries;
 	struct aa_rlimits rlimits;
 	struct capabilities caps;
-	RuleList rule_ents;
 	network_rule net;
 	bool uses_prompt_rules;
+	struct cod_entry *entries;
+	RuleList rule_ents;
 
-	block_rules(void): entries(NULL),
-			   rlimits({0, {}}),
-			   uses_prompt_rules(false)
+	block_rules(void): rlimits({0, {}}),
+			   uses_prompt_rules(false),
+			   entries(NULL)
 	{
 		std::fill(exec_table, exec_table + AA_EXEC_COUNT, (char *)NULL);
 	}
@@ -172,17 +172,18 @@ public:
 	void add_capabilities(struct prefixes prefix, uint64_t cap);
 	void add_compat_net(const network_rule *entry);
 	void merge_block_rules(block_rules *b);
+	void merge_compat_rules(const block_rules *b);
 	int merge_duplicated_rules(const char *profname);
 	int process_variables(void);
 	process_result_t post_process(Profile *prof);
-	void post_parse_profile(Profile *prof);
+	int post_parse_profile(Profile *prof);
 	void add_implied_rules(Profile *prof);
 	bool add_proc_access(const char *rule);
 	bool add_prefix(const prefixes &p, const char *&error);
 private:
 	int merge_rule_t(void);
 	int merge_file(const char *profname);
-	void post_parse_profile_file(Profile *prof);
+	int post_parse_profile_file(Profile *prof);
 	int add_entry_to_x_table(char *name);
 	int add_named_transition(Profile *prof, struct cod_entry *entry);
 };

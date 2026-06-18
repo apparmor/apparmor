@@ -61,10 +61,6 @@ Profile::~Profile()
 		free_value_list(identities);
 	if (ns)
 		free(ns);
-	if (rules) {
-		rules->clear();
-		delete rules;
-	}
 	if (main_block)
 		delete main_block;
 }
@@ -72,14 +68,9 @@ Profile::~Profile()
 // TODO: move to block rule
 // returns number of rules merged
 // returns negative number on error
-int Profile::merge_rules(int debug_only)
+int Profile::merge_rules(void)
 {
-	if (debug_only) {
-		int ret = main_block->merge_duplicated_rules();
-		if (ret < 0)
-			return ret;
-	}
-	return rules->merge_duplicated_rules(name);
+	return main_block->merge_duplicated_rules();
 }
 
 /* add file rules to access /proc files to call change_hat()
@@ -91,7 +82,7 @@ static int profile_add_hat_rules(Profile *prof)
 	    prof->main_block->defined_hats.empty())
 		return 0;
 
-	if (!prof->rules->add_proc_access(CHANGEHAT_PATH))
+	if (!prof->main_block->rules.add_proc_access(CHANGEHAT_PATH))
 		return ENOMEM;
 
 	return 0;
@@ -117,7 +108,7 @@ void Profile::post_parse_profile(void)
 			warn_once(name, "error flag not supported. Ignoring");
 		}
 	}
-	rules->post_parse_profile(this);
+	main_block->post_parse_profile(*this);
 }
 
 void Profile::add_implied_rules(void)

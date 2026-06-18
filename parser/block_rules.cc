@@ -174,9 +174,8 @@ void block_rules::add_compat_net(const network_rule *entry)
 
 }
 
-void block_rules::merge_block_rules(block_rules *b)
+void block_rules::merge_compat_rules(const block_rules *b)
 {
-	struct cod_entry *last;
 	if (!b)
 		return;
 
@@ -195,6 +194,17 @@ void block_rules::merge_block_rules(block_rules *b)
 			rlimits.limits[i] = b->rlimits.limits[i];
 	}
 
+	/* add already does merge due to the nature of compat_net */
+	add_compat_net(&(b->net));
+	uses_prompt_rules = uses_prompt_rules || b->uses_prompt_rules;
+}
+
+void block_rules::merge_block_rules(block_rules *b)
+{
+	struct cod_entry *last;
+	if (!b)
+		return;
+
 	if (entries) {
 		list_last_entry(entries, last);
 		last->next = b->entries;
@@ -208,11 +218,6 @@ void block_rules::merge_block_rules(block_rules *b)
 	}
 	b->rule_ents.clear();
 
-	/* add already does merge due to the nature of compat_net */
-	add_compat_net(&(b->net));
-
-	uses_prompt_rules = uses_prompt_rules || b->uses_prompt_rules;
-
 	bool is_empty = std::all_of(exec_table, exec_table + AA_EXEC_COUNT,
 				    [](char* ptr) { return ptr == NULL; });
 	if (!is_empty) {
@@ -221,6 +226,8 @@ void block_rules::merge_block_rules(block_rules *b)
 	}
 	for (int i = (AA_EXEC_LOCAL >> 10) + 1; i < AA_EXEC_COUNT; i++)
 		exec_table[i] = b->exec_table[i];
+
+	merge_compat_rules(b);
 }
 
 static int strrcmp(const char *a, int ta,
@@ -429,14 +436,14 @@ process_result_t block_rules::post_process(Profile *prof)
 	return process_result_t::SUCCESS;
 }
 
-void block_rules::post_parse_profile(Profile *prof)
+int block_rules::post_parse_profile(Profile *prof)
 {
 	for (rule_t *rule : rule_ents) {
 		if (rule->skip())
 			continue;
 		rule->post_parse_profile(*prof);
 	}
-	post_parse_profile_file(prof);
+	return post_parse_profile_file(prof);
 }
 
 void block_rules::add_implied_rules(Profile *prof)
@@ -515,7 +522,7 @@ int block_rules::add_named_transition(Profile *prof, struct cod_entry *entry)
 		entry->nt_name = NULL;
 	}
 
-	return prof->rules->add_entry_to_x_table(name);
+	return prof->main_block->rules.add_entry_to_x_table(name);
 }
 
 bool block_rules::add_proc_access(const char *rule)
@@ -567,7 +574,7 @@ bool block_rules::add_proc_access(const char *rule)
 	return true;
 }
 
-void block_rules::post_parse_profile_file(Profile *prof)
+int block_rules::post_parse_profile_file(Profile *prof)
 {
 	struct cod_entry *entry;
 	perm32_t cp_perms = 0;
@@ -578,7 +585,7 @@ void block_rules::post_parse_profile_file(Profile *prof)
 			int n = add_named_transition(prof, entry);
 			if (!n) {
 				PERROR("Profile %s has too many specified profile transitions.\n", prof->name);
-				exit(1);
+				return -1;
 			}
 			if (entry->perms & AA_USER_EXEC)
 				perms |= SHIFT_PERMS(n << 10, AA_USER_SHIFT);
@@ -595,9 +602,10 @@ void block_rules::post_parse_profile_file(Profile *prof)
 	 * access to some /proc/ interfaces
 	 */
 	if (cp_perms & AA_CHANGE_PROFILE) {
-		if (!prof->rules->add_proc_access(CHANGEPROFILE_PATH))
-			exit(1);
+		if (!prof->main_block->rules.add_proc_access(CHANGEPROFILE_PATH))
+			return -1;
 	}
+	return 0;
 }
 
 bool block_rules::add_prefix(const prefixes &p, const char *&error)

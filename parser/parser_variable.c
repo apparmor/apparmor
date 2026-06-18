@@ -134,7 +134,7 @@ class saved_var final {
 	}
 };
 
-int process_profile_variables(Profile *prof, int debug_only)
+int process_profile_variables(Profile *prof)
 {
 	int error = 0;
 	saved_var saved_profile_name;
@@ -174,11 +174,7 @@ int process_profile_variables(Profile *prof, int debug_only)
 			return error;
 	}
 
-	error = prof->rules->process_variables();
-
-	if (debug_only)
-		prof->main_block->expand_variables();
-
+	error = prof->main_block->expand_variables();
 	return error;
 }
 

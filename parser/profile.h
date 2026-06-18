@@ -405,7 +405,6 @@ public:
 
 	flagvals flags;
 
-	block_rules *rules;
 	block *main_block;
 
 	struct dfa_stuff dfa;
@@ -449,7 +448,7 @@ public:
 	 * Requires the merged rules have customized methods
 	 * cmp(), is_mergeable() and merge()
 	 */
-	virtual int merge_rules(int debug_only);
+	virtual int merge_rules(void);
 
 	std::string hname(void)
 	{
