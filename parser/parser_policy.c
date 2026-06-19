@@ -409,10 +409,12 @@ static void compute_content_hash(Profile *profile, uint8_t digest[32])
 		sha256_update(&ctx, &entry->priority, sizeof(entry->priority));
 		sha256_update(&ctx, &sep, 1);
 
-		if (entry->link_name)
+		if (entry->link_name) {
 			sha256_update(&ctx, entry->link_name, strlen(entry->link_name) + 1);
-		else
+			sha256_update(&ctx, &entry->subset, sizeof(entry->subset));
+		} else {
 			sha256_update(&ctx, &null_marker, 1);
+		}
 		sha256_update(&ctx, &sep, 1);
 
 		if (entry->nt_name)
