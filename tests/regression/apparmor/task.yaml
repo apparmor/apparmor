@@ -46,6 +46,7 @@ environment:
     TEST/namespaces: 1
     TEST/net_iface: 1
     TEST/net_inet: 1
+    TEST/net_inet_tcp_fastopen: 1
     TEST/net_raw: 1
     TEST/nfs: 1
     TEST/nnp: 1
