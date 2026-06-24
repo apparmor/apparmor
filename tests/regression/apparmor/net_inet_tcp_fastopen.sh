@@ -24,10 +24,22 @@ bin=$pwd
 . "$bin/prologue.inc"
 
 # Need fine-grained inet mediation (connect/send are separable only there).
+# downgrades do not seen to work correctly here so af_mask + parser
+# supporting fine grained permissions is not enough
 requires_any_of_kernel_features network_v8/af_inet network_v9/af_inet
 requires_parser_support "network (send) ip=::1,"
 
 settest net_inet_tcp_fastopen
+
+condfail="xfail"
+condpass="xpass"
+if [ "$(kernel_features_istrue network_v8/tcp-fast-open)" = "true" -o \
+     "$(kernel_features_istrue network_v9/tcp-fast-open)" = "true" ] ; then
+    condfail="fail"
+    condpass="pass"
+fi
+
+
 
 tfo_sysctl=/proc/sys/net/ipv4/tcp_fastopen
 tfo_saved=""
@@ -85,25 +97,25 @@ gen_send_no_connect()
 gen_send_no_connect
 # baseline: a normal connect(2) must be denied -> binary prints PASS (denied),
 # expected outcome 'pass'
-runchecktest "TFO inet - connect(2) denied" pass connect inet $port
+runchecktest "TFO inet - connect(2) denied" $condpass connect inet $port
 # the bug: sendto(MSG_FASTOPEN) must ALSO be denied post-fix
-runchecktest "TFO inet - sendto(MSG_FASTOPEN) denied" pass fastopen inet $port
+runchecktest "TFO inet - sendto(MSG_FASTOPEN) denied" $condpass fastopen inet $port
 
 # ---- inet6 (IPv6) ----
 gen_send_no_connect
-runchecktest "TFO inet6 - connect(2) denied" pass connect inet6 $port
-runchecktest "TFO inet6 - sendto(MSG_FASTOPEN) denied" pass fastopen inet6 $port
+runchecktest "TFO inet6 - connect(2) denied" $condpass connect inet6 $port
+runchecktest "TFO inet6 - sendto(MSG_FASTOPEN) denied" $condpass fastopen inet6 $port
 
 # ---- MPTCP: the second producer the fix guards (IPPROTO_MPTCP) ----
 # The deny-connect rule is family/type based, so it covers MPTCP (inet/inet6
 # stream) too. Only run when MPTCP is enabled.
 if [ "`cat /proc/sys/net/mptcp/enabled 2>/dev/null`" = "1" ]; then
 	gen_send_no_connect
-	runchecktest "TFO MPTCP inet - connect(2) denied" pass connect minet $port
-	runchecktest "TFO MPTCP inet - sendto(MSG_FASTOPEN) denied" pass fastopen minet $port
+	runchecktest "TFO MPTCP inet - connect(2) denied" $condpass connect minet $port
+	runchecktest "TFO MPTCP inet - sendto(MSG_FASTOPEN) denied" $condpass fastopen minet $port
 	gen_send_no_connect
-	runchecktest "TFO MPTCP inet6 - connect(2) denied" pass connect minet6 $port
-	runchecktest "TFO MPTCP inet6 - sendto(MSG_FASTOPEN) denied" pass fastopen minet6 $port
+	runchecktest "TFO MPTCP inet6 - connect(2) denied" $condpass connect minet6 $port
+	runchecktest "TFO MPTCP inet6 - sendto(MSG_FASTOPEN) denied" $condpass fastopen minet6 $port
 fi
 
 # ---- positive control: when connect IS allowed, both succeed (no false deny) ----
@@ -113,7 +125,7 @@ genprofile \
   "network;(setopt,getopt);ip=0.0.0.0;port=0"
 # Here the binary's "denied" assertion is FALSE (op allowed), so it prints
 # FAIL; we expect that, i.e. expected outcome 'fail'.
-runchecktest "TFO inet - connect allowed (control)" fail connect inet $port
-runchecktest "TFO inet - fastopen allowed (control)" fail fastopen inet $port
+runchecktest "TFO inet - connect allowed (control)" $condfail connect inet $port
+runchecktest "TFO inet - fastopen allowed (control)" $condfail fastopen inet $port
 
 exit 0
