@@ -1365,6 +1365,58 @@ test_parser_variables()
 
 }
 
+test_block_configurations()
+{
+	######## prefix ####### allow, deny, prompt, audit, owner
+	### allow ###
+	# deny and prompt not used since it conflicts with allow
+	verify_binary_equality "allow expands correctly - file" \
+			       "/t { allow { /foo r, audit /bar w, owner /baz rw, } }" \
+			       "/t { allow /foo r, audit /bar w, owner /baz rw, }"
+
+	verify_binary_equality "allow expands correctly in subblock - file" \
+			       "/t { allow { { /foo r, audit /bar w, owner /baz rw, } } }" \
+			       "/t { allow /foo r, audit /bar w, owner /baz rw, }"
+
+	### deny ###
+	# allow and prompt  not used since it conflicts with deny
+	verify_binary_equality "deny expands correctly - file" \
+			       "/t { deny { /foo r, audit /bar w, owner /baz rw, } }" \
+			       "/t { deny /foo r, audit deny /bar w, deny owner /baz rw, }"
+
+	verify_binary_equality "deny expands correctly in subblock - file" \
+			       "/t { deny { { /foo r, audit /bar w, owner /baz rw, } } }" \
+			       "/t { deny /foo r, audit deny /bar w, deny owner /baz rw, }"
+
+	### prompt ###
+	# allow and deny not used since it conflicts with prompt
+	verify_binary_equality "prompt expands correctly - file" \
+			       "/t { prompt { /foo r, audit /bar w, owner /baz rw, } }" \
+			       "/t { prompt /foo r, audit prompt /bar w, prompt owner /baz rw, }"
+
+	verify_binary_equality "prompt expands correctly in subblock - file" \
+			       "/t { prompt { { /foo r, audit /bar w, owner /baz rw, } } }" \
+			       "/t { prompt /foo r, audit prompt /bar w, prompt owner /baz rw, }"
+
+	### audit ###
+	verify_binary_equality "audit expands correctly - file" \
+			       "/t { audit { /foo r, allow /foo w, deny /bar r, audit /bar w, prompt /baz r, owner /baz w, } }" \
+			       "/t { audit /foo rw, audit deny /bar r, audit /bar w, audit prompt /baz r, audit owner /baz w, }"
+
+	verify_binary_equality "audit expands correctly in subblock - file" \
+			       "/t { audit { { /foo r, allow /foo w, deny /bar r, audit /bar w, prompt /baz r, owner /baz w, } } }" \
+			       "/t { audit /foo rw, audit deny /bar r, audit /bar w, audit prompt /baz r, audit owner /baz w, }"
+
+	### owner ###
+	verify_binary_equality "owner expands correctly - file" \
+			       "/t { owner { /foo r, allow /foo w, deny /bar r, audit /bar w, prompt /baz r, owner /baz w, } }" \
+			       "/t { owner /foo rw, deny owner /bar r, audit owner /bar w, prompt owner /baz r, owner /baz w, }"
+
+	verify_binary_equality "owner expands correctly in subblock - file" \
+			       "/t { owner { { /foo r, allow /foo w, deny /bar r, audit /bar w, prompt /baz r, owner /baz w, } } }" \
+			       "/t { owner /foo rw, deny owner /bar r, audit owner /bar w, prompt owner /baz r, owner /baz w, }"
+}
+
 run_tests()
 {
 	printf "Equality Tests:\n"
@@ -1544,6 +1596,8 @@ run_tests()
 					/t @{ROOT}@{BAR}/@{FOO} { }"
 
 	test_parser_variables
+
+	test_block_configurations
 
 	# verify combinations of different priority levels
 	# for single rule comparisons, rules should keep same expected result
