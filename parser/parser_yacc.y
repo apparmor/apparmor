@@ -772,8 +772,6 @@ rules: rules opt_prefix network_rule
 		const char *error;
 		if (!$3->add_prefix($2, error))
 			yyerror("%s", error);
-		/* class members need to be updated after prefix is added */
-		$3->update_compat_net();
 
 		auto nm_af_unix = $3->network_map.find(AF_UNIX);
 		if (nm_af_unix != $3->network_map.end()) {
