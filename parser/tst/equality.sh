@@ -1383,6 +1383,22 @@ test_block_configurations()
 			       "/t { allow { { /foo r, audit /bar w, owner /baz rw, } } }" \
 			       "/t { allow /foo r, audit /bar w, owner /baz rw, }"
 
+	verify_binary_equality "allow expands correctly - rule_t" \
+			       "/t { allow { signal, ptrace, audit dbus, } }" \
+			       "/t { allow signal, ptrace, audit dbus, }"
+
+	verify_binary_equality "allow expands correctly in subblock - rule_t" \
+			       "/t { allow { { signal, ptrace, audit dbus, } } }" \
+			       "/t { allow signal, ptrace, audit dbus, }"
+
+	verify_binary_equality "allow expands correctly - capability" \
+			       "/t { allow { capability chown, audit capability kill, } }" \
+			       "/t { allow capability chown, audit capability kill, }"
+
+	verify_binary_equality "allow expands correctly in subblock - capability" \
+			       "/t { allow { { capability chown, audit capability kill, } } }" \
+			       "/t { allow capability chown, audit capability kill, }"
+
 	### deny ###
 	# allow and prompt  not used since it conflicts with deny
 	verify_binary_equality "deny expands correctly - file" \
@@ -1392,6 +1408,22 @@ test_block_configurations()
 	verify_binary_equality "deny expands correctly in subblock - file" \
 			       "/t { deny { { /foo r, audit /bar w, owner /baz rw, } } }" \
 			       "/t { deny /foo r, audit deny /bar w, deny owner /baz rw, }"
+
+	verify_binary_equality "deny expands correctly - rule_t" \
+			       "/t { deny { signal, ptrace, audit dbus, } }" \
+			       "/t { deny signal, deny ptrace, audit deny dbus, }"
+
+	verify_binary_equality "deny expands correctly in subblock - rule_t" \
+			       "/t { deny { { signal, ptrace, audit dbus, } } }" \
+			       "/t { deny signal, deny ptrace, audit deny dbus, }"
+
+	verify_binary_equality "deny expands correctly - capability" \
+			       "/t { deny { capability chown, audit capability kill, } }" \
+			       "/t { deny capability chown, audit deny capability kill, }"
+
+	verify_binary_equality "deny expands correctly in subblock - capability" \
+			       "/t { deny { { capability chown, audit capability kill, } } }" \
+			       "/t { deny capability chown, audit deny capability kill, }"
 
 	### prompt ###
 	# allow and deny not used since it conflicts with prompt
@@ -1403,6 +1435,14 @@ test_block_configurations()
 			       "/t { prompt { { /foo r, audit /bar w, owner /baz rw, } } }" \
 			       "/t { prompt /foo r, audit prompt /bar w, prompt owner /baz rw, }"
 
+	verify_binary_equality "prompt expands correctly - rule_t" \
+			       "/t { prompt { signal, ptrace, audit dbus, } }" \
+			       "/t { prompt signal, prompt ptrace, audit prompt dbus, }"
+
+	verify_binary_equality "prompt expands correctly in subblock - rule_t" \
+			       "/t { prompt { { signal, ptrace, audit dbus, } } }" \
+			       "/t { prompt signal, prompt ptrace, audit prompt dbus, }"
+
 	### audit ###
 	verify_binary_equality "audit expands correctly - file" \
 			       "/t { audit { /foo r, allow /foo w, deny /bar r, audit /bar w, prompt /baz r, owner /baz w, } }" \
@@ -1411,6 +1451,23 @@ test_block_configurations()
 	verify_binary_equality "audit expands correctly in subblock - file" \
 			       "/t { audit { { /foo r, allow /foo w, deny /bar r, audit /bar w, prompt /baz r, owner /baz w, } } }" \
 			       "/t { audit /foo rw, audit deny /bar r, audit /bar w, audit prompt /baz r, audit owner /baz w, }"
+
+	verify_binary_equality "audit expands correctly - rule_t" \
+			       "/t { audit { signal, allow remount, deny ptrace, audit dbus, prompt mount, } }" \
+			       "/t { audit signal, audit remount, audit deny ptrace, audit dbus, audit prompt mount, }"
+
+	verify_binary_equality "audit expands correctly in subblock - rule_t" \
+			       "/t { audit { { signal, allow remount, deny ptrace, audit dbus, prompt mount, } } }" \
+			       "/t { audit signal, audit remount, audit deny ptrace, audit dbus, audit prompt mount, }"
+
+	verify_binary_equality "audit expands correctly - capability" \
+			       "/t { audit { capability chown, allow capability fowner, deny capability kill, audit capability setuid, } }" \
+			       "/t { audit capability chown, audit capability fowner, audit deny capability kill, audit capability setuid, }"
+
+	verify_binary_equality "audit expands correctly in subblock - capability" \
+			       "/t { audit { { capability chown, allow capability fowner, deny capability kill, audit capability setuid, } } }" \
+			       "/t { audit capability chown, audit capability fowner, audit deny capability kill, audit capability setuid, }"
+
 
 	### owner ###
 	verify_binary_equality "owner expands correctly - file" \
@@ -1421,10 +1478,158 @@ test_block_configurations()
 			       "/t { owner { { /foo r, allow /foo w, deny /bar r, audit /bar w, prompt /baz r, owner /baz w, } } }" \
 			       "/t { owner /foo rw, deny owner /bar r, audit owner /bar w, prompt owner /baz r, owner /baz w, }"
 
-	######## all rules #######
+	######## conditionals #######
+	verify_binary_equality "conditions expand correctly" \
+			       "/t { if true { /a r, } else if true { /b r, } else { /c r, } }" \
+			       "/t { /a r, }"
+
+	verify_binary_equality "conditions expand correctly" \
+			       "/t { if false { /a r, } else if true { /b r, } else { /c r, } }" \
+			       "/t { /b r, }"
+
+	verify_binary_equality "conditions expand correctly" \
+			       "/t { if false { /a r, } else if false { /b r, } else { /c r, } }" \
+			       "/t { /c r, }"
+
+	######## all_rules #######
 	verify_binary_equality "all expands correctly" \
 			       "/t { all, }" \
 			       "/t { unix, dbus, io_uring, mqueue, ptrace, signal, userns, mount, remount, umount, pivot_root, network, /{**,} rwlkm, priority=-1 /{**,} ix, capability, }"
+
+	verify_binary_equality "all in subblock expands correctly" \
+			       "/t { { all, } }" \
+			       "/t { unix, dbus, io_uring, mqueue, ptrace, signal, userns, mount, remount, umount, pivot_root, network, /{**,} rwlkm, priority=-1 /{**,} ix, capability, }"
+
+	verify_binary_equality "all in condition expands correctly" \
+			       "/t { if not false { all, } }" \
+			       "/t { unix, dbus, io_uring, mqueue, ptrace, signal, userns, mount, remount, umount, pivot_root, network, /{**,} rwlkm, priority=-1 /{**,} ix, capability, }"
+
+	######## exec transition table #######
+	verify_binary_equality "exec trans table Px is setup correctly when in subblock" \
+			       "/t { { /foo Px -> target, } }" \
+			       "/t { /foo Px -> target, }"
+
+	verify_binary_equality "exec trans table change_profile is setup correctly when in subblock" \
+			       "/t { { change_profile -> target, } }" \
+			       "/t { change_profile-> target, }"
+
+	verify_binary_equality "exec trans table Px is setup correctly when in condition" \
+			       "/t { if true { /foo Px -> target, } }" \
+			       "/t { /foo Px -> target, }"
+
+	verify_binary_equality "exec trans table change_profile is setup correctly when in condition" \
+			       "/t { if true { change_profile -> target, } }" \
+			       "/t { change_profile-> target, }"
+
+	######## capability #######
+	verify_binary_equality "deny block reclassifies allow and deny capabilities" \
+			       "/t { deny { capability chown, deny capability kill, audit capability setuid, } }" \
+			       "/t { deny capability chown, deny capability kill, audit deny capability setuid, }"
+
+	######## rlimit ####### rlimits do not take a prefix but propagate from a plain block
+	verify_binary_equality "rlimit expands correctly - rlimit" \
+			       "/t { { set rlimit cpu <= 10, set rlimit nofile <= 1024, } }" \
+			       "/t { set rlimit cpu <= 10, set rlimit nofile <= 1024, }"
+
+	verify_binary_equality "rlimit expands correctly in subblock - rlimit" \
+			       "/t { { { set rlimit cpu <= 10, set rlimit nofile <= 1024, } } }" \
+			       "/t { set rlimit cpu <= 10, set rlimit nofile <= 1024, }"
+
+	######## network ####### the compat_net table must reflect the block prefix
+	# features.all does not support network_v8/v9, so the compat_net table
+	# is generated and exercised by these tests
+	verify_binary_equality "allow expands correctly - network" \
+			       "/t { allow { network inet stream, audit network inet6 dgram, } }" \
+			       "/t { allow network inet stream, audit network inet6 dgram, }"
+
+	verify_binary_equality "allow expands correctly in subblock - network" \
+			       "/t { allow { { network inet stream, audit network inet6 dgram, } } }" \
+			       "/t { allow network inet stream, audit network inet6 dgram, }"
+
+	verify_binary_equality "deny expands correctly - network" \
+			       "/t { deny { network inet stream, audit network inet6 dgram, } }" \
+			       "/t { deny network inet stream, audit deny network inet6 dgram, }"
+
+	verify_binary_equality "deny expands correctly in subblock - network" \
+			       "/t { deny { { network inet stream, audit network inet6 dgram, } } }" \
+			       "/t { deny network inet stream, audit deny network inet6 dgram, }"
+
+	verify_binary_equality "audit expands correctly - network" \
+			       "/t { audit { network inet stream, allow network inet6 dgram, deny network inet, } }" \
+			       "/t { audit network inet stream, audit network inet6 dgram, audit deny network inet, }"
+
+	verify_binary_equality "audit expands correctly in subblock - network" \
+			       "/t { audit { { network inet stream, allow network inet6 dgram, deny network inet, } } }" \
+			       "/t { audit network inet stream, audit network inet6 dgram, audit deny network inet, }"
+
+	verify_binary_equality "audit deny block reclassifies network" \
+			       "/t { audit deny { network inet stream, } }" \
+			       "/t { audit deny network inet stream, }"
+
+	verify_binary_equality "audit subblock deny subblock reclassifies network" \
+			       "/t { audit { deny { network inet stream, } } }" \
+			       "/t { audit deny network inet stream, }"
+
+	verify_binary_equality "deny subblock audit subblock reclassifies network" \
+			       "/t { deny { audit { network inet stream, } } }" \
+			       "/t { audit deny network inet stream, }"
+
+	# bare network (covers all address families, including the af_unix
+	# socket rules generated for it)
+	verify_binary_equality "deny expands correctly - bare network" \
+			       "/t { deny { network, } }" \
+			       "/t { deny network, }"
+
+	verify_binary_equality "audit expands correctly - bare network" \
+			       "/t { audit { network, } }" \
+			       "/t { audit network, }"
+
+	# "network unix" generates downgraded af_unix socket rules; verify the
+	# block prefix is applied to those generated rules consistently
+	verify_binary_equality "allow expands correctly - network unix" \
+			       "/t { allow { network unix, } }" \
+			       "/t { allow network unix, }"
+
+	verify_binary_equality "allow expands correctly in subblock - network unix" \
+			       "/t { allow { { network unix, } } }" \
+			       "/t { allow network unix, }"
+
+	verify_binary_equality "deny expands correctly - network unix" \
+			       "/t { deny { network unix, } }" \
+			       "/t { deny network unix, }"
+
+	verify_binary_equality "deny expands correctly in subblock - network unix" \
+			       "/t { deny { { network unix, } } }" \
+			       "/t { deny network unix, }"
+
+	verify_binary_equality "audit expands correctly - network unix" \
+			       "/t { audit { network unix, } }" \
+			       "/t { audit network unix, }"
+
+	######## unix ####### explicit unix rules are regular rule_t rules
+	verify_binary_equality "allow expands correctly - unix" \
+			       "/t { allow { unix (connect), audit unix (bind), } }" \
+			       "/t { allow unix (connect), audit unix (bind), }"
+
+	verify_binary_equality "allow expands correctly in subblock - unix" \
+			       "/t { allow { { unix (connect), audit unix (bind), } } }" \
+			       "/t { allow unix (connect), audit unix (bind), }"
+
+	verify_binary_equality "deny expands correctly - unix" \
+			       "/t { deny { unix (connect), audit unix (bind), } }" \
+			       "/t { deny unix (connect), audit deny unix (bind), }"
+
+	verify_binary_equality "deny expands correctly in subblock - unix" \
+			       "/t { deny { { unix (connect), audit unix (bind), } } }" \
+			       "/t { deny unix (connect), audit deny unix (bind), }"
+
+	verify_binary_equality "audit expands correctly - unix" \
+			       "/t { audit { unix (connect), allow unix (bind), deny unix (listen), audit unix (accept), } }" \
+			       "/t { audit unix (connect), audit unix (bind), audit deny unix (listen), audit unix (accept), }"
+
+	verify_binary_equality "audit expands correctly in subblock - unix" \
+			       "/t { audit { { unix (connect), allow unix (bind), deny unix (listen), audit unix (accept), } } }" \
+			       "/t { audit unix (connect), audit unix (bind), audit deny unix (listen), audit unix (accept), }"
 }
 
 # test_dfa_cache_equality - verifies that profiles compiled using a populated
