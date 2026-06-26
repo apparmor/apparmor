@@ -71,6 +71,7 @@ bool kernel_supports_zstd_load = 0;	/* kernel supports compressed policies */
 int features_supports_network = 0;	/* kernel supports network rules */
 int features_supports_networkv8 = 0;	/* kernel supports 4.17 network rules */
 bool features_supports_networkv9 = 0;	/* kernel supports v9 network rules */
+bool features_supports_network_policydb = 0; /* network rules are stored in policydb */
 bool features_supports_inetv8 = 0; 	/* kernel supports inet network rules */
 bool features_supports_inetv9 = 0; 	/* kernel supports inet network rules */
 bool features_supports_networkv9_skb = 0; /* kernel supports v9 skb network rules */
