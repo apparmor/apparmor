@@ -1480,9 +1480,11 @@ test_dfa_cache_equality()
 
 	# Step 2: Compile all profiles WITH --dfa-cache-loc to populate the cache
 	dfa_cache_loc="$cache_dir"
+	local populate_hashes=()
 	i=0
 	for profile in "${profiles[@]}" ; do
-		hash_binary_policy "populate_$i" "$profile" > /dev/null
+		local hash
+		hash=$(hash_binary_policy "populate_$i" "$profile")
 		if [ $? -ne 0 ] ; then
 			printf "\nERROR: DFA cache equality: failed to populate cache for profile %d\n" $i 1>&2
 			((errors++))
@@ -1490,7 +1492,23 @@ test_dfa_cache_equality()
 			dfa_cache_loc="$saved_dfa_cache_loc"
 			return $ret
 		fi
+		populate_hashes+=("$hash")
 		rm -f "${tmpdir}"/populate_$i.*
+		((i++))
+	done
+
+	# Step 2b: Verify empty-cache hashes match baseline (no cache)
+	i=0
+	for profile in "${profiles[@]}" ; do
+		if [ "${baseline_hashes[$i]}" != "${populate_hashes[$i]}" ] ; then
+			printf "\nFAIL: DFA cache equality: profile %d differs with empty cache vs without --dfa-cache-loc\n" $i 1>&2
+			printf "  without cache: %s\n  empty cache:   %s\n" "${baseline_hashes[$i]}" "${populate_hashes[$i]}" 1>&2
+			printf "  profile: %s\n" "${profiles[$i]}" 1>&2
+			((fails++))
+			((ret++))
+		elif [ -n "$verbose" ] ; then
+			printf "  profile %d: empty cache ok (hash=%s)\n" $i "${populate_hashes[$i]}"
+		fi
 		((i++))
 	done
 
