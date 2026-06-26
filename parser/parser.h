@@ -342,6 +342,7 @@ extern int kernel_load;
 extern int kernel_supports_setload;
 extern int features_supports_network;
 extern int features_supports_networkv8;
+extern bool features_supports_network_policydb;
 extern int features_supports_inet;
 extern int kernel_supports_policydb;
 extern bool kernel_supports_diff_encode;
