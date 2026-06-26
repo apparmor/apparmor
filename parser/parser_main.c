@@ -1032,6 +1032,8 @@ void set_supported_features()
 	features_supports_networkv9 = features_intersect(kernel_features,
 							 policy_features,
 							 "network_v9");
+	features_supports_network_policydb = (features_supports_networkv8 ||
+					      features_supports_networkv9);
 	features_supports_networkv9_skb = features_intersect(kernel_features,
 							     policy_features,
 							     "network_v9_skb");
