@@ -29,6 +29,8 @@ profile alsamixer /{usr,}/bin/alsamixer flags=(attach_disconnected.path=/att/als
     @{etc_ro}/alsa/conf.d/ r,
     @{etc_ro}/alsa/conf.d/*.conf r,
     @{etc_ro}/alsa/conf.d/*.conf.example r,
+    @{etc_ro}/asound.conf r,
+    owner @{HOME}/.asoundrc r,
     # alsa info files
     @{PROC}/asound/** r,
 
