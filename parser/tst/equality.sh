@@ -1415,6 +1415,11 @@ test_block_configurations()
 	verify_binary_equality "owner expands correctly in subblock - file" \
 			       "/t { owner { { /foo r, allow /foo w, deny /bar r, audit /bar w, prompt /baz r, owner /baz w, } } }" \
 			       "/t { owner /foo rw, deny owner /bar r, audit owner /bar w, prompt owner /baz r, owner /baz w, }"
+
+	######## all rules #######
+	verify_binary_equality "all expands correctly" \
+			       "/t { all, }" \
+			       "/t { unix, dbus, io_uring, mqueue, ptrace, signal, userns, mount, remount, umount, pivot_root, network, /{**,} rwlkm, priority=-1 /{**,} ix, capability, }"
 }
 
 run_tests()

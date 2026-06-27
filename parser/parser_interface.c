@@ -565,7 +565,7 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 	sd_serialize_rlimits(buf, &profile->rlimits);
 
 	/* choice to support / downgrade needs to already have been made */
-	if (features_supports_networkv8) {
+	if (features_supports_network_policydb) {
 		/* nothing - encoded in policydb */
 	} else if (profile->net.allow && features_supports_network) {
 		size_t i;
