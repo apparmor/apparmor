@@ -774,7 +774,7 @@ rules:	rules opt_prefix change_profile
 		if (!$3)
 			yyerror(_("Assert: `change_profile' returned NULL."));
 		if ($2.owner != OWNER_UNSPECIFIED)
-			yyerror(_("owner conditional not allowed on unix rules"));
+			yyerror(_("owner conditional not allowed on change_profile rules"));
 		if (!generic_add_prefix($3, $2, error))
 			yyerror("%s", error);
 
