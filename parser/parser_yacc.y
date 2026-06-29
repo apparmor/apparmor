@@ -865,7 +865,7 @@ rules:	rules opt_prefix change_profile
 		if (!$3)
 			yyerror(_("Assert: `change_profile' returned NULL."));
 		if ($2.owner)
-			yyerror(_("owner prefix not allowed on unix rules"));
+			yyerror(_("owner prefix not allowed on change_profile rules"));
 		if ($2.deny && $2.audit) {
 			$3->deny = 1;
 		} else if ($2.deny) {
