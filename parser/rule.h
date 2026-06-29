@@ -195,7 +195,7 @@ public:
 		return !(*this == rhs);
 	}
 
-	bool operator-(const internal_audit_t& rhs) const {
+	int operator-(const internal_audit_t& rhs) const {
 		return (int) this->audit - (int) rhs.audit;
 	}
 
