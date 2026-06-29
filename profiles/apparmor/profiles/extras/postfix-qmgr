@@ -13,10 +13,13 @@ abi <abi/5.0>,
 
 include <tunables/global>
 
-profile postfix-qmgr /usr/lib{,exec}/postfix/{bin/,sbin/,}qmgr {
+@{att}=/att/postfix-qmgr/
+profile postfix-qmgr /usr/lib{,exec}/postfix/{bin/,sbin/,}qmgr flags=(attach_disconnected.path=@{att}) {
   include <abstractions/base>
   include <abstractions/nameservice>
   include <abstractions/postfix-common>
+
+  @{att}/systemd/journal/dev-log w,
 
   @{exec_path} mrix,
 
@@ -42,7 +45,7 @@ profile postfix-qmgr /usr/lib{,exec}/postfix/{bin/,sbin/,}qmgr {
   /{var/spool/postfix/,}incoming/[0-9A-F]/                        rwl,
   /{var/spool/postfix/,}incoming/[0-9A-F]*                        rwl,
   /{var/spool/postfix/,}public/flush                              w,
-  /{var/spool/postfix/,}public/qmgr                               r,
+  /{var/spool/postfix/,}public/qmgr                               rw,
   /{var/spool/postfix/,}private/bounce                            w,
   /{var/spool/postfix/,}private/defer                             w,
   /{var/spool/postfix/,}private/local                             rw,
@@ -51,6 +54,8 @@ profile postfix-qmgr /usr/lib{,exec}/postfix/{bin/,sbin/,}qmgr {
   /{var/spool/postfix/,}private/smtp                              w,
   /{var/spool/postfix/,}private/trace                             w,
   /{var/spool/postfix/,}private/uucp                              w,
+
+  owner /var/spool/postfix/private/lmtp rw,
 
   # Site-specific additions and overrides. See local/README for details.
   include if exists <local/postfix-qmgr>
