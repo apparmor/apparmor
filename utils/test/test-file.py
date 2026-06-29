@@ -196,6 +196,22 @@ class FileTestParseFromLog(FileTest):
 
 # TODO: add logparser example for link event
 
+class FileWithoutFilenameFromLog(FileTest):
+    # Some kernels may emit file events without a name field
+    event = 'Mar 03 07:48:21 examplehost.internal kernel: audit: type=1400 audit(1772549301.213:78826): apparmor="DENIED" operation="open" class="file" profile="firefox" pid=16417 comm="vaapitest" requested_mask="wr" denied_mask="wr" fsuid=1000 ouid=0'
+
+    def test_create_from_ev_returns_none(self):
+        parser = ReadLog('', '', '')
+        parsed_event = parser.parse_event(self.event)
+        self.assertIsNone(parsed_event['name'])
+        self.assertIsNone(FileRule.create_from_ev(parsed_event))
+
+    def test_create_rule_from_ev_returns_none(self):
+        parser = ReadLog('', '', '')
+        parsed_event = parser.parse_event(self.event)
+        self.assertIsNone(parser.create_rule_from_ev(parsed_event))
+
+
 class FileFromInit(FileTest):
     tests = (
 
