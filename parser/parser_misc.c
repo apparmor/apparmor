@@ -1113,8 +1113,10 @@ bool check_x_qualifier(struct cod_entry *entry, const char *&error)
 	return true;
 }
 
-// cod_entry version of ->add_prefix here just as file rules aren't converted yet
-bool entry_add_prefix(struct cod_entry *entry, const prefixes &p, const char *&error)
+/* change_profile follows the same rules as file add_prefix except for
+ * owner and check_x_qualifier, so the generic elements were
+ * extracted while cod_entry is not converted to rule_t */
+bool generic_add_prefix(struct cod_entry *entry, const prefixes &p, const char *&error)
 {
 	/* apply rule mode */
 	if (p.rule_mode != RULE_UNSPECIFIED) {
@@ -1126,11 +1128,6 @@ bool entry_add_prefix(struct cod_entry *entry, const prefixes &p, const char *&e
 		entry->rule_mode = p.rule_mode;
 	}
 
-	/* apply owner/other */
-	if (p.owner == 1)
-		entry->perms &= (AA_USER_PERMS | AA_SHARED_PERMS);
-	else if (p.owner == 2)
-		entry->perms &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
 
 	if (p.priority != 0)
 		entry->priority = p.priority;
@@ -1154,6 +1151,20 @@ bool entry_add_prefix(struct cod_entry *entry, const prefixes &p, const char *&e
 	} else if (p.audit != AUDIT_UNSPECIFIED) {
 		entry->audit = p.audit;
 	}
+	return true;
+}
+
+// cod_entry version of ->add_prefix here just as file rules aren't converted yet
+bool entry_add_prefix(struct cod_entry *entry, const prefixes &p, const char *&error)
+{
+	if (!generic_add_prefix(entry, p, error))
+		return false;
+
+	/* apply owner/other */
+	if (p.owner == OWNER_SPECIFIED)
+		entry->perms &= (AA_USER_PERMS | AA_SHARED_PERMS);
+	else if (p.owner == OWNER_NOT)
+		entry->perms &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
 
 	return check_x_qualifier(entry, error);
 }

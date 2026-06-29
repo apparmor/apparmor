@@ -768,20 +768,16 @@ rules:  rules opt_prefix prefix_rule
 
 rules:	rules opt_prefix change_profile
 	{
+		const char *error;
 		PDEBUG("matched: rules change_profile\n");
 		PDEBUG("rules change_profile: (%s)\n", $3->name);
 		if (!$3)
 			yyerror(_("Assert: `change_profile' returned NULL."));
 		if ($2.owner != OWNER_UNSPECIFIED)
 			yyerror(_("owner conditional not allowed on unix rules"));
-		if (($2.rule_mode == RULE_DENY) && $2.audit == AUDIT_FORCE) {
-			$3->rule_mode = RULE_DENY;
-		} else if ($2.rule_mode == RULE_DENY) {
-			$3->rule_mode = RULE_DENY;
-			$3->audit = AUDIT_FORCE;
-		} else if ($2.audit != AUDIT_UNSPECIFIED) {
-			$3->audit = $2.audit;
-		}
+		if (!generic_add_prefix($3, $2, error))
+			yyerror("%s", error);
+
 		add_entry_to_policy($1, $3);
 		$$ = $1;
 	};
