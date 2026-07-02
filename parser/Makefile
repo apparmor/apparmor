@@ -234,6 +234,9 @@ apparmor_parser: $(OBJECTS) $(AAREOBJECTS) $(LIBAPPARMOR_A)
 
 parser_yacc.c: parser_yacc.y $(STATIC_HDRS) $(GENERATED_HDRS)
 	$(YACC) $(YFLAGS) -o parser_yacc.c parser_yacc.y
+	# yacc generates a yyerror that breaks with -Wno-error=format-security
+	# so replace it if present
+	sed -i 's/yyerror[[:space:]]*([[:space:]]*yymsgp[[:space:]]*)/yyerror("%s", yymsgp)/g' parser_yacc.c
 
 parser_yacc.h: parser_yacc.c
 
