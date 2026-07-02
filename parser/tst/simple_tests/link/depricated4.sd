@@ -1,0 +1,9 @@
+#
+#=DESCRIPTION test deprecated combined link and x transition
+#=EXRESULT PASS
+#
+
+profile test {
+     /link/** lcx -> /target,
+}
+

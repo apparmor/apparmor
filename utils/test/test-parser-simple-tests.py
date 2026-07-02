@@ -223,6 +223,13 @@ exception_not_raised = (
     'xtrans/x-conflict.sd',
 
     'network/perms/bad_modifier_2.sd',
+
+    'link/bad_leading_link_x.sd',
+    'link/bad_leading_link_x2.sd',
+    'link/bad_leading_link_x3.sd',
+    'link/bad_leading_link_x4.sd',
+    'link/bad_leading_link_x5.sd',
+    'link/bad_leading_link_x6.sd',
 )
 
 # testcases with lines that don't match any regex and end up as "unknown line"
