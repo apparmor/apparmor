@@ -510,8 +510,10 @@ int aa_features_new_from_string(aa_features **features,
 	*features = NULL;
 
 	/* Require size to be less than STRING_SIZE so there's room for a NUL */
-	if (size >= STRING_SIZE)
-		return ENOBUFS;
+	if (size >= STRING_SIZE) {
+		errno = ENOBUFS;
+		return -1;
+	}
 
 	f = calloc(1, sizeof(*f));
 	if (!f) {
