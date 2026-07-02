@@ -1,13 +1,20 @@
 #!/usr/bin/python3
 
+import os
 import subprocess
 import sys
 
-# TODO: transform this script to a package to use local imports so that if called with ./aa-notify, we use ./apparmor.*
-from apparmor import aa
-from apparmor.logparser import ReadLog
+# pkexec scrubs PYTHONPATH; Python's default sys.path puts this file's own
+# dir (the apparmor package) on it, not the parent. Prepend the parent so
+# `import apparmor.*` resolves to the co-located checkout, not whatever's
+# installed system-wide.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from apparmor.translations import init_translation
+from apparmor import aa  # noqa: E402
+from apparmor.logparser import ReadLog  # noqa: E402
+
+from apparmor.translations import init_translation  # noqa: E402
+
 _ = init_translation()
 
 
