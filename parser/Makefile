@@ -345,7 +345,7 @@ generated_af_names.h: ../common/list_af_names.sh
 	../common/list_af_names.sh > $@
 
 af_names.h: generated_af_names.h base_af_names.h
-	@cat base_af_names.h | diff -u - generated_af_names.h | grep -v '^.AF_MAX' | grep '^\+[^+]' ; \
+	@cat base_af_names.h | diff -u - generated_af_names.h | grep -v '^.AF_MAX' | grep '^+[^+]' ; \
 	if [ $$? -eq 1 ] ; then \
 		cat base_af_names.h | LC_ALL=C sed -n -e 's/[ \t]\?AF_MAX[ \t]\+[0-9]\+,//g'  -e 's/[ \t]\+\?AF_\([A-Z0-9_]\+\)[ \t]\+\([0-9]\+\),/#ifndef AF_\1\n#  define AF_\1 \2\n#endif\nAA_GEN_NET_ENT("\L\1", \UAF_\1)\n/pg' > $@ ; \
 		cat base_af_names.h | LC_ALL=C sed -n -e 's/AF_MAX[ \t]\+\([0-9]\+\),\?.*/\n#define AA_AF_MAX \1\n/p' >> $@ ; \
@@ -358,7 +358,7 @@ generated_cap_names.h: /usr/include/linux/capability.h
 	../common/list_capabilities.sh | LC_ALL=C sed -n -e "s/[ \\t]\\?CAP_\\([A-Z0-9_]\\+\\)/\{\"\\L\\1\", \\UCAP_\\1, NO_BACKMAP_CAP, CAPFLAG_BASE_FEATURE\},\\n/pg" > $@
 
 cap_names.h: generated_cap_names.h base_cap_names.h
-	@LC_ALL=C sed -e 's/\([^,]*,[^,]*,\) CAP_[A-Z0-9_]\+,/\1 NO_BACKMAP_CAP,/g' base_cap_names.h | diff -u - generated_cap_names.h | grep '^\+[^+]' ; \
+	@LC_ALL=C sed -e 's/\([^,]*,[^,]*,\) CAP_[A-Z0-9_]\+,/\1 NO_BACKMAP_CAP,/g' base_cap_names.h | diff -u - generated_cap_names.h | grep '^+[^+]' ; \
 	if [ $$? -eq 1 ] ; then \
 		cp base_cap_names.h $@ ; \
 	else \
