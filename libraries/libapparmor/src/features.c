@@ -677,8 +677,19 @@ int aa_features_write_to_file(aa_features *features,
  */
 bool aa_features_is_equal(aa_features *features1, aa_features *features2)
 {
-	return features1 && features2 &&
-	       strcmp(features1->string, features2->string) == 0;
+	size_t len1, len2;
+
+	if (!features1 || !features2)
+		return false;
+
+	len1 = strnlen(features1->string, STRING_SIZE);
+	len2 = strnlen(features2->string, STRING_SIZE);
+
+	/* Treat unterminated feature buffers as invalid/non-equal. */
+	if (len1 == STRING_SIZE || len2 == STRING_SIZE)
+		return false;
+
+	return len1 == len2 && memcmp(features1->string, features2->string, len1) == 0;
 }
 
 /**
