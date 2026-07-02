@@ -1573,8 +1573,14 @@ static bool get_kernel_features(struct aa_features **features)
 	kernel_supports_policydb = aa_features_supports(*features, "file");
 	kernel_supports_setload = aa_features_supports(*features,
 						       "policy/set_load");
+	/* upstream kernel deliberately switched from diff_encode to
+	 * diff-encode, to avoid broken userspaces from trying to load
+	 * diff-encoded profiles.  see https://launchpad.net/bugs/2148193
+	 */
 	kernel_supports_diff_encode = aa_features_supports(*features,
-							   "policy/diff_encode");
+							"policy/diff_encode")
+				   || aa_features_supports(*features,
+							 "policy/diff-encode");
 	kernel_supports_state32 = aa_features_supports(*features,
 						       "policy/state32");
 	kernel_supports_flags_table = aa_features_supports(*features,
