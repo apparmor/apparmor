@@ -1041,7 +1041,15 @@ opt_file: { /* nothing */ $$ = false; }
 
 frule:	id_or_var file_perms opt_named_transition TOK_END_OF_RULE
 	{
-		$$ = do_file_rule($1, $2, NULL, $3);
+		if ($3 && ($2 & AA_LINK_BITS) && ($2 & AA_EXEC_BITS)) {
+			// TODO: option to fail on abi check for next release
+			pwarn(WARN_DEPRECATED, _("ambiguous rule specifies both link target and exec transition target. Using as exec transition"));
+			$$ = do_file_rule($1, $2, NULL, $3);
+		} else if ($3 && ($2 & AA_LINK_BITS)) {
+			$$ = do_file_rule($1, $2, $3, NULL);
+		} else {
+			$$ = do_file_rule($1, $2, NULL, $3);
+		}
 	};
 
 frule:	file_perms opt_subset_flag id_or_var opt_named_transition TOK_END_OF_RULE
