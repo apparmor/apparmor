@@ -27,8 +27,10 @@ def get_last_login_timestamp(username, filename='/var/log/wtmp', lastlog2_db='/v
 
     if os.access(lastlog2_db, os.R_OK):
         return get_last_login_timestamp_lastlog2(username, lastlog2_db)
-    else:
+    elif os.access(filename, os.R_OK):
         return get_last_login_timestamp_wtmp(username, filename)
+    else:
+        return 0
 
 
 def get_last_login_timestamp_lastlog2(username, lastlog2_db='/var/lib/lastlog/lastlog2.db'):

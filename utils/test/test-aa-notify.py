@@ -283,7 +283,7 @@ Filtering options:
         result = 'Got output "{}", expected "{}"\n'.format(output, expected_output_has)
         self.assertIn(expected_output_has, output, result + output)
 
-    @unittest.skipUnless(os.path.isfile('/var/log/wtmp'), 'Requires wtmp on system')
+    @unittest.skipUnless(os.path.isfile('/var/lib/lastlog/lastlog2.db') or os.path.isfile('/var/log/wtmp'), 'Requires lastlog2 or wtmp on system')
     def test_entries_since_login(self):
         """Test showing log entries since last login"""
 
@@ -298,7 +298,7 @@ Filtering options:
         result = 'Got output "{}", expected "{}"\n'.format(output, expected_output_has)
         self.assertIn(expected_output_has, output, result + output)
 
-    @unittest.skipUnless(os.path.isfile('/var/log/wtmp'), 'Requires wtmp on system')
+    @unittest.skipUnless(os.path.isfile('/var/lib/lastlog/lastlog2.db') or os.path.isfile('/var/log/wtmp'), 'Requires lastlog2 or wtmp on system')
     def test_entries_since_login_verbose(self):
         """Test showing log entries since last login in verbose mode"""
 
@@ -407,7 +407,7 @@ class AANotifyProfileFilterTest(AANotifyBase):
                 result = 'Got output "{}", expected "{}"\n'.format(output, expected_output_has)
                 self.assertIn(expected_output_has, output, result + output)
 
-    @unittest.skipUnless(os.path.isfile('/var/log/wtmp'), 'Requires wtmp on system')
+    @unittest.skipUnless(os.path.isfile('/var/lib/lastlog/lastlog2.db') or os.path.isfile('/var/log/wtmp'), 'Requires lastlog2 or wtmp on system')
     def test_profile_regex_since_login(self):
         profile_tests = (
             (['--filter.profile', 'libreoffice'], (0, 'AppArmor denials: 10 (since')),
@@ -471,7 +471,7 @@ class AANotifyOperationFilterTest(AANotifyBase):
                 result = 'Got output "{}", expected "{}"\n'.format(output, expected_output_has)
                 self.assertIn(expected_output_has, output, result + output)
 
-    @unittest.skipUnless(os.path.isfile('/var/log/wtmp'), 'Requires wtmp on system')
+    @unittest.skipUnless(os.path.isfile('/var/lib/lastlog/lastlog2.db') or os.path.isfile('/var/log/wtmp'), 'Requires lastlog2 or wtmp on system')
     def test_operation_regex_since_login(self):
         operation_tests = (
             (['--filter.operation', 'exec'], (0, 'AppArmor denials: 2 (since')),
@@ -536,7 +536,7 @@ class AANotifyNameFilterTest(AANotifyBase):
                 result = 'Got output "{}", expected "{}"\n'.format(output, expected_output_has)
                 self.assertIn(expected_output_has, output, result + output)
 
-    @unittest.skipUnless(os.path.isfile('/var/log/wtmp'), 'Requires wtmp on system')
+    @unittest.skipUnless(os.path.isfile('/var/lib/lastlog/lastlog2.db') or os.path.isfile('/var/log/wtmp'), 'Requires lastlog2 or wtmp on system')
     def test_name_regex_since_login(self):
         name_tests = (
             (['--filter.name', '/bin/uname'], (0, 'AppArmor denials: 2 (since')),
@@ -601,7 +601,7 @@ class AANotifyDeniedFilterTest(AANotifyBase):
                 result = 'Got output "{}", expected "{}"\n'.format(output, expected_output_has)
                 self.assertIn(expected_output_has, output, result + output)
 
-    @unittest.skipUnless(os.path.isfile('/var/log/wtmp'), 'Requires wtmp on system')
+    @unittest.skipUnless(os.path.isfile('/var/lib/lastlog/lastlog2.db') or os.path.isfile('/var/log/wtmp'), 'Requires lastlog2 or wtmp on system')
     def test_denied_regex_since_login(self):
         denied_tests = (
             (['--filter.denied', 'x'], (0, 'AppArmor denials: 2 (since')),
