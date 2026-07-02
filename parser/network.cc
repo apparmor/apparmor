@@ -1013,15 +1013,20 @@ static int cmp_ip_conds(ip_conds const &lhs, ip_conds const &rhs)
 static int cmp_network_map(std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> lhs,
 			   std::unordered_map<unsigned int, std::pair<unsigned int, unsigned int>> rhs)
 {
-	int res;
 	size_t family_index;
 	for (family_index = AF_UNSPEC; family_index < get_af_max(); family_index++) {
-		res = lhs[family_index].first - rhs[family_index].first;
-		if (res)
-			return res;
-		res = lhs[family_index].second - rhs[family_index].second;
-		if (res)
-			return res;
+		if (lhs[family_index].first < rhs[family_index].first) {
+			return -1;
+		}
+		if (lhs[family_index].first > rhs[family_index].first) {
+			return 1;
+		}
+		if (lhs[family_index].second < rhs[family_index].second) {
+			return -1;
+		}
+		if (lhs[family_index].second > rhs[family_index].second) {
+			return 1;
+		}
 	}
 	return 0;
 }
