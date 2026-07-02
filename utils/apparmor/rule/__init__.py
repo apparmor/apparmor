@@ -150,10 +150,10 @@ class BaseRule(metaclass=ABCMeta):
 
     @classmethod
     def create_from_ev(cls, ev):
-        """returns a rule that would allow an event"""
+        """returns a rule that would allow an event, or None if the event is invalid"""
         hl = hasher()
         cls.hashlog_from_event(hl, ev)
-        return next(cls.from_hashlog(hl))
+        return next(cls.from_hashlog(hl), None)
 
     @staticmethod
     def hashlog_from_event(hl, ev):
