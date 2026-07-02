@@ -25,7 +25,7 @@ class Test(unittest.TestCase):
         logprof_sections = ['settings', 'qualifiers', 'required_hats', 'defaulthat', 'globs']
         logprof_sections_options = [
             'profiledir', 'inactive_profiledir', 'logfiles', 'parser',
-            'logger', 'default_owner_prompt', 'custom_includes']
+            'logger', 'default_owner_prompt', 'custom_includes', 'json_log']
         logprof_settings_parser = '../../parser/apparmor_parser ../parser/apparmor_parser'
 
         self.assertEqual(conf.sections(), logprof_sections)
