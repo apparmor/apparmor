@@ -1116,13 +1116,15 @@ bool check_x_qualifier(struct cod_entry *entry, const char *&error)
 // cod_entry version of ->add_prefix here just as file rules aren't converted yet
 bool entry_add_prefix(struct cod_entry *entry, const prefixes &p, const char *&error)
 {
-	/* modifiers aren't correctly stored for cod_entries yet so
-	 * we can't conflict on them easily. Leave that until conversion
-	 * to rule_t
-	 */
 	/* apply rule mode */
-	if (p.rule_mode != RULE_UNSPECIFIED)
+	if (p.rule_mode != RULE_UNSPECIFIED) {
+		if (entry->rule_mode != RULE_UNSPECIFIED &&
+		    entry->rule_mode != p.rule_mode) {
+			error = "conflicting mode prefix";
+			return false;
+		}
 		entry->rule_mode = p.rule_mode;
+	}
 
 	/* apply owner/other */
 	if (p.owner == 1)
@@ -1133,11 +1135,25 @@ bool entry_add_prefix(struct cod_entry *entry, const prefixes &p, const char *&e
 	if (p.priority != 0)
 		entry->priority = p.priority;
 
+	if (p.audit != AUDIT_UNSPECIFIED) {
+		if (entry->audit != AUDIT_UNSPECIFIED &&
+		    entry->audit != AUDIT_IMPLIED &&
+		    entry->audit != p.audit) {
+			error = "conflicting audit prefix";
+			return false;
+		}
+	}
 	/* implied audit modifier */
-	if (p.audit == AUDIT_FORCE && (p.rule_mode != RULE_DENY))
-		entry->audit = AUDIT_FORCE;
-	else if (p.audit != AUDIT_FORCE && (p.rule_mode == RULE_DENY))
-		entry->audit = AUDIT_FORCE;
+	if ((p.rule_mode == RULE_DENY || entry->rule_mode == RULE_DENY) &&
+	    (p.audit.audit == AUDIT_FORCE || entry->audit.audit == AUDIT_FORCE)) {
+		entry->rule_mode = RULE_DENY;
+		entry->audit = AUDIT_UNSPECIFIED;
+	} else if (p.rule_mode == RULE_DENY) {
+		entry->rule_mode = RULE_DENY;
+		entry->audit = AUDIT_IMPLIED;
+	} else if (p.audit != AUDIT_UNSPECIFIED) {
+		entry->audit = p.audit;
+	}
 
 	return check_x_qualifier(entry, error);
 }
