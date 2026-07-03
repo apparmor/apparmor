@@ -69,6 +69,7 @@ int kernel_load = 1;
 int kernel_supports_setload = 0;	/* kernel supports atomic set loads */
 int features_supports_network = 0;	/* kernel supports network rules */
 int features_supports_networkv8 = 0;	/* kernel supports 4.17 network rules */
+bool features_supports_network_policydb = 0; /* network rules are stored in policydb */
 int features_supports_inet = 0; 	/* kernel supports inet network rules */
 int features_supports_unix = 0;		/* kernel supports unix socket rules */
 int kernel_supports_policydb = 0;	/* kernel supports new policydb */

@@ -949,6 +949,7 @@ void set_supported_features()
 	features_supports_networkv8 = features_intersect(kernel_features,
 							 policy_features,
 							 "network_v8");
+	features_supports_network_policydb = features_supports_networkv8;
 	features_supports_inet = features_intersect(kernel_features,
 						    policy_features,
 						    "network_v8/af_inet");
