@@ -441,6 +441,7 @@ syntax_failure = (
 
     # network port range
     'network/network_ok_17.sd',
+    'network/port-torture.sd',
 )
 
 
