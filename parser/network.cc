@@ -806,6 +806,7 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 {
 	std::string buf;
 	perm32_t cond_perms;
+	rule_mode_t cond_rule_mode;
 	std::list<std::ostringstream> ip_streams;
 
 	for (auto &oss : streams) {
@@ -842,8 +843,11 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 	}
 
 	cond_perms = map_perms(perms);
-	if (!is_cmd && (label || is_peer))
+	cond_rule_mode = rule_mode;
+	if (!is_cmd && (label || is_peer)) {
 		cond_perms = AA_COMPAT_CONT_MATCH;
+		cond_rule_mode = RULE_UNSPECIFIED;
+	}
 
 	for (auto &oss : streams) {
 		oss << "\\x00"; /* null transition */
@@ -851,21 +855,25 @@ bool network_rule::gen_ip_conds(Profile &prof, std::list<std::ostringstream> &st
 		buf = oss.str();
 		/* AA_CONT_MATCH mapping (cond_perms) only applies to perms, not audit */
 		if (!prof.policy.rules->add_rule(buf.c_str(), priority,
-						 rule_mode, cond_perms,
+						 cond_rule_mode, cond_perms,
 						 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
 						 parseopts))
 			return false;
 
 		if (label || is_peer) {
-			if (!is_peer)
-				cond_perms = map_perms(perms);
+			perm32_t l_perms = cond_perms;
+			rule_mode_t l_rule_mode = cond_rule_mode;
+			if (!is_peer) {
+				l_perms = map_perms(perms);
+				l_rule_mode = rule_mode;
+			}
 
 			oss << default_match_pattern; /* label - not used for now */
 			oss << "\\x00"; /* null transition */
 
 			buf = oss.str();
 			if (!prof.policy.rules->add_rule(buf.c_str(), priority,
-							 rule_mode, cond_perms,
+							 l_rule_mode, l_perms,
 							 dedup_perms_rule_t::audit == AUDIT_FORCE ? map_perms(perms) : 0,
 							 parseopts))
 				return false;
