@@ -13,6 +13,7 @@ include <tunables/global>
 
 profile curl /usr/bin/curl {
   include <abstractions/base>
+  include <abstractions/consoles>
   include <abstractions/nameservice>
   include <abstractions/private-files-strict>
   include <abstractions/ssl_certs>
