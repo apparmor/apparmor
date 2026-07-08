@@ -808,20 +808,17 @@ rules:  rules opt_prefix prefix_rule
 
 rules:	rules opt_prefix change_profile
 	{
+		const char *error;
 		PDEBUG("matched: rules change_profile\n");
 		PDEBUG("rules change_profile: (%s)\n", $3->name);
 		if (!$3)
 			yyerror(_("Assert: `change_profile' returned NULL."));
+
 		if ($2.owner != owner_t::UNSPECIFIED)
-			yyerror(_("owner conditional not allowed on unix rules"));
-		if (($2.rule_mode == rule_mode_t::DENY) && $2.audit == audit_t::FORCE) {
-			$3->rule_mode = rule_mode_t::DENY;
-		} else if ($2.rule_mode == rule_mode_t::DENY) {
-			$3->rule_mode = rule_mode_t::DENY;
-			$3->audit = audit_t::FORCE;
-		} else if ($2.audit != audit_t::UNSPECIFIED) {
-			$3->audit = $2.audit;
-		}
+			yyerror(_("owner conditional not allowed on change_profile rules"));
+		if (!generic_add_prefix($3, $2, error))
+			yyerror("%s", error);
+
 		add_entry_to_policy($1, $3);
 		$$ = $1;
 	};
