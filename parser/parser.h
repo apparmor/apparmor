@@ -476,6 +476,7 @@ extern struct cod_entry *copy_cod_entry(struct cod_entry *cod);
 extern void free_cod_entries(struct cod_entry *list);
 void debug_cod_entries(struct cod_entry *list);
 bool check_x_qualifier(struct cod_entry *entry, const char *&error);
+bool generic_add_prefix(struct cod_entry *entry, const prefixes &p, const char *&error);
 bool entry_add_prefix(struct cod_entry *entry, const prefixes &p, const char *&error);
 
 
