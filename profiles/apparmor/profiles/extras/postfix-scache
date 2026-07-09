@@ -15,10 +15,12 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-profile postfix-scache /usr/lib{,exec}/postfix/{bin/,sbin/,}scache {
+profile postfix-scache /usr/lib{,exec}/postfix/{bin/,sbin/,}scache flags=(attach_disconnected.path=/att/postfix-scache/) {
   include <abstractions/base>
   include <abstractions/nameservice>
   include <abstractions/postfix-common>
+
+  owner /att/postfix-scache/var/spool/postfix/private/dovecot-lmtp rw,
 
   /usr/lib{,exec}/postfix/{bin/,sbin/,}scache mrix,
 
