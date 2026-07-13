@@ -1744,16 +1744,22 @@ static bool get_kernel_features(struct aa_features **features)
 		kernel_abi_version = 6;
 
 	kernel_supports_promptdev = aa_features_supports(*features, "policy/perms_compatprompt");
+	kernel_supports_permstable32_version = -1;
 	kernel_supports_permstable32 = aa_features_supports(*features, "policy/permstable32");
 	if (kernel_supports_permstable32) {
-		//fprintf(stderr, "kernel supports prompt\n");
-	}
-	kernel_supports_permstable32_v1 = aa_features_supports(*features, "policy/permstable32_version/0x000001");
-	if (kernel_supports_permstable32_v1) {
-		/* permstabl32 is broken in kernels that only support v1
-		 * so disable it
+		if (aa_features_supports(*features, "policy/permstable32_version/0x000003"))
+			kernel_supports_permstable32_version = 3;
+		else if (aa_features_supports(*features, "policy/permstable32_version/0x000002"))
+			kernel_supports_permstable32_version = 2;
+		else if (aa_features_supports(*features, "policy/permstable32_version/0x000001"))
+			kernel_supports_permstable32_version = 1;
+
+		/*
+		 * v1 is known broken and kernels without a version marker are treated
+		 * as not supporting permstable32.
 		 */
-		kernel_supports_permstable32 = false;
+		if (kernel_supports_permstable32_version < 2)
+			kernel_supports_permstable32 = false;
 	}
 
 	/* set default prompt_compat_mode to the best that is supported */
