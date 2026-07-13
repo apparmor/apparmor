@@ -346,6 +346,7 @@ extern bool kernel_supports_zstd_load;
 extern int features_supports_network;
 extern int features_supports_networkv8;
 extern bool features_supports_networkv9;
+extern bool features_supports_network_policydb;
 extern bool features_supports_inetv8;
 extern bool features_supports_inetv9;
 extern bool features_supports_networkv9_skb;

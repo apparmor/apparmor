@@ -1337,6 +1337,14 @@ test_parser_variables()
 
 }
 
+test_block_configurations()
+{
+	######## all rules #######
+	verify_binary_equality "all expands correctly" \
+			       "/t { all, }" \
+			       "/t { unix, dbus, io_uring, mqueue, ptrace, signal, userns, mount, remount, umount, pivot_root, network, /{**,} rwlkm, priority=-1 /{**,} ix, capability, }"
+}
+
 run_tests()
 {
 	printf "Equality Tests:\n"
@@ -1516,6 +1524,8 @@ run_tests()
 					/t @{ROOT}@{BAR}/@{FOO} { }"
 
 	test_parser_variables
+
+	test_block_configurations
 
 	# verify combinations of different priority levels
 	# for single rule comparisons, rules should keep same expected result

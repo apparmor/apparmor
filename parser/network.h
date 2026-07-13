@@ -229,6 +229,14 @@ public:
 		}
 		return true;
 	};
+
+	bool add_prefix(const prefixes &p, const char *&error) override {
+		bool rc = dedup_perms_rule_t::add_prefix(p, error);
+		/* update compat net needs to run after adding the prefix */
+		update_compat_net();
+		return rc;
+	}
+
 	ostream &dump(ostream &os) override;
 	int expand_variables(void) override;
 	int gen_policy_re(Profile &prof) override;
