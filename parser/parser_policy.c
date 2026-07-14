@@ -516,8 +516,17 @@ static bool dfa_cache_lookup_disk(Profile *profile, uint64_t key,
 		return false;
 	}
 
-	/* Touch DFA cache file to update mtime for cache pruning purposes. */
-	futimens(fileno(f), NULL);
+#define DFA_CACHE_TOUCH_DELTA_SECS (7 * 24 * 60 * 60)
+	/* Touch DFA cache file to update mtime for cache pruning purposes,
+	 * but only if the file is older than DFA_CACHE_TOUCH_DELTA_SECS to
+	 * avoid unnecessary disk writes on every cache hit. */
+	struct stat st;
+	if (fstat(fileno(f), &st) == 0) {
+		struct timespec now;
+		clock_gettime(CLOCK_REALTIME, &now);
+		if (now.tv_sec - st.st_mtim.tv_sec > DFA_CACHE_TOUCH_DELTA_SECS)
+			futimens(fileno(f), NULL);
+	}
 	fclose(f);
 
 	profile->dfa.dfa = dfa;
