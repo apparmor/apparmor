@@ -953,7 +953,7 @@ bool post_process_policydb_net(Profile *prof)
 #define MAKE_STR(X) #X
 #define CLASS_STR(X) "\\d" MAKE_STR(X)
 #define MAKE_SUB_STR(X) "\\000" MAKE_STR(X)
-#define CLASS_SUB_STR(X, Y) MAKE_STR(X) MAKE_SUB_STR(Y)
+#define CLASS_SUB_STR(X, Y) CLASS_STR(X) MAKE_SUB_STR(Y)
 
 static const char *mediates_file = CLASS_STR(AA_CLASS_FILE);
 static const char *mediates_mount = CLASS_STR(AA_CLASS_MOUNT);

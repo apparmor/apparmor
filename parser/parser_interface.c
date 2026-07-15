@@ -404,7 +404,10 @@ void sd_serialize_xtable(std::ostringstream &buf, const char * const *table)
 	}
 
 	sd_write_array(buf, NULL, count);
-	for (size_t i = 4; i < count + 4; i++) {
+	for (size_t i = 4; i < AA_EXEC_COUNT; i++) {
+		if (!table[i]) {
+			continue;
+		}
 		size_t len = strlen(table[i]) + 1;
 
 		/* if its a namespace make sure the second : is overwritten
@@ -532,7 +535,7 @@ void sd_serialize_profile(std::ostringstream &buf, Profile *profile,
 	sd_serialize_rlimits(buf, &profile->rlimits);
 
 	/* choice to support / downgrade needs to already have been made */
-	if (features_supports_networkv8) {
+	if (features_supports_network_policydb) {
 		/* nothing - encoded in policydb */
 	} else if (profile->net.allow && features_supports_network) {
 		size_t i;

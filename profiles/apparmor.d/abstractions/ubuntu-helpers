@@ -41,6 +41,7 @@ profile sanitized_helper {
   # Allow all networking
   network inet,
   network inet6,
+  network unix,
 
   # Allow all DBus communications
   include <abstractions/dbus-session-strict>

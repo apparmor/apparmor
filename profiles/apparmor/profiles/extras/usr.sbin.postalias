@@ -1,7 +1,7 @@
 # ------------------------------------------------------------------
 #
 #    Copyright (C) 2002-2005 Novell/SUSE
-#    Copyright (C) 2021 Christian Boltz
+#    Copyright (C) 2021-2026 Christian Boltz
 #
 #    This program is free software; you can redistribute it and/or
 #    modify it under the terms of version 2 of the GNU General Public
@@ -13,12 +13,19 @@ abi <abi/4.0>,
 
 include <tunables/global>
 
-/usr/sbin/postalias {
+@{att}=/att/postalias/
+profile postalias /usr/sbin/postalias flags=(attach_disconnected.path=@{att}) {
   include <abstractions/base>
   include <abstractions/kerberosclient>
   include <abstractions/nameservice>
   include <abstractions/consoles>
   include <abstractions/postfix-common>
+
+  @{att}/dev/null              r,
+  @{att}@{run}/systemd/userdb/io.systemd.DynamicUser rw,
+  @{att}@{run}/systemd/userdb/io.systemd.Machine rw,
+  @{att}/systemd/journal/dev-log w,
+
   /etc/aliases                         r,
   /etc/aliases.{lm,}db                 rwlk,
   /etc/postfix                         r,
@@ -38,4 +45,5 @@ include <tunables/global>
 
   # Site-specific additions and overrides. See local/README for details.
   include if exists <local/usr.sbin.postalias>
+  include if exists <local/postalias>
 }

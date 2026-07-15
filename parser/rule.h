@@ -160,10 +160,48 @@ std::ostream &operator<<(std::ostream &os, rule_t &rule);
 typedef std::list<rule_t *> RuleList;
 
 /* Not classes so they can be used in the bison front end */
-typedef enum { AUDIT_UNSPECIFIED, AUDIT_FORCE, AUDIT_QUIET } audit_t;
+typedef enum { AUDIT_UNSPECIFIED, AUDIT_IMPLIED, AUDIT_FORCE, AUDIT_QUIET } audit_t;
 typedef enum { RULE_UNSPECIFIED, RULE_ALLOW, RULE_DENY, RULE_PROMPT } rule_mode_t;
 typedef enum { OWNER_UNSPECIFIED, OWNER_SPECIFIED, OWNER_NOT } owner_t;
 
+class internal_audit_t {
+public:
+	audit_t audit;
+	operator audit_t() const {
+		return audit;
+	}
+
+	internal_audit_t& operator=(const audit_t& rhs) {
+		audit = rhs;
+		return *this;
+	}
+
+	bool operator==(const audit_t& rhs) const {
+		if (rhs == AUDIT_FORCE)
+			return (this->audit == rhs) || (this->audit == AUDIT_IMPLIED);
+		return this->audit == rhs;
+	}
+
+	bool operator!=(const audit_t& rhs) const {
+		return !(*this == rhs);
+	}
+
+	bool operator==(const internal_audit_t& rhs) const {
+		return *this == rhs.audit;
+	}
+
+	bool operator!=(const internal_audit_t& rhs) const {
+		return !(*this == rhs);
+	}
+
+	int operator-(const internal_audit_t& rhs) const {
+		return (int) this->audit - (int) rhs.audit;
+	}
+
+	bool operator<(const internal_audit_t& rhs) const {
+		return this->audit < rhs.audit;
+	}
+};
 
 /* NOTE: we can not have a constructor for class prefixes. This is
  * because it will break bison, and we would need to transition to
@@ -174,7 +212,7 @@ typedef enum { OWNER_UNSPECIFIED, OWNER_SPECIFIED, OWNER_NOT } owner_t;
 class prefixes {
 public:
 	int priority;
-	audit_t audit;
+	internal_audit_t audit;
 	rule_mode_t rule_mode;
 	owner_t owner;
 
@@ -248,7 +286,7 @@ public:
 		int tmp = priority - rhs.priority;
 		if (tmp != 0)
 			return tmp;
-		tmp = (int) audit - (int) rhs.audit;
+		tmp = audit - rhs.audit;
 		if (tmp != 0)
 			return tmp;
 		tmp = (int) rule_mode - (int) rhs.rule_mode;
@@ -300,6 +338,7 @@ public:
 		/* audit conflicts */
 		if (p.audit != AUDIT_UNSPECIFIED) {
 			if (audit != AUDIT_UNSPECIFIED &&
+			    audit != AUDIT_IMPLIED &&
 			    audit != p.audit) {
 				error = "conflicting audit prefix";
 				return false;
@@ -307,7 +346,7 @@ public:
 //			audit = p.audit;
 		}
 
-		/* allow deny conflicts */
+		/* allow deny prompt conflicts */
 		if (p.rule_mode != RULE_UNSPECIFIED) {
 			if (rule_mode != RULE_UNSPECIFIED &&
 			    rule_mode != p.rule_mode) {
@@ -329,11 +368,13 @@ public:
 
 		/* TODO: MOVE this ! */
 		/* does the prefix imply a modifier */
-		if (p.rule_mode == RULE_DENY && p.audit == AUDIT_FORCE) {
+		if ((p.rule_mode == RULE_DENY || rule_mode == RULE_DENY) &&
+		    (p.audit.audit == AUDIT_FORCE || audit.audit == AUDIT_FORCE)) {
 			rule_mode = RULE_DENY;
+			audit = AUDIT_UNSPECIFIED;
 		} else if (p.rule_mode == RULE_DENY) {
 			rule_mode = RULE_DENY;
-			audit = AUDIT_FORCE;
+			audit = AUDIT_IMPLIED;
 		} else if (p.audit != AUDIT_UNSPECIFIED) {
 			audit = p.audit;
 		}

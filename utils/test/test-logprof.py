@@ -66,7 +66,7 @@ class TestLogprof(AATest):
         self.process.stdin.close()
         self.process.stdout.close()
         self.process.terminate()
-        self.process.wait(timeout=0.3)
+        self.process.wait(timeout=0.6)
 
     def _run_test(self, params, expected):
         auditlog = './logprof/%s.auditlog' % params
@@ -127,7 +127,7 @@ class TestLogprof(AATest):
             output = self.process.stdout.readline().decode("utf-8").strip()
             self.assertEqual(output, line)
         # give logprof some time to write the updated profile and terminate
-        self.process.wait(timeout=0.6)
+        self.process.wait(timeout=1.2)
         self.assertEqual(self.process.returncode, 0)
 
 

@@ -145,6 +145,7 @@ int strn_escseq(const char **pos, const char *chrs, size_t n)
 	}
 
 	char c = *(*pos)++;
+	n--; // n > 1 due to test above.
 	switch(c) {
 	case '\\':
 		return '\\';
@@ -184,7 +185,7 @@ int strn_escseq(const char **pos, const char *chrs, size_t n)
 		return c;
 
 	/* unsupported escape sequence, backup to return that char */
-	pos--;
+	(*pos)--;
 	return -1;
 }
 

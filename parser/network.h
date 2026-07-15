@@ -84,6 +84,14 @@
 #define IPV4_SIZE	1
 #define IPV6_SIZE	2
 
+enum class port_type_t {
+	UNSPECIFIED,
+	PRIVILEGED,
+	UNPRIVILEGED,
+	// TDOD allow both??
+	REMOTE,		/* internal only */
+};
+
 struct network_tuple {
 	const char *family_name;
 	unsigned int family;
@@ -132,6 +140,7 @@ public:
 
 	uint16_t from_port = 0;
 	uint16_t to_port = 0;
+	port_type_t port_type = port_type_t::UNSPECIFIED;
 
 	struct ip_address ip;
 
@@ -189,7 +198,7 @@ public:
 		}
 	};
 
-	bool gen_ip_conds(Profile &prof, std::list<std::ostringstream> &streams, ip_conds &entry, bool is_peer, uint16_t port, bool is_port, bool is_cmd);
+	bool gen_ip_conds(Profile &prof, std::list<std::ostringstream> &streams, ip_conds &entry, bool is_peer, bool is_cmd);
 	bool gen_net_rule(Profile &prof, u16 family, unsigned int type_mask, unsigned int protocol);
 	void set_netperm(unsigned int family, unsigned int type, unsigned int protocol);
 	void update_compat_net(void);
@@ -208,6 +217,14 @@ public:
 		}
 		return true;
 	};
+
+	bool add_prefix(const prefixes &p, const char *&error) override {
+		bool rc = dedup_perms_rule_t::add_prefix(p, error);
+		/* update compat net needs to run after adding the prefix */
+		update_compat_net();
+		return rc;
+	}
+
 	virtual ostream &dump(ostream &os);
 	virtual int expand_variables(void);
 	virtual int gen_policy_re(Profile &prof);

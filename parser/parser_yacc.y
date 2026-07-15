@@ -641,9 +641,9 @@ opt_priority: { $$ = 0; }
 		free($3);
 		/* see note on mediates_priority */
 		if (tmp > MAX_POLICY_PRIORITY)
-			yyerror("invalid priority %l > %d", tmp, MAX_POLICY_PRIORITY);
+			yyerror("invalid priority %ld > %d", tmp, MAX_POLICY_PRIORITY);
 		if (tmp < MIN_POLICY_PRIORITY)
-			yyerror("invalid priority %l > %d", tmp, MIN_POLICY_PRIORITY);
+			yyerror("invalid priority %ld > %d", tmp, MIN_POLICY_PRIORITY);
 		$$ = tmp;
 	}
 
@@ -731,9 +731,7 @@ rules: rules opt_prefix network_rule
 	{
 		const char *error;
 		if (!$3->add_prefix($2, error))
-			yyerror(error);
-		/* class members need to be updated after prefix is added */
-		$3->update_compat_net();
+			yyerror("%s", error);
 
 		auto nm_af_unix = $3->network_map.find(AF_UNIX);
 		if (nm_af_unix != $3->network_map.end()) {
@@ -763,27 +761,23 @@ rules:  rules opt_prefix prefix_rule
 	{
 		const char *error;
 		if (!$3->add_prefix($2, error))
-			yyerror(error);
+			yyerror("%s", error);
 		$1->rule_ents.push_back($3);
 		$$ = $1;
 	}
 
 rules:	rules opt_prefix change_profile
 	{
+		const char *error;
 		PDEBUG("matched: rules change_profile\n");
 		PDEBUG("rules change_profile: (%s)\n", $3->name);
 		if (!$3)
 			yyerror(_("Assert: `change_profile' returned NULL."));
 		if ($2.owner != OWNER_UNSPECIFIED)
-			yyerror(_("owner conditional not allowed on unix rules"));
-		if (($2.rule_mode == RULE_DENY) && $2.audit == AUDIT_FORCE) {
-			$3->rule_mode = RULE_DENY;
-		} else if ($2.rule_mode == RULE_DENY) {
-			$3->rule_mode = RULE_DENY;
-			$3->audit = AUDIT_FORCE;
-		} else if ($2.audit != AUDIT_UNSPECIFIED) {
-			$3->audit = $2.audit;
-		}
+			yyerror(_("owner conditional not allowed on change_profile rules"));
+		if (!generic_add_prefix($3, $2, error))
+			yyerror("%s", error);
+
 		add_entry_to_policy($1, $3);
 		$$ = $1;
 	};
@@ -891,7 +885,7 @@ rules: rules TOK_SET TOK_RLIMIT TOK_ID TOK_LE TOK_VALUE opt_id TOK_END_OF_RULE
 				if (!end || $6 == end || $7)
 					yyerror("RLIMIT '%s' invalid value %s %s\n", $4, $6, $7 ? $7 : "");
 				if (tmp < -20 || tmp > 19)
-					yyerror("RLIMIT '%s' out of range (-20 .. 19) %d\n", $4, tmp);
+					yyerror("RLIMIT '%s' out of range (-20 .. 19) %lld\n", $4, tmp);
 				value = tmp + 20;
 				break;
 #endif
@@ -919,7 +913,7 @@ rules: rules TOK_SET TOK_RLIMIT TOK_ID TOK_LE TOK_VALUE opt_id TOK_END_OF_RULE
 				value = tmp;
 				break;
 			default:
-				yyerror("Unknown RLIMIT %d\n", $4);
+				yyerror("Unknown RLIMIT %s\n", $4);
 			}
 		}
 		$1->rlimits.specified |= 1 << limit;
@@ -1041,7 +1035,15 @@ opt_file: { /* nothing */ $$ = false; }
 
 frule:	id_or_var file_perms opt_named_transition TOK_END_OF_RULE
 	{
-		$$ = do_file_rule($1, $2, NULL, $3);
+		if ($3 && ($2 & AA_LINK_BITS) && ($2 & AA_EXEC_BITS)) {
+			// TODO: option to fail on abi check for next release
+			pwarn(WARN_DEPRECATED, _("ambiguous rule specifies both link target and exec transition target. Using as exec transition"));
+			$$ = do_file_rule($1, $2, NULL, $3);
+		} else if ($3 && ($2 & AA_LINK_BITS)) {
+			$$ = do_file_rule($1, $2, $3, NULL);
+		} else {
+			$$ = do_file_rule($1, $2, NULL, $3);
+		}
 	};
 
 frule:	file_perms opt_subset_flag id_or_var opt_named_transition TOK_END_OF_RULE
@@ -1105,6 +1107,9 @@ link_rule: TOK_LINK opt_subset_flag id_or_var TOK_ARROW id_or_var TOK_END_OF_RUL
 		struct cod_entry *entry;
 		PDEBUG("Matched: link tok_id (%s) -> (%s)\n", $3, $5);
 		entry = new_entry($3, AA_LINK_BITS, $5);
+		if (!entry) {
+			yyerror(_("Memory allocation error."));
+		}
 		entry->subset = $2;
 		PDEBUG("rule.entry: link (%s)\n", entry->name);
 		$$ = entry;

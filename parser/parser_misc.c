@@ -752,7 +752,7 @@ perm32_t parse_perms(const char *str_perms)
 	perms = SHIFT_PERMS(tmp, AA_USER_SHIFT);
 	perms |= SHIFT_PERMS(tmp, AA_OTHER_SHIFT);
 	if (perms & ~AA_VALID_PERMS)
-		yyerror(_("Internal error generated invalid perm 0x%llx\n"), perms);
+		yyerror(_("Internal error generated invalid perm 0x%x\n"), perms);
 	return perms;
 }
 
@@ -824,7 +824,7 @@ int parse_X_perms(const char *X, int valid, const char *str_perms, perm32_t *per
 	if (*perms & ~valid) {
 		if (fail)
 			yyerror(_("Internal error generated invalid %s perm 0x%x\n"),
-				X, perms);
+				X, *perms);
 		else
 			return 0;
 	}
@@ -972,7 +972,7 @@ bool parse_label(bool *_stack, char **_ns, char **_name,
 alloc_fail:
 	err = _("Memory allocation error.");
 	if (yyerr)
-		yyerror(err);
+		yyerror("%s", err);
 	else
 		fprintf(stderr, "%s", err);
 
@@ -997,6 +997,7 @@ struct cod_entry *new_entry(char *id, perm32_t perms, char *link_id)
 	entry->pattern_type = ePatternInvalid;
 	entry->pat.regex = NULL;
 
+	entry->subset = false;
 	entry->next = NULL;
 
 	PDEBUG(" Insertion of: (%s)\n", entry->name);
@@ -1024,6 +1025,7 @@ struct cod_entry *copy_cod_entry(struct cod_entry *orig)
 	entry->pat.regex = NULL;
 
 	entry->next = orig->next;
+	entry->subset = orig->subset;
 
 	return entry;
 
@@ -1090,7 +1092,7 @@ void debug_cod_entries(struct cod_entry *list)
 			printf("\tName:\tNULL\n");
 
 		if (AA_LINK_BITS & item->perms)
-			printf("\tlink:\t(%s)\n", item->link_name ? item->link_name : "/**");
+			printf("\tlink: subset=%d\t(%s)\n", item->subset, item->link_name ? item->link_name : "/**");
 
 	}
 }
@@ -1111,29 +1113,58 @@ bool check_x_qualifier(struct cod_entry *entry, const char *&error)
 	return true;
 }
 
+/* change_profile follows the same rules as file add_prefix except for
+ * owner and check_x_qualifier, so the generic elements were
+ * extracted while cod_entry is not converted to rule_t */
+bool generic_add_prefix(struct cod_entry *entry, const prefixes &p, const char *&error)
+{
+	/* apply rule mode */
+	if (p.rule_mode != RULE_UNSPECIFIED) {
+		if (entry->rule_mode != RULE_UNSPECIFIED &&
+		    entry->rule_mode != p.rule_mode) {
+			error = "conflicting mode prefix";
+			return false;
+		}
+		entry->rule_mode = p.rule_mode;
+	}
+
+
+	if (p.priority != 0)
+		entry->priority = p.priority;
+
+	if (p.audit != AUDIT_UNSPECIFIED) {
+		if (entry->audit != AUDIT_UNSPECIFIED &&
+		    entry->audit != AUDIT_IMPLIED &&
+		    entry->audit != p.audit) {
+			error = "conflicting audit prefix";
+			return false;
+		}
+	}
+	/* implied audit modifier */
+	if ((p.rule_mode == RULE_DENY || entry->rule_mode == RULE_DENY) &&
+	    (p.audit.audit == AUDIT_FORCE || entry->audit.audit == AUDIT_FORCE)) {
+		entry->rule_mode = RULE_DENY;
+		entry->audit = AUDIT_UNSPECIFIED;
+	} else if (p.rule_mode == RULE_DENY) {
+		entry->rule_mode = RULE_DENY;
+		entry->audit = AUDIT_IMPLIED;
+	} else if (p.audit != AUDIT_UNSPECIFIED) {
+		entry->audit = p.audit;
+	}
+	return true;
+}
+
 // cod_entry version of ->add_prefix here just as file rules aren't converted yet
 bool entry_add_prefix(struct cod_entry *entry, const prefixes &p, const char *&error)
 {
-	/* modifiers aren't correctly stored for cod_entries yet so
-	 * we can't conflict on them easily. Leave that until conversion
-	 * to rule_t
-	 */
-	/* apply rule mode */
-	entry->rule_mode = p.rule_mode;
+	if (!generic_add_prefix(entry, p, error))
+		return false;
 
 	/* apply owner/other */
-	if (p.owner == 1)
+	if (p.owner == OWNER_SPECIFIED)
 		entry->perms &= (AA_USER_PERMS | AA_SHARED_PERMS);
-	else if (p.owner == 2)
+	else if (p.owner == OWNER_NOT)
 		entry->perms &= (AA_OTHER_PERMS | AA_SHARED_PERMS);
-
-	entry->priority = p.priority;
-
-	/* implied audit modifier */
-	if (p.audit == AUDIT_FORCE && (entry->rule_mode != RULE_DENY))
-		entry->audit = AUDIT_FORCE;
-	else if (p.audit != AUDIT_FORCE && (entry->rule_mode == RULE_DENY))
-		entry->audit = AUDIT_FORCE;
 
 	return check_x_qualifier(entry, error);
 }

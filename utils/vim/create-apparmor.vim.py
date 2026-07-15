@@ -117,48 +117,54 @@ def my_repl(matchobj):
     return matchobj.group(0)
 
 
-def create_file_rule(highlighting, permissions, comment, denyrule=0):
+def create_file_rule(highlighting, permissions, comment, denyrule=0, transition = 0):
 
     if denyrule == 0:
         keywords = '@@auditdenyowner@@'
     else:
         keywords = '@@audit_DENY_owner@@'  # TODO: not defined yet, will be '(audit\s+)?deny\s+(owner\s+)?'
 
+    if transition:
+        transition = '@@TRANSITION@@'
+    else:
+        transition = ''
+
     sniplet = ''
     sniplet = sniplet + "\n" + '" ' + comment + "\n"
 
-    prefix = r'syn match  ' + highlighting + r' /\v^\s*' + keywords
-    suffix = r'@@EOL@@/ contains=sdGlob,sdComment nextgroup=@sdEntry,sdComment,sdError,sdInclude' + "\n"
-    # filename without quotes
-    sniplet = sniplet + prefix + r'@@FILENAME@@\s+' + permissions + suffix
-    # filename with quotes
-    sniplet = sniplet + prefix + r'"@@FILENAME@@"\s+' + permissions + suffix
-    # filename without quotes, reverse syntax
-    sniplet = sniplet + prefix + permissions + r'\s+@@FILENAME@@' + suffix
-    # filename with quotes, reverse syntax
-    sniplet = sniplet + prefix + permissions + r'\s+"@@FILENAME@@"+' + suffix
+    for file_kw in ['', r'file\s+']:
+        prefix = r'syn match  ' + highlighting + r' /\v^\s*' + file_kw + keywords
+        suffix = r'@@EOL@@/ contains=sdGlob,sdComment nextgroup=@sdEntry,sdComment,sdError,sdInclude' + "\n"
+
+        for fn_quotes in ['', '"']:
+            quoted_filename = fn_quotes + r'@@FILENAME@@' + fn_quotes  # depending on fn_quotes, might also not be quoted
+            # trailing permissions syntax
+            sniplet = sniplet + prefix + quoted_filename + r'\s+' + permissions + transition + suffix
+            # leading permissions
+            sniplet = sniplet + prefix + permissions + r'\s+' + quoted_filename + transition + suffix
 
     return sniplet
 
 
 filerule = ''
-filerule = filerule + create_file_rule('sdEntryWriteExec ', r'(l|r|w|a|m|k|[iuUpPcC]x)+@@TRANSITION@@', 'write + exec/mmap - danger! (known bug: accepts aw to keep things simple)')
-filerule = filerule + create_file_rule('sdEntryUX',  r'(r|m|k|ux|pux)+@@TRANSITION@@',  'ux(mr) - unconstrained entry, flag the line red. also includes pux which is unconstrained if no profile exists')
-filerule = filerule + create_file_rule('sdEntryUXe', r'(r|m|k|Ux|PUx)+@@TRANSITION@@',  'Ux(mr) and PUx(mr) - like ux + clean environment')
-filerule = filerule + create_file_rule('sdEntryPX',  r'(r|m|k|px|cx|pix|cix)+@@TRANSITION@@',  'px/cx/pix/cix(mrk) - standard exec entry, flag the line blue')
-filerule = filerule + create_file_rule('sdEntryPXe', r'(r|m|k|Px|Cx|Pix|Cix)+@@TRANSITION@@', 'Px/Cx/Pix/Cix(mrk) - like px/cx + clean environment')
+filerule = filerule + create_file_rule('sdEntryWriteExec ', r'[lrwamk]*[iuUpPcC][iUu]?x[lrwamk]*', 'write + exec/mmap - danger! (known bug: accepts aw to keep things simple)', transition=1)
+filerule = filerule + create_file_rule('sdEntryUX',  r'(r|m|k|ux|pux)+',  'ux(mr) - unconfined entry, flag the line red. also includes pux which is unconfined if no profile exists', transition=1)
+filerule = filerule + create_file_rule('sdEntryUXe', r'(r|m|k|Ux|PUx)+',  'Ux(mr) and PUx(mr) - like ux + clean environment', transition=1)
+filerule = filerule + create_file_rule('sdEntryPX',  r'(r|m|k|px|cx|pix|cix)+',  'px/cx/pix/cix(mrk) - standard exec entry, flag the line blue', transition=1)
+filerule = filerule + create_file_rule('sdEntryPXe', r'(r|m|k|Px|Cx|Pix|Cix)+', 'Px/Cx/Pix/Cix(mrk) - like px/cx + clean environment', transition=1)
 filerule = filerule + create_file_rule('sdEntryIX',  r'(r|m|k|ix)+',  'ix(mr) - standard exec entry, flag the line green')
 filerule = filerule + create_file_rule('sdEntryM',   r'(r|m|k)+',  'mr - mmap with PROT_EXEC')
 
-filerule = filerule + create_file_rule('sdEntryM',   r'(r|m|k|x)+',  'special case: deny x is allowed (does not need to be ix, px, ux or cx)', 1)
+filerule = filerule + create_file_rule('sdEntryM',   r'(r|m|k|x)+',  'special case: deny x is allowed (does not need to be ix, px, ux or cx)', denyrule=1)
 # syn match  sdEntryM /@@DENYFILE@@(r|m|k|x)+@@EOL@@/ contains=sdGlob,sdComment nextgroup=@sdEntry,sdComment,sdError,sdInclude
 
 
 filerule = filerule + create_file_rule('sdError',    r'\S*(w\S*a|a\S*w)\S*',  'write + append is an error')
-filerule = filerule + create_file_rule('sdEntryW',   r'(l|r|w|k)+',  'write entry, flag the line yellow')
-filerule = filerule + create_file_rule('sdEntryW',   r'(l|r|a|k)+',  'append entry, flag the line yellow')
-filerule = filerule + create_file_rule('sdEntryK',   r'[rlk]+',  'read entry + locking, currently no highlighting')
-filerule = filerule + create_file_rule('sdEntryR',   r'[rl]+',  'read entry, no highlighting')
+for writeperm in ['a', 'w']:
+    filerule = filerule + create_file_rule('sdEntryW',   r'[r' + writeperm + 'k]*l[r' + writeperm + 'k]*',  'link (and optionally write) entry, flag the line yellow', transition=1)
+    filerule = filerule + create_file_rule('sdEntryW',   r'[r' + writeperm + 'k]+',  'write entry, flag the line yellow')
+filerule = filerule + create_file_rule('sdEntryK',   r'[rk]+',  'read entry + locking, currently no highlighting')
+filerule = filerule + create_file_rule('sdEntryR',   r'r+',  'read entry, no highlighting')
 
 # " special case: deny x is allowed (doesn't need to be ix, px, ux or cx)
 # syn match  sdEntryM /@@DENYFILE@@(r|m|k|x)+@@EOL@@/ contains=sdGlob,sdComment nextgroup=@sdEntry,sdComment,sdError,sdInclude

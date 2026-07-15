@@ -685,11 +685,18 @@ void DFA::minimize(optflags const &opts)
 	list<Partition *> partitions;
 
 	/* Set up the initial partitions
-	 * minimum of - 1 non accepting, and 1 accepting
+	 * minimum of 3: 1 trap (nonmatching), 1 start, and 1 non accepting or 1 accepting
 	 */
 	int accept_count = 0;
 	int final_accept = 0;
 	for (Partition::iterator i = states.begin(); i != states.end(); i++) {
+		if (*i == start) {
+			Partition *part = new Partition();
+			part->push_back(*i);
+			partitions.push_back(part);
+			(*i)->partition = part;
+			continue;
+		}
 		PermMap::iterator p = perm_map.find((*i)->perms);
 		if (p == perm_map.end()) {
 			Partition *part = new Partition();

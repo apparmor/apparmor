@@ -101,6 +101,9 @@ void all_rule::add_implied_rules(Profile &prof)
 		if (!path)
 			yyerror(_("Memory allocation error."));
 		entry = new_entry(path, perms, NULL);
+		if (!entry) {
+			yyerror(_("Memory allocation error."));
+		}
 		if (!entry_add_prefix(entry, *prefix, error)) {
 			yyerror(_("%s"), error);
 		}
@@ -117,12 +120,11 @@ void all_rule::add_implied_rules(Profile &prof)
 		// TODO:
 		// need a better way to make sure the prefix is intialized
 		// without a constructor or copy constructor
-		ix_prefix.priority = prefix->priority -1;
+		ix_prefix.priority = prefix->priority - 1;
 		ix_prefix.audit = prefix->audit;
 		ix_prefix.rule_mode = prefix->rule_mode;
 		ix_prefix.owner = prefix->owner;
 
-		ix_prefix.priority -= 1;
 		if (rule_mode != RULE_DENY)
 			perms |= AA_EXEC_INHERIT;
 		/* duplicate to other permission set */
@@ -130,6 +132,9 @@ void all_rule::add_implied_rules(Profile &prof)
 		if (!path)
 			yyerror(_("Memory allocation error."));
 		entry = new_entry(path, perms, NULL);
+		if (!entry) {
+			yyerror(_("Memory allocation error."));
+		}
 		if (!entry_add_prefix(entry, ix_prefix, error)) {
 			yyerror(_("%s"), error);
 		}

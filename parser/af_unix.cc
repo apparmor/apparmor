@@ -101,9 +101,14 @@ unix_rule::unix_rule(unsigned int type_p, audit_t audit_p, rule_mode_t rule_mode
 {
 	if (type_p != 0xffffffff) {
 		sock_type_n = type_p;
-		sock_type = strdup(net_find_type_name(type_p));
-		if (!sock_type)
+		const char *type_name = net_find_type_name(type_p);
+		if (!type_name) {
 			yyerror("socket rule: invalid socket type '%d'", type_p);
+		}
+		sock_type = strdup(type_name);
+		if (!sock_type) {
+			yyerror(_("Memory allocation error."));
+		}
 	}
 	perms = AA_VALID_NET_PERMS;
 	audit = audit_p;
@@ -204,7 +209,7 @@ void unix_rule::downgrade_rule(Profile &prof) {
 		const char *error;
 		network_rule *netv8 = new network_rule(perms, AF_UNIX, sock_type_n);
 		if(!netv8->add_prefix({0, audit, rule_mode, owner}, error))
-			yyerror(error);
+			yyerror("%s", error);
 		prof.rule_ents.push_back(netv8);
 	} else {
 		/* deny rules have to be dropped because the downgrade makes

@@ -36,7 +36,7 @@ EXTRAS_ABSTRACTIONS_SOURCE=./apparmor/profiles/extras/abstractions
 ifdef USE_SYSTEM
     PYTHONPATH=
     PARSER?=apparmor_parser
-    LOGPROF?=aa-logprof
+    LOGPROF?=aa-logprof --no-check-mountpoint
 else
     # PYTHON_DIST_BUILD_PATH based on libapparmor/swig/python/test/Makefile.am
     PYTHON_DIST_BUILD_PATH = ../libraries/libapparmor/swig/python/build/$$($(PYTHON) ../libraries/libapparmor/swig/python/test/buildpath.py)
@@ -45,7 +45,7 @@ else
     PYTHONPATH=../utils/:$(PYTHON_DIST_BUILD_PATH)
     PARSER?=../parser/apparmor_parser
     # use ../utils logprof
-    LOGPROF?=LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) PYTHONPATH=$(PYTHONPATH) $(PYTHON) ../utils/aa-logprof --configdir ../utils/
+    LOGPROF?=LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) PYTHONPATH=$(PYTHONPATH) $(PYTHON) ../utils/aa-logprof --no-check-mountpoint --configdir ../utils/test
 endif
 
 # $(PWD) is wrong when using "make -C profiles" - explicitly set it here to get the right value
@@ -122,20 +122,20 @@ check-parser: test-dependencies
 	@echo "*** Checking profiles from ${PROFILES_SOURCE} against apparmor_parser"
 	$(Q)for profile in $$(find ${PROFILES_SOURCE} -maxdepth 1 -type f) ; do \
 		[ -n "${VERBOSE}" ] && echo "Testing $${profile}" ; \
-		${PARSER} --config-file=../parser/tst/parser.conf -S -b ${PROFILES_SOURCE} $${profile} > /dev/null || exit 1; \
+		${PARSER} --config-file=../parser/tst/parser.conf -QK -S -b ${PROFILES_SOURCE} $${profile} > /dev/null || exit 1; \
 	done
 
 	@echo "*** Checking profiles from ${EXTRAS_SOURCE} against apparmor_parser"
 	$(Q)for profile in $$(find ${EXTRAS_SOURCE} -maxdepth 1 -type f -not -name README) ; do \
 		[ -n "${VERBOSE}" ] && echo "Testing $${profile}" ; \
-		${PARSER} --config-file=../parser/tst/parser.conf -S -b ${EXTRAS_SOURCE} -I ${PROFILES_SOURCE} $${profile} > /dev/null || exit 1; \
+		${PARSER} --config-file=../parser/tst/parser.conf -QK -S -b ${EXTRAS_SOURCE} -I ${PROFILES_SOURCE} $${profile} > /dev/null || exit 1; \
 	done
 
 	@echo "*** Checking abstractions from ${ABSTRACTIONS_SOURCE} against apparmor_parser"
 	$(Q)for abstraction in $$(find ${ABSTRACTIONS_SOURCE} -maxdepth 1 -type f -printf '%P\n') ; do \
 		[ -n "${VERBOSE}" ] && echo "Testing ${ABSTRACTIONS_SOURCE}/$${abstraction}" ; \
 		echo "abi <abi/4.0>, include <tunables/global> profile test { include <abstractions/$${abstraction}> }" \
-		| ${PARSER} --config-file=../parser/tst/parser.conf -S -b ${PROFILES_SOURCE} > /dev/null \
+		| ${PARSER} --config-file=../parser/tst/parser.conf -QK -S -b ${PROFILES_SOURCE} > /dev/null \
 		|| exit 1; \
 	done
 
@@ -143,7 +143,7 @@ check-parser: test-dependencies
 	$(Q)for abstraction in $$(find ${EXTRAS_ABSTRACTIONS_SOURCE} -maxdepth 1 -type f -printf '%P\n') ; do \
 		[ -n "${VERBOSE}" ] && echo "Testing ${EXTRAS_ABSTRACTIONS_SOURCE}/$${abstraction}" ; \
 		echo "abi <abi/4.0>, include <tunables/global> profile test { include <abstractions/$${abstraction}> }" \
-		| ${PARSER} --config-file=../parser/tst/parser.conf -S -b ${PROFILES_SOURCE} -I ${EXTRAS_SOURCE} > /dev/null \
+		| ${PARSER} --config-file=../parser/tst/parser.conf -QK -S -b ${PROFILES_SOURCE} -I ${EXTRAS_SOURCE} > /dev/null \
 		|| exit 1; \
 	done
 

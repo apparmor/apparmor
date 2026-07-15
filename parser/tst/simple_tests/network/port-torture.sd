@@ -1,0 +1,27 @@
+#
+#=DESCRIPTION network port range torture test
+#=EXRESULT PASS
+#
+/usr/bin/foo {
+  network port=0-65534,
+  network port=0-65535,
+  network port=1-65534,
+  network port=1-65535,
+  network peer=(port=0-65534),
+  network peer=(port=0-65535),
+  network peer=(port=1-65534),
+  network peer=(port=1-65535),
+  network port=0-65534 peer=(port=0-65534),
+  network port=0-65535 peer=(port=0-65535),
+  network port=1-65534 peer=(port=1-65534),
+  network port=1-65535 peer=(port=1-65535),
+  network ip=127.0.0.1 port=0-65534,
+  network ip=127.0.0.1 port=0-65535,
+  network ip=127.0.0.1 port=1-65534,
+  network ip=127.0.0.1 port=1-65535,
+  network ip=127.0.0.1 port=0-65534 peer=(ip=127.0.0.2 port=0-65534),
+  network ip=127.0.0.1 port=0-65535 peer=(ip=127.0.0.2 port=0-65535),
+  network ip=127.0.0.1 port=1-65534 peer=(ip=127.0.0.2 port=1-65534),
+  network ip=127.0.0.1 port=1-65535 peer=(ip=127.0.0.2 port=1-65535),
+
+}

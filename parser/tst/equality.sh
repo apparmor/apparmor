@@ -636,6 +636,34 @@ for audit in "" "audit" ; do
 	done
 done
 
+# owner block prefixes must not clobber inner file rule modes
+# block rules currently do not support priority at the block level
+# once that is added combinations with priority at the block level should
+# be added
+verify_binary_equality "'$p1'x'$p2' owner block preserves prompt mode on file rules" \
+		"/t { $p1 prompt owner /foo r, }" \
+		"/t { owner { $p2 prompt /foo r, } }"
+
+verify_binary_equality "'$p1'x'$p2' owner block preserves deny mode on file rules" \
+		"/t { $p1 deny owner /foo r, }" \
+		"/t { owner { $p2 deny /foo r, } }"
+
+verify_binary_equality "'$p1'x'$p2' owner block preserves prompt mode on link rules" \
+		"/t { $p1 prompt owner link /a -> /b, }" \
+		"/t { owner { $p2 prompt link /a -> /b, } }"
+
+verify_binary_equality "'$p1'x'$p2' owner block preserves deny mode on link rules" \
+		"/t { $p1 deny owner link /a -> /b, }" \
+		"/t { owner { $p2 deny link /a -> /b, } }"
+
+# owner block prefixes must not clobber explicit inner priorities
+# only run this once since this check carries its own explicit priority
+if [ -z "$p1" ] && [ -z "$p2" ]; then
+	verify_binary_equality "owner block preserves explicit inner priority on file rules" \
+			"/t { priority=1 owner /* r, audit deny owner /foo r, }" \
+			"/t { owner { priority=1 /* r, audit deny /foo r, } }"
+fi
+
 #Test rule overlap for x most specific match
 for perm1 in "ux" "Ux" "px" "Px" "cx" "Cx" "ix" "pux" "Pux" \
 	     "pix" "Pix" "cux" "Cux" "cix" "Cix" "px -> b" \
@@ -1095,6 +1123,63 @@ verify_binary_equality "'$p1'x'$p2' dbus slash filtering for paths" \
 }
 
 
+test_block_configurations()
+{
+	######## prefix ####### allow, deny, prompt, audit, owner
+	### allow ###
+	# deny and prompt not used since it conflicts with allow
+	verify_binary_equality "allow expands correctly - file" \
+			       "/t { allow { /foo r, audit /bar w, owner /baz rw, } }" \
+			       "/t { allow /foo r, audit /bar w, owner /baz rw, }"
+
+	verify_binary_equality "allow expands correctly in subblock - file" \
+			       "/t { allow { { /foo r, audit /bar w, owner /baz rw, } } }" \
+			       "/t { allow /foo r, audit /bar w, owner /baz rw, }"
+
+	### deny ###
+	# allow and prompt  not used since it conflicts with deny
+	verify_binary_equality "deny expands correctly - file" \
+			       "/t { deny { /foo r, audit /bar w, owner /baz rw, } }" \
+			       "/t { deny /foo r, audit deny /bar w, deny owner /baz rw, }"
+
+	verify_binary_equality "deny expands correctly in subblock - file" \
+			       "/t { deny { { /foo r, audit /bar w, owner /baz rw, } } }" \
+			       "/t { deny /foo r, audit deny /bar w, deny owner /baz rw, }"
+
+	### prompt ###
+	# allow and deny not used since it conflicts with prompt
+	verify_binary_equality "prompt expands correctly - file" \
+			       "/t { prompt { /foo r, audit /bar w, owner /baz rw, } }" \
+			       "/t { prompt /foo r, audit prompt /bar w, prompt owner /baz rw, }"
+
+	verify_binary_equality "prompt expands correctly in subblock - file" \
+			       "/t { prompt { { /foo r, audit /bar w, owner /baz rw, } } }" \
+			       "/t { prompt /foo r, audit prompt /bar w, prompt owner /baz rw, }"
+
+	### audit ###
+	verify_binary_equality "audit expands correctly - file" \
+			       "/t { audit { /foo r, allow /foo w, deny /bar r, audit /bar w, prompt /baz r, owner /baz w, } }" \
+			       "/t { audit /foo rw, audit deny /bar r, audit /bar w, audit prompt /baz r, audit owner /baz w, }"
+
+	verify_binary_equality "audit expands correctly in subblock - file" \
+			       "/t { audit { { /foo r, allow /foo w, deny /bar r, audit /bar w, prompt /baz r, owner /baz w, } } }" \
+			       "/t { audit /foo rw, audit deny /bar r, audit /bar w, audit prompt /baz r, audit owner /baz w, }"
+
+	### owner ###
+	verify_binary_equality "owner expands correctly - file" \
+			       "/t { owner { /foo r, allow /foo w, deny /bar r, audit /bar w, prompt /baz r, owner /baz w, } }" \
+			       "/t { owner /foo rw, deny owner /bar r, audit owner /bar w, prompt owner /baz r, owner /baz w, }"
+
+	verify_binary_equality "owner expands correctly in subblock - file" \
+			       "/t { owner { { /foo r, allow /foo w, deny /bar r, audit /bar w, prompt /baz r, owner /baz w, } } }" \
+			       "/t { owner /foo rw, deny owner /bar r, audit owner /bar w, prompt owner /baz r, owner /baz w, }"
+
+	######## all rules #######
+	verify_binary_equality "all expands correctly" \
+			       "/t { all, }" \
+			       "/t { unix, dbus, io_uring, mqueue, ptrace, signal, userns, mount, remount, umount, pivot_root, network, /{**,} rwlkm, priority=-1 /{**,} ix, capability, }"
+}
+
 run_tests()
 {
 	printf "Equality Tests:\n"
@@ -1148,6 +1233,58 @@ run_tests()
 				 network peer=(port=3458), \
 				 network peer=(port=3459), \
 				 network peer=(port=3460), }"
+
+	    verify_binary_equality "network port bind range" \
+			   "/t { network bind port=1021-1023, }" \
+			   "/t { network bind port=1021, \
+				 network bind port=1022, \
+				 network bind port=1023, }"
+
+	    verify_binary_equality "network port bind range cross 1024" \
+			   "/t { network bind port=1023-1024, }" \
+			   "/t { network bind port=1023, \
+				 network bind port=1024, }"
+
+	    verify_binary_equality "network port bind range cross 1024 med" \
+			   "/t { network bind port=769-1278, }" \
+			   "/t { network bind port=769-1023, \
+				 network bind port=1024-1278, }"
+
+	    verify_binary_equality "network port bind range cross 1024 large" \
+			   "/t { network bind port=769-8191, }" \
+			   "/t { network bind port=769-1023, \
+				 network bind port=1024-8191, }"
+
+	    verify_binary_equality "network port range cross 1024" \
+			   "/t { network port=1023-1024, }" \
+			   "/t { network port=1023, \
+				 network port=1024, }"
+
+	    verify_binary_equality "network port range cross 1024 med" \
+			   "/t { network port=769-1278, }" \
+			   "/t { network port=769-1023, \
+				 network port=1024-1278, }"
+
+	    verify_binary_equality "network port range cross 1024 large" \
+			   "/t { network port=769-8191, }" \
+			   "/t { network port=769-1023, \
+				 network port=1024-8191, }"
+
+	    verify_binary_equality "network port peer range cross 1024" \
+			   "/t { network peer=(port=1023-1024), }" \
+			   "/t { network peer=(port=1023), \
+				 network peer=(port=1024), }"
+
+	    verify_binary_equality "network port peer range cross 1024 med" \
+			   "/t { network peer=(port=769-1278), }" \
+			   "/t { network peer=(port=769-1023), \
+				 network peer=(port=1024-1278), }"
+
+	    verify_binary_equality "network port range cross 1024 large" \
+			   "/t { network peer=(port=769-8191), }" \
+			   "/t { network peer=(port=769-1023), \
+				 network peer=(port=1024-8191), }"
+
 
 	    verify_binary_inequality "network port range allows more than single port" \
 			     "/t { network port=3456-3460, }" \
@@ -1204,6 +1341,8 @@ run_tests()
 				"/t { /{bin/,#value} r, }" \
 				"@{BAR}=bin/   \#value
 					/t { /@{BAR} r, }"
+
+	test_block_configurations
 
 	# verify combinations of different priority levels
 	# for single rule comparisons, rules should keep same expected result

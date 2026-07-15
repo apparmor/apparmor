@@ -123,7 +123,7 @@ struct cod_entry {
 	Profile *prof;		 	/* Special profile defined
 					 * just for this executable */
 	perm32_t perms;			/* perms is 'or' of AA_* bits */
-	audit_t audit;
+	internal_audit_t audit;
 	rule_mode_t rule_mode;
 
 	bool alias_ignore;		/* ignore for alias processing */
@@ -342,9 +342,10 @@ extern int kernel_load;
 extern int kernel_supports_setload;
 extern int features_supports_network;
 extern int features_supports_networkv8;
+extern bool features_supports_network_policydb;
 extern int features_supports_inet;
 extern int kernel_supports_policydb;
-extern int kernel_supports_diff_encode;
+extern bool kernel_supports_diff_encode;
 extern int features_supports_mount;
 extern bool features_supports_detached_mount;
 extern int features_supports_dbus;
@@ -409,7 +410,7 @@ extern int mru_skip_cache;
 extern FILE *yyin;
 extern void yyrestart(FILE *fp);
 extern int yyparse(void);
-extern void yyerror(const char *msg, ...);
+extern void yyerror(const char *msg, ...) __attribute__((noreturn, format(printf, 1, 2)));
 extern int yylex(void);
 
 /* parser_include.c */
@@ -475,6 +476,7 @@ extern struct cod_entry *copy_cod_entry(struct cod_entry *cod);
 extern void free_cod_entries(struct cod_entry *list);
 void debug_cod_entries(struct cod_entry *list);
 bool check_x_qualifier(struct cod_entry *entry, const char *&error);
+bool generic_add_prefix(struct cod_entry *entry, const prefixes &p, const char *&error);
 bool entry_add_prefix(struct cod_entry *entry, const prefixes &p, const char *&error);
 
 
