@@ -40,6 +40,7 @@ profile unix-chkpwd /{,usr/}{,s}bin/unix_chkpwd flags=(attach_disconnected.path=
 
   # disconnected paths - their non-disconnected counterpart is allowed via abstractions
   /att/unix-chkpwd/run/authd.sock rw,
+  /att/unix-chkpwd/run/nslcd/socket rw,
   /att/unix-chkpwd/run/systemd/journal/dev-log w,
   /att/unix-chkpwd/run/systemd/userdb/io.systemd.DynamicUser rw,
   /att/unix-chkpwd/run/systemd/userdb/org.gnome.DisplayManager rw,
