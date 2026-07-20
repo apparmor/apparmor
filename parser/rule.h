@@ -18,12 +18,16 @@
 #ifndef __AA_RULE_H
 #define __AA_RULE_H
 
-#include <cstdint>
+#include <stddef.h>
+
 #include <list>
 #include <ostream>
 
 #include "perms.h"
 #include "policydb.h"
+
+class perms_rule_t;
+class prefix_rule_t;
 
 enum class prompt_compat_t : int {
 	UNKNOWN = 0,

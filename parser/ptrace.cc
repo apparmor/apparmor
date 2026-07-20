@@ -16,9 +16,13 @@
  *   Ltd.
  */
 
+#include "libapparmor_re/aare_rules.h"
 #include "parser.h"
+#include "policydb.h"
 #include "profile.h"
 #include "ptrace.h"
+
+#include <string.h>
 
 #include <iomanip>
 #include <string>

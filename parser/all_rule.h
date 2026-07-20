@@ -18,9 +18,9 @@
 #ifndef __AA_ALL_H
 #define __AA_ALL_H
 
+#include "immunix.h"
 #include "rule.h"
-
-#include <libintl.h>
+#include "sys/apparmor.h"
 
 #ifndef _
 #define _(s) gettext(s)

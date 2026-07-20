@@ -21,17 +21,20 @@
 #ifndef __LIBAA_RE_RULES_H
 #define __LIBAA_RE_RULES_H
 
+#include <map>
+#include <utility>
 #include <vector>
+
+#include <stddef.h>
 
 #include <stdint.h>
 
-#include "../common_optarg.h"
-#include "apparmor_re.h"
-#include "chfa.h"
 #include "expr-tree.h"
-#include "../immunix.h"
+#include "../common_flags.h"  // for optflags
 #include "../perms.h"
 #include "../rule.h"
+
+class CHFA;
 
 class UniquePerm final {
 public:

@@ -19,9 +19,11 @@
 #ifndef __AA_SIGNAL_H
 #define __AA_SIGNAL_H
 
-#include "parser.h"
+#include <stdlib.h>
+
+#include <set>
+
 #include "rule.h"
-#include "profile.h"
 
 
 #define AA_MAY_SEND			(1 << 1)

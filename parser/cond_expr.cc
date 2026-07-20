@@ -18,9 +18,13 @@
 
 #include <algorithm>
 
+#include <errno.h>
+#include <stdlib.h>
+
 #include "cond_expr.h"
 #include "parser.h"
 #include "symtab.h"
+#include "variable.h"
 
 cond_expr::cond_expr(bool result):
 	result(result)

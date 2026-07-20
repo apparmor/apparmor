@@ -18,16 +18,18 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <sys/apparmor.h>
 
 #include <iomanip>
 #include <string>
 #include <sstream>
 #include <unordered_map>
+#include <utility>
 
+#include "immunix.h"
+#include "libapparmor_re/aare_rules.h"
 #include "parser.h"
+#include "policydb.h"
 #include "profile.h"
-#include "parser_yacc.h"
 #include "signal.h"
 
 using namespace std;

@@ -30,8 +30,6 @@
 #include <iostream>
 
 #include <assert.h>
-#include <limits.h>
-#include <stdint.h>
 
 #include "expr-tree.h"
 enum class prompt_compat_t : int;

@@ -85,10 +85,12 @@ endif
 
 
 # Internationalization support. Define a package and a LOCALEDIR
-EXTRA_CXXFLAGS+=-DPACKAGE=\"${NAME}\" -DLOCALEDIR=\"${LOCALEDIR}\"
+EXTRA_DEFINES=-DPACKAGE=\"${NAME}\" -DLOCALEDIR=\"${LOCALEDIR}\"
 
 # Config directory (default /etc/apparmor; overridable at build time for packaging)
-EXTRA_CXXFLAGS+=-DCONFDIR=\"${CONFDIR}\"
+EXTRA_DEFINES+=-DCONFDIR=\"${CONFDIR}\"
+
+EXTRA_CXXFLAGS+=${EXTRA_DEFINES}
 
 SRCS = parser_common.c parser_include.c parser_interface.c parser_lex.c \
        parser_main.c parser_misc.c parser_merge.c parser_symtab.c \
@@ -410,6 +412,12 @@ errnos.h:
 	echo '#include <errno.h>' > dump.c
 	$(CC) $(CPPFLAGS) -E -dD dump.c | $(AWK) '/^#define E/ { printf "{ \"%s\", %s },\n", $$2, $$2 }' > errnos.h
 	rm -f dump.c
+
+.PHONY: check-includes
+check-includes:
+	# intended for manual review of the output
+	# Note the -D DEBUG to ensure that debugging-only includes get honored
+	ret=0; for file in *.c *.cc *.h libapparmor_re/*.c libapparmor_re/*.cc libapparmor_re/*.h ; do include-what-you-use  -Xiwyu --error ${EXTRA_DEFINES} $(INCLUDE_APPARMOR) -D DEBUG $$file || ret=$$? ; done; exit $$ret
 
 .SILENT: check
 .PHONY: check

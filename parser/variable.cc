@@ -15,10 +15,17 @@
  *   along with this program; if not, contact Canonical Ltd.
  */
 
+#include <errno.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+
 #include <cctype>
+#include <cstdlib>
 #include <list>
 #include <tuple>
 
+#include "parser.h"
 #include "variable.h"
 #include "symtab.h"
 

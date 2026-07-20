@@ -22,7 +22,6 @@
 #define __AA_COMMON_OPTARG_H
 
 #include "common_flags.h"
-#include "libapparmor_re/apparmor_re.h"
 
 
 /*

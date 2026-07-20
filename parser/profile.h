@@ -18,22 +18,29 @@
 #define aa_unused __attribute__ ((unused))
 #endif
 
-#include <set>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+
+#include <algorithm>
+#include <list>
 #include <vector>
 #include <string>
 #include <iostream>
-#include <sstream>
 #include <map>
 
 #include "capability.h"
 #include "parser.h"
 #include "rule.h"
-#include "libapparmor_re/aare_rules.h"
 #include "network.h"
 #include "signal.h"
 #include "immunix.h"
 #include "perms.h"
 #include "profilelist.h"
+
+class aare_rules;
 
 extern const char*profile_mode_table[];
 /* use profile_mode_packed to convert to the packed representation */

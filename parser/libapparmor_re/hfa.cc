@@ -25,11 +25,14 @@
 #include <list>
 #include <vector>
 #include <set>
+#include <stdexcept>
 #include <map>
-#include <ostream>
 #include <iostream>
-#include <string.h>
+
 #include <stdint.h>
+#include <stdio.h>
+
+#include "apparmor_re.h"
 #include "expr-tree.h"
 #include "hfa.h"
 #include "policy_compat.h"

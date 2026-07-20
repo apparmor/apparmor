@@ -12,12 +12,15 @@
  *   GNU General Public License for more details.
  */
 
+#include "libapparmor_re/aare_rules.h"
 #include "profile.h"
 #include "rule.h"
 #include "parser.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include <vector>
 #include <algorithm>
 

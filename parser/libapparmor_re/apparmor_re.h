@@ -19,8 +19,6 @@
 #ifndef __LIBAA_RE_APPARMOR_RE_H
 #define __LIBAA_RE_APPARMOR_RE_H
 
-#include "../common_flags.h"
-
 #define CONTROL_DFA_EQUIV		(1 << 0)
 #define CONTROL_DFA_TREE_NORMAL		(1 << 1)
 #define CONTROL_DFA_TREE_SIMPLE		(1 << 2)

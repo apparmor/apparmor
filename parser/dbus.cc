@@ -24,9 +24,10 @@
 #include <string>
 #include <sstream>
 
+#include "immunix.h"
+#include "libapparmor_re/aare_rules.h"
 #include "parser.h"
 #include "profile.h"
-#include "parser_yacc.h"
 #include "dbus.h"
 
 

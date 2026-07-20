@@ -19,6 +19,7 @@
 #define __AA_USERNS_H
 
 #include "parser.h"
+#include "rule.h"
 
 #define AA_USERNS_CREATE	8
 #define AA_VALID_USERNS_PERMS (AA_USERNS_CREATE)

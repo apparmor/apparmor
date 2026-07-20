@@ -19,13 +19,23 @@
 #include <iomanip>
 #include <string>
 #include <sstream>
-#include <map>
+#include <stdexcept>
+
 #include <arpa/inet.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+#include "sys/apparmor_private.h"
 
 #include "lib.h"
+#include "libapparmor_re/aare_rules.h"
+#include "network.h"
 #include "parser.h"
 #include "profile.h"
-#include "network.h"
+#include "signal.h"
 
 #define ALL_TYPES 0x43e
 

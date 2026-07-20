@@ -1,7 +1,6 @@
 #ifndef __LIBAA_RE_FLEX_TABLES_H
 #define __LIBAA_RE_FLEX_TABLES_H
 
-#include <stdlib.h>
 #include <stdint.h>
 
 enum {

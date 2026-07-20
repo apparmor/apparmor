@@ -18,15 +18,19 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <sys/apparmor.h>
+#include <endian.h>
+#include <sys/socket.h>
 
 #include <iomanip>
 #include <string>
 #include <sstream>
 
-#include "common_optarg.h"
+#include "common_flags.h"
+#include "immunix.h"
+#include "libapparmor_re/aare_rules.h"
 #include "network.h"
 #include "parser.h"
+#include "policydb.h"
 #include "profile.h"
 #include "af_unix.h"
 

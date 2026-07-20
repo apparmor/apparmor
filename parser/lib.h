@@ -1,7 +1,11 @@
 #ifndef __AA_LIB_H_
 #define __AA_LIB_H_
 
+#include <stddef.h>  // for size_t
+
 #include <sys/apparmor_private.h>
+
+struct stat;
 
 #define autofree __attribute((cleanup(_aa_autofree)))
 #define autoclose __attribute((cleanup(_aa_autoclose)))

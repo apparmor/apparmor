@@ -18,8 +18,11 @@
 #ifndef __AA_PTRACE_H
 #define __AA_PTRACE_H
 
+#include <stdlib.h>
+
 #include "immunix.h"
 #include "parser.h"
+#include "rule.h"
 
 #define AA_MAY_TRACE	AA_MAY_WRITE
 #define AA_MAY_READBY	0x10		/* MAY_CREATE in new encoding */

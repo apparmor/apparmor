@@ -14,7 +14,10 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, contact Canonical Ltd.
  */
+#include <stdlib.h>
+#include <utility>
 
+#include "parser.h"
 #include "symtab.h"
 
 template <typename T>

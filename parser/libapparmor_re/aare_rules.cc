@@ -19,13 +19,13 @@
  * Wrapper around the dfa to convert aa rules into a dfa
  */
 
-#include <ostream>
 #include <iostream>
 #include <sstream>
-#include <assert.h>
+
 #include <stdlib.h>
 
 #include "aare_rules.h"
+#include "apparmor_re.h"
 #include "expr-tree.h"
 #include "parse.h"
 #include "hfa.h"

@@ -21,17 +21,13 @@
 #include "dbus.h"
 #include "io_uring.h"
 #include "mqueue.h"
+#include "network.h"
 #include "ptrace.h"
 #include "signal.h"
 #include "userns.h"
 #include "mount.h"
-#include "parser.h"
 
-#include <iomanip>
-#include <string>
-#include <iostream>
-#include <sstream>
-
+#include <string.h>
 
 
 void all_rule::add_implied_rules(Profile &prof)

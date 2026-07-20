@@ -21,8 +21,12 @@
 #ifndef __AA_MQUEUE_H
 #define __AA_MQUEUE_H
 
+#include <stdint.h>
+#include <stdlib.h>
+
 #include "immunix.h"
 #include "parser.h"
+#include "rule.h"
 
 #define AA_MQUEUE_WRITE		AA_MAY_WRITE
 #define AA_MQUEUE_READ		AA_MAY_READ
