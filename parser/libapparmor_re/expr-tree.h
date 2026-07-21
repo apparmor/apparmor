@@ -438,6 +438,12 @@ public:
 	{
 		type_flags |= node_type_t::NCHILD;
 	};
+	/* takes the contents of @children, leaving it empty */
+	NChildNode(std::vector<Node *> &children): InnerNode()
+	{
+		type_flags |= node_type_t::NCHILD;
+		child.swap(children);
+	};
 	virtual ~NChildNode()
 	{
 		std::vector<Node *>::iterator it;
@@ -923,6 +929,10 @@ public:
 	{
 		type_flags |= node_type_t::CAT;
 	}
+	CatNode(std::vector<Node *> &children): NChildNode(children)
+	{
+		type_flags |= node_type_t::CAT;
+	}
 	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
 	{
 		/* being careful about the construction we can reduce the
@@ -1012,6 +1022,10 @@ public:
 class AltNode: public NChildNode {
 public:
 	AltNode(Node *left, Node *right): NChildNode(left, right)
+	{
+		type_flags |= node_type_t::ALT;
+	}
+	AltNode(std::vector<Node *> &children): NChildNode(children)
 	{
 		type_flags |= node_type_t::ALT;
 	}

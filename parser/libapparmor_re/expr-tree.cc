@@ -589,6 +589,7 @@ struct vec_stats {
 	int chars;		/* char/charset nodes merged into a charset */
 	int dups;		/* duplicate Alt alternatives removed */
 	int collapsed;		/* Cat/Alt nodes replaced by their only child */
+	int factored;		/* runs of Alt alternatives factored */
 };
 
 static bool same_nchild_type(Node *a, Node *b)
@@ -636,19 +637,22 @@ static Node *collapse_node(Node *n, struct vec_stats &st)
 }
 
 /*
- * Total ordering used to sort Alt alternatives. For dir == 0 this is
- * cmp(). For dir == 1 Cat nodes are compared from their last child
- * backwards, so that Cat nodes with a common suffix are adjacent.
+ * Total ordering used to sort Alt alternatives. Non Cat nodes use
+ * cmp(). Cat nodes are compared element wise before size (cmp()
+ * compares size first), from their first child for dir == 0 and from
+ * their last child backwards for dir == 1, so that Cat nodes with a
+ * common prefix (dir == 0) or suffix (dir == 1) are adjacent.
  */
 static int vec_cmp(Node *a, Node *b, int dir)
 {
-	if (!dir || !a->is_type(node_type_t::CAT) || !b->is_type(node_type_t::CAT))
+	if (!a->is_type(node_type_t::CAT) || !b->is_type(node_type_t::CAT))
 		return a->cmp(b);
 
-	std::vector<Node *>::reverse_iterator i = a->child.rbegin();
-	std::vector<Node *>::reverse_iterator j = b->child.rbegin();
-	for ( ; i != a->child.rend() && j != b->child.rend(); i++, j++) {
-		int tmp = (*i)->cmp(*j);
+	size_t n = std::min(a->child.size(), b->child.size());
+	for (size_t k = 0; k < n; k++) {
+		Node *x = dir ? a->child[a->child.size() - 1 - k] : a->child[k];
+		Node *y = dir ? b->child[b->child.size() - 1 - k] : b->child[k];
+		int tmp = x->cmp(y);
 		if (tmp != 0)
 			return tmp;
 	}
@@ -729,7 +733,179 @@ static void merge_alt_chars(Node *n, struct vec_stats &st)
 	st.chars += count - 1;
 }
 
-/* merge chars, sort, and remove duplicate alternatives */
+struct cmp_less {
+	bool operator()(Node *a, Node *b) const { return a->cmp(b) < 0; }
+};
+
+/* the element @k from the factoring end of Cat @c */
+static Node *cat_elem(Node *c, size_t k, int dir)
+{
+	return dir ? c->child[c->child.size() - 1 - k] : c->child[k];
+}
+
+/*
+ * length of the common prefix (dir == 0) or suffix (dir == 1) of the
+ * Cat nodes in [@first, @last), whose first element is known to match
+ */
+static size_t common_len(std::vector<Node *>::iterator first,
+			 std::vector<Node *>::iterator last, int dir)
+{
+	std::vector<Node *>::iterator i;
+	size_t max = (*first)->child.size();
+
+	for (i = first + 1; i != last; i++) {
+		if ((*i)->child.size() < max)
+			max = (*i)->child.size();
+	}
+
+	size_t len;
+	for (len = 1; len < max; len++) {
+		Node *e = cat_elem(*first, len, dir);
+		for (i = first + 1; i != last; i++) {
+			if (cat_elem(*i, len, dir)->cmp(e) != 0)
+				return len;
+		}
+	}
+	return len;
+}
+
+/*
+ * Remove the @len common elements from the factoring end of Cat @c. If
+ * @keep is set the removed elements are moved into it, otherwise they
+ * are released. Returns what remains of @c, which is epsnode if all
+ * elements were removed.
+ */
+static Node *cat_remainder(Node *c, size_t len, int dir,
+			   std::vector<Node *> *keep, struct vec_stats &st)
+{
+	std::vector<Node *>::iterator b, e;
+
+	if (dir) {
+		b = c->child.end() - len;
+		e = c->child.end();
+	} else {
+		b = c->child.begin();
+		e = b + len;
+	}
+	if (keep) {
+		keep->assign(b, e);
+	} else {
+		for (std::vector<Node *>::iterator i = b; i != e; i++)
+			(*i)->release();
+	}
+	c->child.erase(b, e);
+
+	if (c->child.empty()) {
+		c->release();
+		return &epsnode;
+	}
+	if (c->child.size() == 1)
+		return collapse_node(c, st);
+	return c;
+}
+
+static Node *simplify_vec_alt(Node *n, int dir, struct vec_stats &st);
+
+/*
+ * Factor the run of Cat alternatives [@first, @last) that share a common
+ * first (dir == 0) or last (dir == 1) element, and the non Cat
+ * alternative @x equal to that element if not NULL.
+ *   ab | ac   -> a(b | c)	ba | ca   -> (b | c)a
+ *   a | ab    -> a(E | b)	a | ba    -> (E | b)a
+ * @x is not released, the caller must release it.
+ * Returns the factored node.
+ */
+static Node *factor_run(std::vector<Node *>::iterator first,
+			std::vector<Node *>::iterator last, Node *x, int dir,
+			struct vec_stats &st)
+{
+	/* x is a single element so only its first element is common */
+	size_t len = x ? 1 : common_len(first, last, dir);
+	std::vector<Node *> common, rest;
+	std::vector<Node *>::iterator i;
+
+	for (i = first; i != last; i++)
+		rest.push_back(cat_remainder(*i, len, dir,
+					     i == first ? &common : NULL, st));
+	if (x)
+		rest.push_back(&epsnode);
+
+	Node *alt = simplify_vec_alt(new AltNode(rest), dir, st);
+	std::vector<Node *> children;
+	if (dir) {
+		children.push_back(alt);
+		children.insert(children.end(), common.begin(), common.end());
+	} else {
+		children.swap(common);
+		children.push_back(alt);
+	}
+	st.factored++;
+	return simplify_vec_cat(new CatNode(children), st);
+}
+
+/*
+ * Factor the alternatives of sorted and deduped Alt @n. Cat nodes sort
+ * after all other node types, and Cat nodes with the same first (dir
+ * == 0) or last (dir == 1) element are adjacent.
+ */
+static void factor_alt(Node *n, int dir, struct vec_stats &st)
+{
+	std::vector<Node *>::iterator cats, i, j;
+
+	for (cats = n->child.begin(); cats != n->child.end(); cats++) {
+		if ((*cats)->is_type(node_type_t::CAT))
+			break;
+	}
+	if (cats == n->child.end())
+		return;
+
+	/* non Cat alternatives, sorted by cmp() */
+	std::vector<Node *> leaves(n->child.begin(), cats);
+	std::vector<bool> used(leaves.size(), false);
+	std::vector<Node *> out;
+	bool factored = false;
+
+	for (i = cats; i != n->child.end(); i = j) {
+		Node *key = cat_elem(*i, 0, dir);
+		for (j = i + 1; j != n->child.end(); j++) {
+			if (cat_elem(*j, 0, dir)->cmp(key) != 0)
+				break;
+		}
+
+		Node *x = NULL;
+		std::vector<Node *>::iterator l;
+		l = std::lower_bound(leaves.begin(), leaves.end(), key,
+				     cmp_less());
+		if (l != leaves.end() && (*l)->cmp(key) == 0) {
+			x = *l;
+			used[l - leaves.begin()] = true;
+		}
+
+		if (j - i == 1 && !x) {
+			out.push_back(*i);
+			continue;
+		}
+		out.push_back(factor_run(i, j, x, dir, st));
+		factored = true;
+	}
+	if (!factored)
+		return;
+
+	/* used leaves are released only now, as the binary search of
+	 * later runs may compare against them
+	 */
+	for (size_t k = 0; k < leaves.size(); k++) {
+		if (used[k])
+			leaves[k]->release();
+		else
+			out.push_back(leaves[k]);
+	}
+	/* keep a canonical order so cmp() of Alt nodes is consistent */
+	std::sort(out.begin(), out.end(), vec_less(dir));
+	n->child.swap(out);
+}
+
+/* merge chars, sort, remove duplicate alternatives, and factor */
 static Node *simplify_vec_alt(Node *n, int dir, struct vec_stats &st)
 {
 	/* children may have simplified into Alt nodes */
@@ -750,6 +926,8 @@ static Node *simplify_vec_alt(Node *n, int dir, struct vec_stats &st)
 		}
 	}
 	n->child.swap(out);
+
+	factor_alt(n, dir, st);
 
 	if (n->child.size() == 1)
 		return collapse_node(n, st);
@@ -784,7 +962,7 @@ static Node *simplify_vec(Node *t, int dir, struct vec_stats &st)
 
 static Node *simplify_tree_vec(Node *t, optflags const &opts)
 {
-	struct vec_stats st = { 0, 0, 0, 0, 0 };
+	struct vec_stats st = { 0, 0, 0, 0, 0, 0 };
 
 	/* same pass order as the old algorithm, default right then left */
 	int dir = (opts.control & CONTROL_DFA_TREE_LEFT) ? 0 : 1;
@@ -793,9 +971,9 @@ static Node *simplify_tree_vec(Node *t, optflags const &opts)
 
 	if (opts.dump & DUMP_DFA_TREE_STATS)
 		fprintf(stderr,
-			"expr-vector: flattened %d, eps %d, chars %d, dups %d, collapsed %d\n",
+			"expr-vector: flattened %d, eps %d, chars %d, dups %d, collapsed %d, factored %d\n",
 			st.flattened, st.eps, st.chars, st.dups,
-			st.collapsed);
+			st.collapsed, st.factored);
 	return t;
 }
 
