@@ -153,12 +153,11 @@ cJSON.o: cJSON.c cJSON.h
 
 .SILENT: check
 .PHONY: check
-check: check_pod_files tests
+check: check_pod_files tests check-includes
 
 .PHONY: check-includes
 check-includes:
-	# doesn't set $?, intended for manual review of the output
-	ret=0; for file in *.c *.h ; do include-what-you-use  -Xiwyu --error ${EXTRA_DEFINES} $(INCLUDE_APPARMOR) $$file || ret=$$? ; done; exit $$ret
+	ret=0; for file in *.c *.h ; do include-what-you-use -Xiwyu --error ${EXTRA_DEFINES} $(INCLUDE_APPARMOR) $$file || ret=$$? ; done; exit $$ret
 
 .SILENT: tests
 tests: $(BINTOOLS) $(SBINTOOLS) $(TESTS)

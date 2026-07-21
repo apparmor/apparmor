@@ -29,7 +29,7 @@ stages:
     # Install build-dependencies by loading the package list from the ubuntu/debian cloud-init profile.
     - printf '\e[0K%s:%s:%s[collapsed=true]\r\e[0K%s\n' section_start "$(date +%s)" install_deps "Installing dependencies..."
     - apt-get update -qq
-    - apt-get install --yes yq make lsb-release libzstd-dev
+    - apt-get install --yes yq make lsb-release libzstd-dev iwyu
     - |
       printf 'include .image-garden.mk\n$(info $(UBUNTU_CLOUD_INIT_USER_DATA_TEMPLATE))\n.PHONY: nothing\nnothing:\n' \
       | make -f - nothing \
