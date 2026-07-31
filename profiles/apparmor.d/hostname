@@ -12,10 +12,11 @@ abi <abi/5.0>,
 
 include <tunables/global>
 
+@{att}=/att/hostname
 @{bin}={/usr,}/bin
 @{exec}={hostname,domainname,ypdomainname,nisdomainname,dnsdomainname}
 
-profile hostname @{bin}/@{exec} {
+profile hostname @{bin}/@{exec} flags=(attach_disconnected.path=@{att}) {
   include <abstractions/base>
   include <abstractions/nameservice-strict>
 
@@ -27,6 +28,8 @@ profile hostname @{bin}/@{exec} {
   network netlink raw,
   network inet dgram,
   network inet6 dgram,
+
+  @{att}@{run}/nscd/socket rw,
 
   file r /etc/hostname,
   file r /etc/defaultdomain,
