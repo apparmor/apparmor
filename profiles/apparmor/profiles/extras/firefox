@@ -459,10 +459,10 @@ profile firefox @{MOZ_LIBDIR}/@{MOZ_APP_NAME}{,*[^s][^h]} {
   # Extensions
   # /usr/share/.../extensions/... is already covered by '/usr/.../** r', above.
   # Allow 'x' for downloaded extensions, but inherit policy for safety
-  owner @{HOME}/.mozilla/**/extensions/** mixr,
+  owner @{HOME}/.{,config/}mozilla/**/extensions/** mixr,
 
   # Widevine CDM plugin (LP: #1777070)
-  owner @{HOME}/.mozilla/firefox/*/gmp-widevinecdm/*/libwidevinecdm.so m,
+  owner @{HOME}/.{,config/}mozilla/firefox/*/gmp-widevinecdm/*/libwidevinecdm.so m,
 
   deny @{MOZ_LIBDIR}/update.test w,
   deny /usr/lib/mozilla/extensions/**/ w,
