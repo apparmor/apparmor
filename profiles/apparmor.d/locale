@@ -17,6 +17,7 @@ abi <abi/5.0>,
 
 profile locale /usr/bin/locale {
   include <abstractions/base>
+  include <abstractions/consoles>
 
   file r /usr/share/i18n/charmaps/,
   file r /usr/share/i18n/charmaps/*,
