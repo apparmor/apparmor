@@ -14,6 +14,7 @@ include <tunables/global>
 
 profile zgrep /usr/bin/{x,}zgrep {
   include <abstractions/base>
+  include <abstractions/consoles>
   include <abstractions/bash>
 
   /dev/tty rw,
@@ -44,6 +45,7 @@ profile zgrep /usr/bin/{x,}zgrep {
 
   profile helper {
     include <abstractions/base>
+    include <abstractions/consoles>
 
     capability dac_override,
     capability dac_read_search,
