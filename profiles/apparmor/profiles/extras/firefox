@@ -67,6 +67,12 @@ profile firefox @{MOZ_LIBDIR}/@{MOZ_APP_NAME}{,*[^s][^h]} {
   @{PROC}/@{pid}/net/ipv6_route r,
   @{PROC}/@{pid}/net/dev r,
   @{PROC}/@{pid}/net/wireless r,
+
+  # Allow communication with the PC/SC Smart Card Daemon (pcscd), needed for
+  # smartcard-based authentication (e.g. the Spanish DNIe) via PKCS#11 modules
+  @{run}/pcscd/pcscd.comm rw,
+  @{run}/pcscd/ r,
+
   dbus (send)
        bus=system
        path=/org/freedesktop/NetworkManager
