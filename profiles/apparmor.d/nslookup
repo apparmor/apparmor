@@ -16,6 +16,7 @@ include <tunables/global>
 
 profile nslookup /usr/bin/nslookup {
   include <abstractions/base>
+  include <abstractions/consoles>
   include <abstractions/nameservice-strict>
   include <abstractions/terminfo>
 
@@ -30,6 +31,7 @@ profile nslookup /usr/bin/nslookup {
 
   # Read access is requested to the following locations during bare `nslookup`
   /usr/bin/nslookup mr,
+  /proc/sys/net/ipv4/ip_local_port_range r,
   /proc/version_signature r,
   /sys/kernel/mm/transparent_hugepage/enabled r,
 
