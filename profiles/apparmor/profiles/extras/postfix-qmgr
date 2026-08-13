@@ -20,6 +20,8 @@ profile postfix-qmgr /usr/lib{,exec}/postfix/{bin/,sbin/,}qmgr flags=(attach_dis
   include <abstractions/postfix-common>
 
   @{att}/systemd/journal/dev-log w,
+  @{att}@{run}/systemd/userdb/io.systemd.DynamicUser rw,
+  @{att}@{run}/systemd/userdb/io.systemd.Machine rw,
 
   @{exec_path} mrix,
 
