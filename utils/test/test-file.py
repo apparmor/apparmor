@@ -112,7 +112,7 @@ class FileTestParse(FileTest):
 class FileTestParseInvalid(FileTest):
     tests = (
         ('/foo x,',       AppArmorException),  # should be *x
-        ('/foo raw,',     AppArmorException),  # r and a conflict
+        ('/foo raw,',     AppArmorException),  # w and a conflict
         ('deny /foo ix,', AppArmorException),  # endy only allows x, but not *x
         ('deny /foo Px,', AppArmorException),  # deny only allows x, but not *x
         ('deny /foo Pi,', AppArmorException),  # missing 'x', and P not allowed
@@ -272,7 +272,7 @@ class InvalidFileInit(AATest):
 
 
         # misc
-        (      ('/foo',       'rwa',              'ix',       '/bar', False,  False,        False),        AppArmorException),  # 'r' and 'a' conflict  # noqa: E201
+        (      ('/foo',       'rwa',              'ix',       '/bar', False,  False,        False),        AppArmorException),  # 'w' and 'a' conflict  # noqa: E201
         (      ('/foo',       None,               'rw',       '/bar', False,  False,        False),        AppArmorBug),        # file perms in exec perms parameter  # noqa: E201
         (      ('/foo',       'ix',               None,       '/bar', False,  False,        False),        AppArmorBug),        # exec perms in file perms parameter  # noqa: E201
         (      ('foo',        'rw',               'ix',       '/bar', False,  False,        False),        AppArmorException),  # path doesn't start with /  # noqa: E201
