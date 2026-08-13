@@ -13,6 +13,7 @@ include <tunables/global>
 
 profile ssh-keyscan /usr/bin/ssh-keyscan {
   include <abstractions/base>
+  include <abstractions/consoles>
   include <abstractions/nameservice-strict>
   
   network inet dgram,
