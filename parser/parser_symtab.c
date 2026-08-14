@@ -54,7 +54,7 @@ static struct symtab *new_symtab_entry(const char *name)
 		return NULL;
 	}
 
-	n->var_name = strndup(name, PATH_MAX);
+	n->var_name = strdup(name);
 	if (!n->var_name) {
 		PERROR("Failed to allocate memory: %s\n", strerror(errno));
 		free(n);
@@ -73,7 +73,7 @@ static struct set_value *new_set_value(const char *val)
 		return NULL;
 	}
 
-	n->val = strndup(val, PATH_MAX);
+	n->val = strdup(val);
 	if (!n->val) {
 		PERROR("Failed to allocate memory: %s\n", strerror(errno));
 		free(n);
