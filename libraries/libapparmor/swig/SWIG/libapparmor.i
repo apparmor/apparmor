@@ -143,7 +143,11 @@ warnings.warn("free_record is now a no-op as the record's memory is handled auto
   }
   if (alloc_status != SWIG_NEWOBJ) {
     // Unconditionally copy because the C function modifies the string in place
-    $1 = %new_copy_array(con_ptr, con_len+1, char);
+    $1 = %new_array(con_len+1, char);
+    if ($1 == NULL) {
+      SWIG_exception_fail(SWIG_MemoryError, "could not allocate C con_ptr copy array");
+    }
+    memcpy($1, con_ptr, con_len+1);
   } else {
     $1 = con_ptr;
   }
