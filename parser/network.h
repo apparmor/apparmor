@@ -213,7 +213,7 @@ public:
 	bool gen_ip_conds(Profile &prof, std::list<std::ostringstream> &streams, ip_conds &entry, bool is_peer, bool is_cmd, bool is_iface);
 	bool gen_net_rule(Profile &prof, unsigned int netclass, u16 family, unsigned int type_mask, unsigned int protocol, bool skb);
 	void set_netperm(unsigned int family, unsigned int type, unsigned int protocol);
-	void update_compat_net(void);
+	void update_compat_net(const prefixes &p);
 	bool parse_address(ip_conds &entry);
 	bool parse_port(ip_conds &entry);
 	bool parse_iface(ip_conds &entry);
@@ -234,7 +234,7 @@ public:
 	bool add_prefix(const prefixes &p, const char *&error) override {
 		bool rc = dedup_perms_rule_t::add_prefix(p, error);
 		/* update compat net needs to run after adding the prefix */
-		update_compat_net();
+		update_compat_net(p);
 		return rc;
 	}
 
