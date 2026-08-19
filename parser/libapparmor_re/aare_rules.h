@@ -46,17 +46,15 @@ public:
 
 	bool operator<(UniquePerm const &rhs)const
 	{
-		if (priority < rhs.priority)
+		if (priority != rhs.priority)
 			return priority < rhs.priority;
-		if (mode >= rhs.mode) {
-			if (exact_match == rhs.exact_match) {
-				if (perms == rhs.perms)
-					return audit < rhs.audit;
-				return perms < rhs.perms;
-			}
+		if (mode != rhs.mode)
+			return mode < rhs.mode;
+		if (exact_match != rhs.exact_match)
 			return exact_match;
-		}
-		return true;  // mode < rhs.mode
+		if (perms != rhs.perms)
+			return perms < rhs.perms;
+		return audit < rhs.audit;
 	}
 };
 
