@@ -28,7 +28,7 @@
 static int strrcmp(const char *a, int ta,
 		   const char *b, int tb)
 {
-	while (ta && tb) {
+	while (ta >= 0 && tb >= 0) {
 		int res = (int) a[ta--] - (int) b[tb--];
 		if (res)
 			return res;
