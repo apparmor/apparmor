@@ -31,7 +31,7 @@ void block_rules::add_entry(struct cod_entry *entry)
 void block_rules::add_rule(rule_t *entry)
 {
 	rule_ents.push_back(entry);
-	if (static_cast<prefix_rule_t *>(entry)->rule_mode == rule_mode_t::PROMPT)
+	if (entry->uses_prompt())
 		uses_prompt_rules = true;
 }
 

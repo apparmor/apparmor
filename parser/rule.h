@@ -171,6 +171,10 @@ public:
 
 	virtual rule_t* clone() const = 0;
 
+	// does the rule use prompt mediation. overridden by rule
+	// types that carry a rule_mode (see prefix_rule_t).
+	virtual bool uses_prompt() const { return false; }
+
 protected:
 	const char *warned_name = NULL;
 	virtual void warn_once(const char *name, const char *msg);
@@ -367,6 +371,11 @@ public:
 	prefix_rule_t& operator=(prefix_rule_t&& p) noexcept = delete;
 
 	virtual ~prefix_rule_t() { }
+
+	virtual bool uses_prompt() const override
+	{
+		return rule_mode == rule_mode_t::PROMPT;
+	}
 
 	virtual bool valid_prefix(const prefixes &p, const char *&error) = 0;
 
