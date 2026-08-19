@@ -43,7 +43,10 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <ctype.h>
-#include <float.h>
+// work around https://github.com/include-what-you-use/include-what-you-use/issues/2073
+#include <float.h> // IWYU pragma: keep
+  // IWYU pragma: no_include <__float_float.h>
+  // IWYU pragma: no_include <__float_infinity_nan.h>
 
 #ifdef ENABLE_LOCALES
 #include <locale.h>

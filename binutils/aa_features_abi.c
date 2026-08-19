@@ -23,7 +23,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <sys/apparmor.h>
-#include <sys/apparmor_private.h>
+// IWYU pragma: no_include "sys/apparmor_private.h" // ideally <sys/apparmor_private.h>, but that doesn't silence include-what-you-use
 #include <unistd.h>
 #define _(s) gettext(s)
 

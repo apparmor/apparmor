@@ -23,7 +23,7 @@
 #define _(s) gettext(s)
 
 #include <sys/apparmor.h>
-#include <sys/apparmor_private.h>
+#include <sys/apparmor_private.h> // IWYU pragma: keep
 
 #include "cJSON.h"
 
