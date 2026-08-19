@@ -129,7 +129,7 @@ public:
 			   uses_prompt_rules(false),
 			   entries(NULL)
 	{
-		std::fill(exec_table, exec_table + AA_EXEC_COUNT, (char *)NULL);
+		std::fill(exec_table, exec_table + AA_EXEC_COUNT, nullptr);
 	}
 
 	block_rules(const block_rules &p);
