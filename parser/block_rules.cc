@@ -457,8 +457,7 @@ void block_rules::add_implied_rules(Profile *prof)
 
 int block_rules::add_entry_to_x_table(char *name)
 {
-	int i;
-	for (i = (AA_EXEC_LOCAL >> 10) + 1; i < AA_EXEC_COUNT; i++) {
+	for (int i = (AA_EXEC_LOCAL >> 10) + 1; i < AA_EXEC_COUNT; i++) {
 		if (!exec_table[i]) {
 			exec_table[i] = name;
 			return i;
