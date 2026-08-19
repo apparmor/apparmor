@@ -586,6 +586,8 @@ int block_rules::post_parse_profile_file(Profile *prof)
 				PERROR("Profile %s has too many specified profile transitions.\n", prof->name);
 				return -1;
 			}
+			/* n is bounded by AA_EXEC_COUNT (currently 16)
+			 * and that the shifts will therefore never overflow */
 			if (entry->perms & AA_USER_EXEC)
 				perms |= SHIFT_PERMS(n << 10, AA_USER_SHIFT);
 			if (entry->perms & AA_OTHER_EXEC)
