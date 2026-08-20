@@ -16,6 +16,9 @@
   # Global config of openssl
   include <abstractions/openssl>
 
+  # Global config of upki
+  include <abstractions/upki>
+
   @{etc_ro}/gcrypt/hwf.deny r,
   @{etc_ro}/gcrypt/random.conf r,
   @{PROC}/sys/crypto/fips_enabled r,
