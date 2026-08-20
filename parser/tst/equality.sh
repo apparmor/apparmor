@@ -160,7 +160,7 @@ verify_binary()
 		((errors++))
 		return $((ret + 1))
 	fi
-	rm -f $tmpdir/*
+	rm -rf $tmpdir/*
 
 	if [ -n "$verbose" ] ; then printf "Binary %s %s" "$t" "$desc" ; fi
 	if ! good_hash=$(hash_binary_policy "known" "$good_profile") ; then
@@ -168,7 +168,7 @@ verify_binary()
 		printf "\nERROR: Error hashing the following \"known-good\" profile:\n%s\n\n" \
 		       "$good_profile" 1>&2
 		((errors++))
-		rm -f ${tmpdir}/*
+		rm -rf ${tmpdir}/*
 		return $((ret + 1))
 	fi
 
@@ -1437,6 +1437,11 @@ test_dfa_cache_equality()
 	local cached_dir="${tmpdir}/cached_out"
 	local ret=0
 
+	echo "/test {}" | ${APPARMOR_PARSER} --features-file "${_SCRIPTDIR}/features_files/$features_file" -QT --dfa-cache-loc "" > /dev/null
+	if [ $? -ne 0 ] ; then
+		echo "   --dfa-cache-loc not supported skipping dfa-cache tests"
+		return 0
+	fi
 	mkdir -p "$cache_dir" "$nocache_dir" "$cached_dir"
 
 	# Representative profiles that exercise different DFA paths

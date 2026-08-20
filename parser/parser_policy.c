@@ -358,7 +358,7 @@ static uint64_t hash_profile_file_rules(Profile *profile)
 				FNV1A_ADD_TO_HASH(hash, (unsigned char)*p);
 		}
 		FNV1A_ADD_TO_HASH(hash, entry->perms);
-		FNV1A_ADD_TO_HASH(hash, entry->audit);
+		FNV1A_ADD_TO_HASH(hash, entry->audit.audit);
 		FNV1A_ADD_TO_HASH(hash, entry->rule_mode);
 		FNV1A_ADD_TO_HASH(hash, entry->priority);
 		if (entry->link_name) {
@@ -379,7 +379,6 @@ static uint64_t hash_profile_file_rules(Profile *profile)
 	FNV1A_ADD_TO_HASH(hash, parser_abi_version);
 	FNV1A_ADD_TO_HASH(hash, parseopts.control);
 	FNV1A_ADD_TO_HASH(hash, kernel_supports_permstable32);
-	FNV1A_ADD_TO_HASH(hash, kernel_supports_permstable32_v1);
 
 	return hash;
 }
@@ -404,7 +403,7 @@ static void compute_content_hash(Profile *profile, uint8_t digest[32])
 		sha256_update(&ctx, &sep, 1);
 
 		sha256_update(&ctx, &entry->perms, sizeof(entry->perms));
-		sha256_update(&ctx, &entry->audit, sizeof(entry->audit));
+		sha256_update(&ctx, &entry->audit.audit, sizeof(entry->audit.audit));
 		sha256_update(&ctx, &entry->rule_mode, sizeof(entry->rule_mode));
 		sha256_update(&ctx, &entry->priority, sizeof(entry->priority));
 		sha256_update(&ctx, &sep, 1);
@@ -430,8 +429,6 @@ static void compute_content_hash(Profile *profile, uint8_t digest[32])
 	sha256_update(&ctx, &parseopts.control, sizeof(parseopts.control));
 	sha256_update(&ctx, &kernel_supports_permstable32,
 		      sizeof(kernel_supports_permstable32));
-	sha256_update(&ctx, &kernel_supports_permstable32_v1,
-		      sizeof(kernel_supports_permstable32_v1));
 
 	sha256_final(&ctx, digest);
 }
