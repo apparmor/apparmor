@@ -97,7 +97,7 @@ public:
 				  removed_by(r.removed_by)
 	{
 		if (r.warned_name)
-			warned_name = strdup(r.warned_name);
+			warned_name = warned_name;
 	}
 	rule_t(rule_t &&r) noexcept : rule_type(r.rule_type), flags(r.flags),
 				      removed_by(r.removed_by), warned_name(r.warned_name)
@@ -107,7 +107,6 @@ public:
 
 	virtual ~rule_t()
 	{
-		free((void *)warned_name);
 	};
 
 	bool is_type(int type) { return rule_type == type; }
