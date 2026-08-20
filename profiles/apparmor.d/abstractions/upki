@@ -1,0 +1,6 @@
+  abi <abi/5.0>,
+
+  /etc/upki/config.toml r,
+  /var/cache/upki/** r,
+
+  include if exists <abstractions/upki.d>
