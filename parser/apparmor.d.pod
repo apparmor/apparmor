@@ -2523,13 +2523,137 @@ referenced by the permission check.
 
 =head3 Qualifier Blocks
 
-Rule Qualifiers can be applied to multiple rules at a time by grouping the
-rules into a rule block.
+Rule Qualifiers can be applied to multiple rules at a time by grouping
+the rules into a rule block. A block is a set of rules enclosed in
+braces ('{' ... '}'), optionally preceded by one or more
+qualifiers. The qualifiers in front of the block are distributed onto
+every rule contained in the block, exactly as if they had been written
+on each rule individually.
 
   audit {
      /foo r,
      network,
   }
+
+is equivalent to
+
+  audit /foo r,
+  audit network,
+
+Any rule type that accepts qualifiers may appear inside a block. Rule
+types that do not take a qualifier prefix (for example I<rlimit>
+rules) are still permitted inside a plain block and are simply carried
+through unchanged; applying a qualifier that such a rule cannot accept
+is an error.
+
+=head3 Nested Blocks
+
+Blocks may be nested. When blocks are nested the qualifiers accumulate
+from the outermost block inward: each block applies its own qualifiers
+to everything it contains, including any inner blocks, and the process
+repeats for each level of nesting. The order in which qualifiers are
+written across the nesting levels does not matter; the resulting set
+of qualifiers on a leaf rule is the combination of all the enclosing
+blocks plus the qualifiers written on the rule itself. For example
+
+  audit {
+     deny {
+        network inet stream,
+     }
+  }
+
+  deny {
+     audit {
+        network inet stream,
+     }
+  }
+
+both resolve to
+
+  audit deny network inet stream,
+
+A block with no qualifiers (a bare '{' ... '}') introduces no
+qualifiers of its own; it only groups rules and passes the qualifiers
+of its enclosing blocks through. This makes
+
+  { network inet stream, }
+
+equivalent to the rule written on its own, and
+
+  allow { { network inet stream, } }
+
+equivalent to C<allow network inet stream,>.
+
+The I<if> conditional blocks (see L</Conditional rules>) behave the
+same way with respect to qualifiers: qualifiers on a block that wraps
+an I<if>, and qualifiers on the block belonging to the taken branch,
+are applied to the rules that the branch contributes.
+
+=head3 Qualifier Interaction and Conflicts
+
+When a qualifier is distributed onto a rule, it is combined with any
+qualifier of the same kind already present on that rule. The rules for
+combining are:
+
+=over 4
+
+=item B<Same value>
+
+If the block qualifier and the rule already agree (or the rule did not
+specify that qualifier), the qualifier is simply applied. This is the
+common case and always succeeds.
+
+=item B<Conflicting access type>
+
+The access types I<allow>, I<deny> and I<prompt> are mutually exclusive.
+A block whose access type differs from an access type specified on a
+contained rule (or on a more deeply nested block) is a conflict and the
+policy fails to compile with a "conflicting mode prefix" error. For this
+reason I<allow>, I<deny> and I<prompt> blocks must not enclose rules that
+carry one of the other two access types.
+
+=item B<Conflicting owner>
+
+Not every rule type accepts the I<owner> qualifier. Applying an I<owner>
+block to rules that do not support it (for example rules that have no
+notion of an object owner) will cause those rules to fail to compile.
+When using an I<owner> block make sure every rule it encloses is one that
+can take the I<owner> qualifier.
+
+=item B<priority>
+
+I<priority> cannot be currently applied to block rules.
+
+=back
+
+Because the I<audit> and I<deny> qualifiers are orthogonal, they can
+be combined. A I<deny> qualifier applied to a rule that also carries
+I<audit> results in an audited denial (C<audit deny ...>), while a
+plain I<deny> block silences logging for the rules it
+encloses. Distributing I<deny> or I<audit> over a block therefore
+reclassifies the contained rules consistently. For example
+
+  audit {
+     signal,
+     allow remount,
+     deny ptrace,
+     audit dbus,
+     prompt mount,
+  }
+
+resolves to
+
+  audit signal,
+  audit remount,
+  audit deny ptrace,
+  audit dbus,
+  audit prompt mount,
+
+Here the I<allow>, I<deny> and I<prompt> access types on the inner rules
+do not conflict with the outer I<audit> qualifier (audit is not an access
+type), so I<audit> is layered on top of each of them, whereas an outer
+I<allow>, I<deny> or I<prompt> block enclosing those same rules would
+conflict.
 
 =head2 #include mechanism
 
