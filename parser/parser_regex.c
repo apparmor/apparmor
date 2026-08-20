@@ -1161,7 +1161,8 @@ static void dfa_cache_store_disk(Profile *profile, uint64_t key,
 
 int process_profile_rules(Profile *prof)
 {
-	int err;
+	int err = -1;
+
 	bool file_dfa_cached = false;
 #ifdef USE_DFA_CACHE
 	uint64_t cache_key = 0;
@@ -1195,9 +1196,9 @@ int process_profile_rules(Profile *prof)
 
 	/* compile rules */
 	if (prof->main_block->gen_policy_re(*prof) != rule_result_t::OK) {
-		exit(1);
+		PERROR(_("ERROR generating policy re for profile %s, failed to load\n"), prof->name);
+		return err;
 	}
-
 
 	if (!file_dfa_cached) {
 		/* post policy process checks */
@@ -1218,16 +1219,13 @@ int process_profile_rules(Profile *prof)
 	return 0;
 xmatch_err:
 	PERROR(_("ERROR processing xmatch for profile %s, failed to load\n"), prof->name);
-	// TODO: convert to error return
-	exit(1);
+	return err;
 regex_err:
 	PERROR(_("ERROR processing regexs for profile %s, failed to load\n"), prof->name);
-	exit(1);
 	return err;
 policydb_err:
 	PERROR(_("ERROR processing policydb rules for profile %s, failed to load\n"),
 	       prof->name);
-	exit(1);
 	return err;
 
 }
