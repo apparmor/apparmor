@@ -32,6 +32,7 @@ default_features_file="features.all"
 features_file=$default_features_file
 retain=0
 dumpdfa=0
+dfa_cache_loc=""
 testtype=""
 description="Manually run test"
 tmpdir=$(mktemp -d /tmp/eq.$$-XXXXXX)
@@ -100,6 +101,10 @@ hash_binary_policy()
 		dump="${tmpdir}/$1.state"
 	fi
 
+	if [ -n "$dfa_cache_loc" ] ; then
+		flags="$flags --dfa-cache-loc $dfa_cache_loc"
+	fi
+
 	printf %s "$2" | ${APPARMOR_PARSER} --features-file "${_SCRIPTDIR}/features_files/$features_file" ${flags} > "$tmpdir/$1.bin" 2>"$dump"
 	rc=$?
 	if [ $rc -eq 0 ] ; then
@@ -155,7 +160,7 @@ verify_binary()
 		((errors++))
 		return $((ret + 1))
 	fi
-	rm -f $tmpdir/*
+	rm -rf $tmpdir/*
 
 	if [ -n "$verbose" ] ; then printf "Binary %s %s" "$t" "$desc" ; fi
 	if ! good_hash=$(hash_binary_policy "known" "$good_profile") ; then
@@ -163,7 +168,7 @@ verify_binary()
 		printf "\nERROR: Error hashing the following \"known-good\" profile:\n%s\n\n" \
 		       "$good_profile" 1>&2
 		((errors++))
-		rm -f ${tmpdir}/*
+		rm -rf ${tmpdir}/*
 		return $((ret + 1))
 	fi
 
@@ -1422,9 +1427,154 @@ test_block_configurations()
 			       "/t { unix, dbus, io_uring, mqueue, ptrace, signal, userns, mount, remount, umount, pivot_root, network, /{**,} rwlkm, priority=-1 /{**,} ix, capability, }"
 }
 
+# test_dfa_cache_equality - verifies that profiles compiled using a populated
+# DFA disk cache (--dfa-cache-loc) produce identical binary output to profiles
+# compiled without it.
+test_dfa_cache_equality()
+{
+	local cache_dir="${tmpdir}/dfa_cache"
+	local nocache_dir="${tmpdir}/nocache_out"
+	local cached_dir="${tmpdir}/cached_out"
+	local ret=0
+
+	echo "/test {}" | ${APPARMOR_PARSER} --features-file "${_SCRIPTDIR}/features_files/$features_file" -QT --dfa-cache-loc "" > /dev/null
+	if [ $? -ne 0 ] ; then
+		echo "   --dfa-cache-loc not supported skipping dfa-cache tests"
+		return 0
+	fi
+	mkdir -p "$cache_dir" "$nocache_dir" "$cached_dir"
+
+	# Representative profiles that exercise different DFA paths
+	local profiles=(
+		"/t { /foo r, /bar rw, /baz/** rwmlk, }"
+		"/t { capability mac_admin, /foo r, network tcp, }"
+		"/t { dbus send bus=session path=/org/foo interface=org.foo peer=(name=com.bar), /data/** rw, }"
+		"/t { signal (send,receive) peer=unconfined, /usr/bin/* px, }"
+		"/t { /lib/** mr, /etc/foo r, /tmp/** rw, owner /home/** rwk, }"
+		"@{FOO}=foo bar
+		    /t { /data/@{FOO} rw, /bin/@{FOO} px, }"
+		"/t { mount options in (ro) /dev/sda -> /mnt, /mnt/** r, }"
+		"/t { unix (create, listen, accept) addr=@/tmp/sock, /run/** rw, }"
+	)
+
+	if [ -n "$verbose" ] ; then
+		printf "\nDFA cache equality test (%d profiles):\n" ${#profiles[@]}
+	fi
+
+	# Step 1: Compile all profiles WITHOUT --dfa-cache-loc (baseline)
+	local saved_dfa_cache_loc="$dfa_cache_loc"
+	dfa_cache_loc=""
+	local baseline_hashes=()
+	local i=0
+	for profile in "${profiles[@]}" ; do
+		local hash
+		hash=$(hash_binary_policy "nocache_$i" "$profile")
+		if [ $? -ne 0 ] ; then
+			printf "\nERROR: DFA cache equality: failed to compile baseline profile %d\n" $i 1>&2
+			((errors++))
+			((ret++))
+			dfa_cache_loc="$saved_dfa_cache_loc"
+			return $ret
+		fi
+		baseline_hashes+=("$hash")
+		if [ -f "${tmpdir}/nocache_$i.bin.$hash" ] ; then
+			mv "${tmpdir}/nocache_$i.bin.$hash" "$nocache_dir/$i.bin"
+		fi
+		((i++))
+	done
+
+	# Step 2: Compile all profiles WITH --dfa-cache-loc to populate the cache
+	dfa_cache_loc="$cache_dir"
+	local populate_hashes=()
+	i=0
+	for profile in "${profiles[@]}" ; do
+		local hash
+		hash=$(hash_binary_policy "populate_$i" "$profile")
+		if [ $? -ne 0 ] ; then
+			printf "\nERROR: DFA cache equality: failed to populate cache for profile %d\n" $i 1>&2
+			((errors++))
+			((ret++))
+			dfa_cache_loc="$saved_dfa_cache_loc"
+			return $ret
+		fi
+		populate_hashes+=("$hash")
+		rm -f "${tmpdir}"/populate_$i.*
+		((i++))
+	done
+
+	# Step 2b: Verify empty-cache hashes match baseline (no cache)
+	i=0
+	for profile in "${profiles[@]}" ; do
+		if [ "${baseline_hashes[$i]}" != "${populate_hashes[$i]}" ] ; then
+			printf "\nFAIL: DFA cache equality: profile %d differs with empty cache vs without --dfa-cache-loc\n" $i 1>&2
+			printf "  without cache: %s\n  empty cache:   %s\n" "${baseline_hashes[$i]}" "${populate_hashes[$i]}" 1>&2
+			printf "  profile: %s\n" "${profiles[$i]}" 1>&2
+			((fails++))
+			((ret++))
+		elif [ -n "$verbose" ] ; then
+			printf "  profile %d: empty cache ok (hash=%s)\n" $i "${populate_hashes[$i]}"
+		fi
+		((i++))
+	done
+
+	# Step 3: Compile again WITH --dfa-cache-loc (should use populated cache)
+	local cached_hashes=()
+	i=0
+	for profile in "${profiles[@]}" ; do
+		local hash
+		hash=$(hash_binary_policy "cached_$i" "$profile")
+		if [ $? -ne 0 ] ; then
+			printf "\nERROR: DFA cache equality: failed to compile from cache for profile %d\n" $i 1>&2
+			((errors++))
+			((ret++))
+			dfa_cache_loc="$saved_dfa_cache_loc"
+			return $ret
+		fi
+		cached_hashes+=("$hash")
+		if [ -f "${tmpdir}/cached_$i.bin.$hash" ] ; then
+			mv "${tmpdir}/cached_$i.bin.$hash" "$cached_dir/$i.bin"
+		fi
+		((i++))
+	done
+
+	# Step 4: Compare baseline (no cache) vs cached output
+	i=0
+	for profile in "${profiles[@]}" ; do
+		if [ "${baseline_hashes[$i]}" != "${cached_hashes[$i]}" ] ; then
+			printf "\nFAIL: DFA cache equality: profile %d differs with vs without --dfa-cache-loc\n" $i 1>&2
+			printf "  without cache: %s\n  with cache:    %s\n" "${baseline_hashes[$i]}" "${cached_hashes[$i]}" 1>&2
+			printf "  profile: %s\n" "${profiles[$i]}" 1>&2
+			((fails++))
+			((ret++))
+		elif [ -n "$verbose" ] ; then
+			printf "  profile %d: ok (hash=%s)\n" $i "${baseline_hashes[$i]}"
+		fi
+		((i++))
+	done
+
+	dfa_cache_loc="$saved_dfa_cache_loc"
+
+	if [ $ret -eq 0 ] ; then
+		if [ -z "$verbose" ] ; then
+			printf "."
+		else
+			printf "  DFA cache equality: PASS\n"
+		fi
+	fi
+
+	# Cleanup
+	rm -rf "$cache_dir" "$nocache_dir" "$cached_dir"
+
+	return $ret
+}
+
 run_tests()
 {
 	printf "Equality Tests:\n"
+
+	# Run DFA cache equality test (ensures --dfa-cache-loc produces
+	# identical output to compilation without it)
+	test_dfa_cache_equality
 
 	#rules that don't support priority
 
@@ -1660,6 +1810,7 @@ Options:
   -d		include dfa dumps with failed test output
   -f arg	features file to use
   -p arg	parser to invoke
+  --dfa-cache-loc dir	pass --dfa-cache-loc to the parser
   --description	description to print with test
   -v		verbose
 examples:
@@ -1730,6 +1881,11 @@ while [[ $# -gt 0 ]]; do
 	    ;;
 	-p|--parser)
 	    APPARMOR_PARSER="$2"
+	    shift # past argument
+	    shift # past option
+	    ;;
+	--dfa-cache-loc)
+	    dfa_cache_loc="$2"
 	    shift # past argument
 	    shift # past option
 	    ;;
