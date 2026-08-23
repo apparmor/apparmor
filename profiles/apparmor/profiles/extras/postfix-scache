@@ -3,6 +3,7 @@
 #
 #    Copyright (C) 2002-2005 Novell/SUSE
 #    Copyright (C) 2018 Canonical, Ltd.
+#    Copyright (C) 2026 Christian Boltz
 #
 #    This program is free software; you can redistribute it and/or
 #    modify it under the terms of version 2 of the GNU General Public
@@ -15,14 +16,20 @@ abi <abi/5.0>,
 
 include <tunables/global>
 
-profile postfix-scache /usr/lib{,exec}/postfix/{bin/,sbin/,}scache flags=(attach_disconnected.path=/att/postfix-scache/) {
+@{att}=/att/postfix-scache/
+profile postfix-scache /usr/lib{,exec}/postfix/{bin/,sbin/,}scache flags=(attach_disconnected.path=@{att}) {
   include <abstractions/base>
   include <abstractions/nameservice>
   include <abstractions/postfix-common>
 
-  owner /att/postfix-scache/var/spool/postfix/private/dovecot-lmtp rw,
+  owner @{att}/var/spool/postfix/private/dovecot-lmtp rw,
+  owner /var/spool/postfix/private/scache rw,
 
   @{exec_path} mrix,
+
+  @{att}@{run}/systemd/userdb/io.systemd.DynamicUser rw,
+  @{att}@{run}/systemd/userdb/io.systemd.Machine rw,
+  @{att}/systemd/journal/dev-log w,
 
   # Site-specific additions and overrides. See local/README for details.
   include if exists <local/postfix-scache>
