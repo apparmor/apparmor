@@ -1123,6 +1123,21 @@ verify_binary_equality "'$p1'x'$p2' dbus slash filtering for paths" \
 }
 
 
+test_profile_flag_ordering()
+{
+	# Test that combining profile flag keywords in one list does not silently drop any,
+	# regardless of order. Profile flags (like interruptible) must be properly merged
+	# when they appear after path flags (like chroot_relative).
+	verify_binary_equality "flag ordering: chroot_relative + interruptible" \
+			"/t flags=(chroot_relative, interruptible) { /f r, }" \
+			"/t flags=(interruptible, chroot_relative) { /f r, }"
+
+	verify_binary_equality "flag ordering: mediate_deleted + interruptible" \
+			"/t flags=(mediate_deleted, interruptible) { /f r, }" \
+			"/t flags=(interruptible, mediate_deleted) { /f r, }"
+
+}
+
 test_block_configurations()
 {
 	######## prefix ####### allow, deny, prompt, audit, owner
@@ -1341,6 +1356,8 @@ run_tests()
 				"/t { /{bin/,#value} r, }" \
 				"@{BAR}=bin/   \#value
 					/t { /@{BAR} r, }"
+
+	test_profile_flag_ordering
 
 	test_block_configurations
 

@@ -265,6 +265,7 @@ public:
 				profile_mode_table[mode],
 				profile_mode_table[rhs.mode]);
 		mode = merge_profile_mode(mode, rhs.mode);
+		flags |= rhs.flags;
 		audit = audit || rhs.audit;
 		path = path | rhs.path;
 		if ((path & (PATH_CHROOT_REL | PATH_NS_REL)) ==
