@@ -23,6 +23,7 @@ profile samba-rpcd /usr/lib*/samba/{,samba/}rpcd_{mdssvc,epmapper,rpcecho,fsrvp,
   @{run}/samba/ncalrpc/np/lsarpc wr,
   @{run}/samba/ncalrpc/np/mdssvc wr,
   @{run}/samba/ncalrpc/np/winreg wr,
+  @{run}/samba/ncalrpc/np/samr wr,
 
   # Site-specific additions and overrides. See local/README for details.
   include if exists <local/samba-rpcd>
