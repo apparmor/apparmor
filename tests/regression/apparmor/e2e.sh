@@ -37,7 +37,7 @@ load_and_verify() {
     echo "profile $prof {}" | genprofile image=$prof --stdin
 
     # Check for the zstd magic number and decompress the cache if needed
-    if [ $(hexdump -s 8 -n 4 --format "\"%x\"" $cache_dir/profile) = "fd2fb528" ]; then
+    if [ "$(hexdump -s 8 -n 4 -e '4/1 "%02x"' "$cache_dir/profile")" = "28b52ffd" ]; then
         # Skip past our own custom header
         cache_md5=$(cat $cache_dir/profile | tail -c +9 | zstdcat | md5sum | awk '{ print $1 }')
     else
