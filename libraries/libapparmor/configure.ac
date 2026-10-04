@@ -98,7 +98,8 @@ fi
 
 AC_PROG_CXX
 
-m4_ifndef([AX_CHECK_COMPILE_FLAG], [AC_MSG_ERROR(['autoconf-archive' missing])])
+m4_ifndef([AX_CHECK_COMPILE_FLAG],
+	[m4_fatal(['autoconf-archive' missing, install it and re-run autogen.sh])])
 EXTRA_CFLAGS="-Wall $EXTRA_WARNINGS -fPIC"
 AX_CHECK_COMPILE_FLAG([-flto-partition=none], , , [-Werror])
 AS_VAR_IF([ax_cv_check_cflags__Werror__flto_partition_none], [yes],
