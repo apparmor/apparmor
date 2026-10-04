@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 DIE=0
 package=libapparmor
 
