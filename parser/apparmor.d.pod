@@ -2145,7 +2145,7 @@ Example AppArmor DBus rules:
          path=/com/example/path
          interface=com.example.Interface
          member=ExampleMethod
-         peer=(name=(com.example.ExampleName1|com.example.ExampleName2)),
+         peer=(name="{com.example.ExampleName1,com.example.ExampleName2}"),
 
     # Allow receive access for all unconfined peers
     dbus receive peer=(label=unconfined),
