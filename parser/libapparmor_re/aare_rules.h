@@ -106,13 +106,30 @@ typedef std::map<Node *, Node *> PermExprMap;
 class aare_rules final {
 	Node *root;
 	void add_to_rules(Node *tree, Node *perms);
-	UniquePermsCache unique_perms;
+	/* used when a shared UniquePermsCache isn't provided */
+	UniquePermsCache local_perms;
+	/* the cache of accept nodes, either local_perms or a cache shared
+	 * with other aare_rules. A shared cache must outlive the aare_rules
+	 * and the dfas created from them, and is not cleared when the
+	 * aare_rules is destroyed.
+	 * TODO: a shared cache is not safe for concurrent use, it is only
+	 *       shared within a process (eg. -j 0)
+	 */
+	UniquePermsCache &unique_perms;
 	PermExprMap expr_map;
  public:
 	int reverse;
 	int rule_count;
-	aare_rules(void): root(NULL), unique_perms(), expr_map(), reverse(0), rule_count(0) { };
-	aare_rules(int reverse): root(NULL), unique_perms(), expr_map(), reverse(reverse), rule_count(0) { };
+	aare_rules(void): root(NULL), local_perms(), unique_perms(local_perms), expr_map(), reverse(0), rule_count(0) { };
+	aare_rules(int reverse): root(NULL), local_perms(), unique_perms(local_perms), expr_map(), reverse(reverse), rule_count(0) { };
+	/* perms_cache: shared cache to use, or NULL to use a local cache */
+	aare_rules(UniquePermsCache *perms_cache, int reverse = 0):
+		root(NULL), local_perms(),
+		unique_perms(perms_cache ? *perms_cache : local_perms),
+		expr_map(), reverse(reverse), rule_count(0) { };
+	/* not copyable, a copy would reference the original's local cache */
+	aare_rules(const aare_rules &) = delete;
+	aare_rules &operator=(const aare_rules &) = delete;
 	~aare_rules();
 
 	bool add_rule(const char *rule, int priority, rule_mode_t mode,

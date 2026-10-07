@@ -1676,6 +1676,63 @@ static int test_aaregex_to_pcre(void)
 	return rc;
 }
 
+/* build an xattr style dfa (see process_profile_name_xmatch), where the
+ * appended rules make the accept nodes followed by more of the tree, so
+ * their followpos is set when building the dfa.
+ * Both rules are patterns, so they share an accept node. A literal
+ * pattern gets a separate exact match accept node, and append_rule()
+ * shares the appended tree between the accept nodes' trees, so it would
+ * be freed twice when the rules are destroyed.
+ * Returns: the dfa blob as a string, empty on failure
+ */
+static std::string build_shared_perms_dfa(UniquePermsCache *cache)
+{
+	std::vector <aa_perms> perms_table;
+	size_t size = 0;
+	int len = 0;
+	std::string blob;
+
+	aare_rules *rules = new aare_rules(cache);
+	if (rules->add_rule("/foo/[^/]*", 0, rule_mode_t::ALLOW, AA_MAY_EXEC, 0,
+			    parseopts) &&
+	    rules->add_rule("/bar/[^/]*", 0, rule_mode_t::ALLOW, AA_MAY_EXEC, 0,
+			    parseopts) &&
+	    rules->append_rule("one", false, true, parseopts) &&
+	    rules->append_rule("two", false, true, parseopts)) {
+		void *dfa = rules->create_dfablob(&size, &len, perms_table,
+						  parseopts, false, -1);
+		if (dfa) {
+			blob.assign((char *) dfa, size);
+			free(dfa);
+		}
+	}
+	delete rules;
+
+	return blob;
+}
+
+static int test_shared_perms_cache(void)
+{
+	int rc = 0;
+	UniquePermsCache cache;
+
+	std::string local = build_shared_perms_dfa(NULL);
+	MY_TEST(!local.empty(), "shared perms cache: build dfa with local cache");
+
+	std::string shared1 = build_shared_perms_dfa(&cache);
+	MY_TEST(shared1 == local, "shared perms cache: first dfa matches local cache dfa");
+	MY_TEST(cache.nodes.size() == 1, "shared perms cache: accept node added to shared cache");
+
+	/* the second dfa reuses the accept node, and must not be affected
+	 * by state left from building the first dfa
+	 */
+	std::string shared2 = build_shared_perms_dfa(&cache);
+	MY_TEST(shared2 == local, "shared perms cache: second dfa matches local cache dfa");
+	MY_TEST(cache.nodes.size() == 1, "shared perms cache: accept node shared between dfas");
+
+	return rc;
+}
+
 int main(void)
 {
 	int rc = 0;
@@ -1683,6 +1740,10 @@ int main(void)
 
 	// Default is parser_common.c, but it should be this source file instead
 	progname = __FILE__;
+
+	retval = test_shared_perms_cache();
+	if (retval != 0)
+		rc = retval;
 
 	retval = test_filter_slashes();
 	if (retval != 0)

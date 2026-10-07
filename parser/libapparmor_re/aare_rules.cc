@@ -38,7 +38,8 @@ aare_rules::~aare_rules(void)
 	if (root)
 		root->release();
 
-	unique_perms.clear();
+	/* a shared unique_perms cache is owned by the caller */
+	local_perms.clear();
 	expr_map.clear();
 }
 
