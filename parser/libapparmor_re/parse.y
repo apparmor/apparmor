@@ -106,7 +106,11 @@ qterm	    : term
 
 term	    : '.'		{ $$ = new AnyCharNode; }
 	    | regex_char	{ $$ = new CharNode($1); }
-	    | '[' charset ']'	{ $$ = new CharSetNode(*$2);
+	    | '[' charset ']'	{ /* [a] -> a so it can factor with a */
+				  if ($2->size() == 1)
+					$$ = new CharNode(*$2->begin());
+				  else
+					$$ = new CharSetNode(*$2);
 				  delete $2; }
 	    | '[' '^' charset ']'
 				{ $$ = new NotCharSetNode(*$3);
