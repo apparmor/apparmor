@@ -141,14 +141,18 @@ void Node::dump_syntax_tree(ostream &os) const
 {
 	for (const_depth_first_traversal i(this); i; i++) {
 		os << i->label << '\t';
-		if ((*i)->child[0] == 0)
+		if (!(*i)->is_type(node_type_t::INNER))
 			os << **i << '\t' << (*i)->followpos << endl;
-		else {
-			if ((*i)->child[1] == 0)
-				os << (*i)->child[0]->label << **i;
-			else
-				os << (*i)->child[0]->label << **i
-				   << (*i)->child[1]->label;
+		else if ((*i)->is_type(node_type_t::ONECHILD)) {
+			os << (*i)->child[0]->label << **i;
+			os << '\t' << endl;
+		} else {
+			std::vector<Node *>::const_iterator c;
+			for (c = (*i)->child.begin(); c != (*i)->child.end(); c++) {
+				if (c != (*i)->child.begin())
+					os << **i;
+				os << (*c)->label;
+			}
 			os << '\t' << endl;
 		}
 	}
@@ -638,11 +642,19 @@ void flip_tree(Node *node)
 
 void dump_regex_rec(ostream &os, Node *tree)
 {
-	if (tree->child[0])
+	if (!tree->is_type(node_type_t::INNER)) {
+		os << *tree;
+	} else if (tree->is_type(node_type_t::ONECHILD)) {
 		dump_regex_rec(os, tree->child[0]);
-	os << *tree;
-	if (tree->child[1])
-		dump_regex_rec(os, tree->child[1]);
+		os << *tree;
+	} else {
+		std::vector<Node *>::iterator c;
+		for (c = tree->child.begin(); c != tree->child.end(); c++) {
+			if (c != tree->child.begin())
+				os << *tree;
+			dump_regex_rec(os, *c);
+		}
+	}
 }
 
 void dump_regex(ostream &os, Node *tree)

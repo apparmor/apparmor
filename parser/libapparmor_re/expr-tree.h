@@ -37,7 +37,6 @@
 #include <cstddef>
 #include <map>
 #include <set>
-#include <stack>
 #include <ostream>
 #include <vector>
 
@@ -1156,34 +1155,58 @@ public:
 
 
 /* Traverse the syntax tree depth-first in an iterator-like manner. */
+/*
+ * Post order depth first traversal of the expression tree.
+ *
+ * Iterative so deep trees don't use the C stack, and only tracks the
+ * path from the root to the current node, so memory use is O(depth)
+ * of the tree, regardless of how many children a node has.
+ *
+ * A node is visited after all of its children. The visited node's
+ * children may be modified (eg. reordered by flip_tree()), but the
+ * number of children must not change while the node is visited.
+ */
 template<class node_type>
 class basic_depth_first_traversal {
-	std::stack<node_type *>pos;
-	void push_left(node_type *node) {
-		pos.push(node);
+	struct frame {
+		node_type *node;
+		size_t next;	/* index of next child to visit */
+		frame(node_type *node): node(node), next(0) { }
+	};
+	std::vector<frame> pos;
 
-		while (node->is_type(node_type_t::INNER)) {
-			pos.push(node->child[0]);
-			node = node->child[0];
+	/* descend until the node on top of the stack has no unvisited
+	 * children. Leaf nodes and OneChildNodes have NULL entries in
+	 * their child vector, which are skipped.
+	 */
+	void descend(void)
+	{
+		while (pos.back().node->is_type(node_type_t::INNER)) {
+			frame &f = pos.back();
+			node_type *c = NULL;
+
+			while (!c && f.next < f.node->child.size())
+				c = f.node->child[f.next++];
+			if (!c)
+				return;
+			/* invalidates f */
+			pos.push_back(frame(c));
 		}
 	}
 public:
-	basic_depth_first_traversal(node_type *node) { push_left(node); }
-	node_type *operator*() { return pos.top(); }
-	node_type *operator->() { return pos.top(); }
+	basic_depth_first_traversal(node_type *node)
+	{
+		pos.push_back(frame(node));
+		descend();
+	}
+	node_type *operator*() { return pos.back().node; }
+	node_type *operator->() { return pos.back().node; }
 	operator bool() { return !pos.empty(); }
 	void operator++(int)
 	{
-		node_type *last = pos.top();
-		pos.pop();
-
-		if (!pos.empty()) {
-			node_type *node = pos.top();
-			if (node->child[1] &&
-			    node->child[1] != last) {
-				push_left(node->child[1]);
-			}
-		}
+		pos.pop_back();
+		if (!pos.empty())
+			descend();
 	}
 };
 
