@@ -146,54 +146,6 @@ err:
 }
 
 /*
- * append_rule is like add_rule, but appends the rule to any existing rules
- * with a separating transition. The appended rule matches with the same
- * permissions as the rule it's appended to. If there are no existing rules
- * append_rule returns true.
- *
- * This is used by xattrs matching where, after matching the path, the DFA is
- * advanced by a null character for each xattr.
- */
-bool aare_rules::append_rule(const char *rule, bool oob, bool with_perm,
-			     optflags const &opts)
-{
-	Node *tree = NULL;
-	if (regex_parse(&tree, rule))
-		return false;
-
-	if (opts.dump & DUMP_DFA_RULE_EXPR) {
-		cerr << "rule: ";
-		cerr << rule;
-		cerr << "  ->  ";
-		tree->dump(cerr);
-		cerr << "\n\n";
-	}
-
-	/*
-	 * For each matching state, we want to create an optional path
-	 * separated by a separating character.
-	 *
-	 * When matching xattrs, the DFA must end up in an accepting state for
-	 * the path, then each value of the xattrs. Using an optional node
-	 * lets each rule end up in an accepting state.
-	 */
-	tree = new CatNode(oob ? new CharNode(transchar(-1, true)) : new CharNode(0), tree);
-	if (expr_map.size() == 0) {
-		// There's nothing to append to. Free the tree reference.
-		delete tree;
-		return true;
-	}
-	PermExprMap::const_iterator it;
-	for (it = expr_map.cbegin(); it != expr_map.cend(); it++) {
-		if (with_perm)
-			expr_map[it->first] = new CatNode(it->second, new AltNode(it->first, tree));
-		else
-			expr_map[it->first] = new CatNode(it->second, tree);
-	}
-	return true;
-}
-
-/*
  * Finish constructing the expr tree from the different permission set
  * trees, simplifying each. Each permission set's tree is followed by its
  * accept node, or if @tail is set by

@@ -139,7 +139,6 @@ class aare_rules final {
 	bool add_rule_vec(int priority, rule_mode_t mode, perm32_t perms,
 			  perm32_t audit, int count, const char **rulev,
 			  optflags const &opts, bool oob);
-	bool append_rule(const char *rule, bool oob, bool with_perm, optflags const &opts);
 	/* @tail: optional ruleset appended to every rule of this ruleset,
 	 *        see build_tree(). It must use the same UniquePermsCache
 	 *        as this ruleset, and its rules are consumed.
