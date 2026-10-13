@@ -1733,6 +1733,114 @@ static int test_shared_perms_cache(void)
 	return rc;
 }
 
+/* build the dfa for two pattern rules, with "o[^/]e" appended to them
+ * either by append_rule(), or by passing a tail ruleset to
+ * create_dfablob().
+ * Returns: the dfa blob as a string, empty on failure
+ */
+static std::string build_tail_dfa(UniquePermsCache *cache, bool use_tail)
+{
+	std::vector <aa_perms> perms_table;
+	size_t size = 0;
+	int len = 0;
+	std::string blob;
+	void *dfa = NULL;
+
+	aare_rules *rules = new aare_rules(cache);
+	aare_rules *tail = new aare_rules(cache);
+	if (rules->add_rule("/foo/[^/]*", 0, rule_mode_t::ALLOW, AA_MAY_EXEC, 0,
+			    parseopts) &&
+	    rules->add_rule("/bar/[^/]*", 0, rule_mode_t::ALLOW, AA_MAY_EXEC, 0,
+			    parseopts)) {
+		if (use_tail) {
+			if (tail->add_rule("o[^/]e", 0, rule_mode_t::ALLOW,
+					   AA_MAY_EXEC, 0, parseopts))
+				dfa = rules->create_dfablob(&size, &len,
+							    perms_table,
+							    parseopts, false,
+							    -1, tail,
+							    false);
+		} else if (rules->append_rule("o[^/]e", false, true,
+					      parseopts)) {
+			dfa = rules->create_dfablob(&size, &len, perms_table,
+						    parseopts, false, -1);
+		}
+	}
+	if (dfa) {
+		blob.assign((char *) dfa, size);
+		free(dfa);
+	}
+	delete rules;
+	delete tail;
+
+	return blob;
+}
+
+static int test_tail_rules(void)
+{
+	int rc = 0;
+	std::vector <aa_perms> perms_table;
+	size_t size = 0;
+	int len = 0;
+	void *dfa;
+
+	{
+		/* the tail rule has the same perms as the rules, so they
+		 * share an accept node, and the dfa is the same as with
+		 * append_rule()
+		 */
+		UniquePermsCache cache;
+		std::string append = build_tail_dfa(&cache, false);
+		std::string tail = build_tail_dfa(&cache, true);
+		MY_TEST(!append.empty(), "tail rules: build dfa with append_rule");
+		MY_TEST(!tail.empty(), "tail rules: build dfa with tail ruleset");
+		MY_TEST(tail == append, "tail rules: tail ruleset dfa matches append_rule dfa");
+	}
+	{
+		/* a literal and a pattern rule have different accept nodes,
+		 * so the tail is shared between two permission sets
+		 */
+		UniquePermsCache cache;
+		aare_rules *rules = new aare_rules(&cache);
+		aare_rules *tail = new aare_rules(&cache);
+		dfa = NULL;
+		if (rules->add_rule("/foo", 0, rule_mode_t::ALLOW, AA_MAY_EXEC, 0,
+				    parseopts) &&
+		    rules->add_rule("/bar/[^/]*", 0, rule_mode_t::ALLOW, AA_MAY_EXEC,
+				    0, parseopts) &&
+		    tail->add_rule("o[^/]e", 0, rule_mode_t::ALLOW, AA_MAY_EXEC, 0,
+				   parseopts))
+			dfa = rules->create_dfablob(&size, &len, perms_table,
+						    parseopts, false, -1,
+						    tail);
+		MY_TEST(dfa != NULL, "tail rules: tail shared between accept nodes");
+		MY_TEST(cache.nodes.size() == 2, "tail rules: tail shares the pattern accept node");
+		free(dfa);
+		delete rules;
+		delete tail;
+	}
+	{
+		/* a tail must use the same UniquePermsCache */
+		UniquePermsCache cache;
+		aare_rules *rules = new aare_rules(&cache);
+		aare_rules *tail = new aare_rules();
+		dfa = NULL;
+		if (rules->add_rule("/foo/[^/]*", 0, rule_mode_t::ALLOW, AA_MAY_EXEC,
+				    0, parseopts) &&
+		    tail->add_rule("o[^/]e", 0, rule_mode_t::ALLOW, AA_MAY_EXEC, 0,
+				   parseopts))
+			dfa = rules->create_dfablob(&size, &len, perms_table,
+						    parseopts, false, -1,
+						    tail);
+		MY_TEST(dfa == NULL, "tail rules: tail with a different cache is rejected");
+		free(dfa);
+		delete rules;
+		delete tail;
+	}
+
+	return rc;
+}
+
 int main(void)
 {
 	int rc = 0;
@@ -1742,6 +1850,10 @@ int main(void)
 	progname = __FILE__;
 
 	retval = test_shared_perms_cache();
+	if (retval != 0)
+		rc = retval;
+
+	retval = test_tail_rules();
 	if (retval != 0)
 		rc = retval;
 

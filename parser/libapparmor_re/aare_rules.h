@@ -117,6 +117,8 @@ class aare_rules final {
 	 */
 	UniquePermsCache &unique_perms;
 	PermExprMap expr_map;
+	Node *build_tree(optflags const &opts, SharedTreeNode *tail,
+			 int *min_match_len);
  public:
 	int reverse;
 	int rule_count;
@@ -138,15 +140,21 @@ class aare_rules final {
 			  perm32_t audit, int count, const char **rulev,
 			  optflags const &opts, bool oob);
 	bool append_rule(const char *rule, bool oob, bool with_perm, optflags const &opts);
+	/* @tail: optional ruleset appended to every rule of this ruleset,
+	 *        see build_tree(). It must use the same UniquePermsCache
+	 *        as this ruleset, and its rules are consumed.
+	 * @tail_oob: separate the tail with an oob transition, else \x00
+	 */
 	CHFA *create_chfa(int *min_match_len,
 			  std::vector <aa_perms> &perms_table,
 			  optflags const &opts, bool filedfa,
-			  int permstable32_version);
+			  int permstable32_version, aare_rules *tail = NULL,
+			  bool tail_oob = true);
 	void *create_dfablob(size_t *size, int *min_match_len,
 			 std::vector <aa_perms> &perms_table,
 			 optflags const &opts,
-			 bool filedfa,
-			 int permstable32_version);
+			 bool filedfa, int permstable32_version,
+			 aare_rules *tail = NULL, bool tail_oob = true);
 };
 
 #endif				/* __LIBAA_RE_RULES_H */
