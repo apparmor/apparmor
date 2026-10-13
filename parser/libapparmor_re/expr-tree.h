@@ -333,6 +333,8 @@ public:
 	 * not use them to compute followpos.
 	 */
 	virtual bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) = 0;
+	/* clear the state computed by compute_pos() */
+	virtual void clear_pos(void) { followpos.clear(); }
 
 	/*
 	 * min_match_len determines the smallest string that can match the
@@ -877,7 +879,8 @@ public:
  */
 class SharedTreeNode: public OneChildNode {
 public:
-	SharedTreeNode(Node *tree): OneChildNode(tree), refcount(1)
+	SharedTreeNode(Node *tree): OneChildNode(tree), refcount(1),
+		computed(false), nullable(false), pos_uses(0)
 	{
 		type_flags |= node_type_t::SHAREDTREE;
 	}
@@ -891,13 +894,41 @@ public:
 		if (--refcount == 0)
 			delete this;
 	}
-	/* computed for every reference, followpos within the subtree is
-	 * the same each time as the context is the same
-	 * TODO: cache firstpos/lastpos so the subtree is only walked once
+	/*
+	 * The subtree is only walked for the first reference, its firstpos
+	 * and lastpos are cached for the remaining references. followpos
+	 * within the subtree is the same for every reference as the
+	 * context is the same.
+	 *
+	 * During a dfa build every reference to the node is in the tree,
+	 * so the cache is handed to the last reference instead of being
+	 * kept until clear_pos().
 	 */
 	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
 	{
-		return child[0]->compute_pos(firstpos, lastpos);
+		if (!computed) {
+			nullable = child[0]->compute_pos(first_cache,
+							 last_cache);
+			computed = true;
+		}
+		if (++pos_uses == refcount) {
+			merge_into(firstpos, first_cache);
+			merge_into(lastpos, last_cache);
+			first_cache.clear();
+			last_cache.clear();
+		} else {
+			firstpos.insert(first_cache.begin(), first_cache.end());
+			lastpos.insert(last_cache.begin(), last_cache.end());
+		}
+		return nullable;
+	}
+	void clear_pos(void) override
+	{
+		OneChildNode::clear_pos();
+		computed = false;
+		pos_uses = 0;
+		first_cache.clear();
+		last_cache.clear();
 	}
 	/* only equal to itself */
 	int cmp(const Node *other) const override
@@ -920,6 +951,12 @@ public:
 	int min_match_len() const override { return child[0]->min_match_len(); }
 
 	unsigned int refcount;
+private:
+	/* compute_pos() cache */
+	bool computed;
+	bool nullable;
+	unsigned int pos_uses;
+	NodeSet first_cache, last_cache;
 };
 
 /* Match a pair of consecutive nodes. */

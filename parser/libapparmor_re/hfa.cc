@@ -480,10 +480,11 @@ DFA::DFA(Node *root, optflags const &opts, bool buildfiledfa): root(root), filed
 
 	/* Accept nodes are shared, and can be shared between trees (see
 	 * UniquePermsCache), so can have followpos from a previous dfa.
-	 * Clear followpos for all nodes before any is computed.
+	 * Clear the compute_pos() state (followpos, and the SharedTreeNode
+	 * caches) for all nodes before any is computed.
 	 */
 	for (depth_first_traversal i(root); i; i++)
-		(*i)->followpos.clear();
+		(*i)->clear_pos();
 
 	/* root lastpos is not needed, drop it as soon as compute is done */
 	NodeSet *firstpos = new NodeSet;
@@ -515,7 +516,7 @@ DFA::DFA(Node *root, optflags const &opts, bool buildfiledfa): root(root), filed
 	 * needed.
 	 */
 	for (depth_first_traversal i(root); i; i++) {
-		(*i)->followpos.clear();
+		(*i)->clear_pos();
 	}
 
 	if (opts.dump & DUMP_DFA_NODE_TO_DFA)
