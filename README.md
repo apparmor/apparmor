@@ -236,6 +236,7 @@ In addition, modify the tarball checksum under `source-checksum`.
       - flex
       - gettext
       - g++
+      - libzstd-dev
       - pkg-config
       - wget
     source: ./apparmor-5.0.0.tar.gz

@@ -54,6 +54,15 @@ CPPFLAGS += -D_GNU_SOURCE
 STDLIB_INCLUDE:="\#include <stdlib.h>"
 HAVE_REALLOCARRAY:=$(shell echo $(STDLIB_INCLUDE) | ${CPP} ${CPPFLAGS} - - | grep -q reallocarray && echo true)
 
+# Test for libzstd: parser.h includes <zstd.h> and apparmor_parser links -lzstd
+ZSTD_INCLUDE:="\#include <zstd.h>"
+HAVE_ZSTD:=$(shell echo $(ZSTD_INCLUDE) | ${CPP} ${CPPFLAGS} - - >/dev/null 2>&1 && echo true)
+ifneq (${HAVE_ZSTD},true)
+ifneq (,$(filter-out %clean,$(or ${MAKECMDGOALS},all)))
+$(error <zstd.h> not found. Install libzstd-dev (Debian, Ubuntu) or libzstd-devel (openSUSE, Fedora))
+endif
+endif
+
 WARNINGS = -Wall
 CXX_WARNINGS = ${WARNINGS} ${EXTRA_WARNINGS}
 
