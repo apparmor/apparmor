@@ -37,51 +37,52 @@ void all_rule::add_implied_rules(Profile &prof)
 
 	rule = new unix_rule(0xffffffff, audit, rule_mode);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.main_block->add_rule(rule);
 
 	rule = new dbus_rule(0, NULL, NULL);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.main_block->add_rule(rule);
 
 	rule = new io_uring_rule(0, NULL, NULL);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.main_block->add_rule(rule);
 
 	rule = new mqueue_rule(0, NULL);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.main_block->add_rule(rule);
 
 	rule = new ptrace_rule(0, NULL);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.main_block->add_rule(rule);
 
 	rule = new signal_rule(0, NULL);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.main_block->add_rule(rule);
 
 	rule = new userns_rule(0, NULL);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.main_block->add_rule(rule);
 
 	rule = new mnt_rule(NULL, NULL, NULL, NULL, AA_MAY_MOUNT);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.main_block->add_rule(rule);
 
 	rule = new mnt_rule(NULL, NULL, NULL, NULL, AA_DUMMY_REMOUNT);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.main_block->add_rule(rule);
 
 	rule = new mnt_rule(NULL, NULL, NULL, NULL, AA_MAY_UMOUNT);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.main_block->add_rule(rule);
 
 	rule = new mnt_rule(NULL, NULL, NULL, NULL, AA_MAY_PIVOTROOT);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.main_block->add_rule(rule);
 
 	rule = new network_rule(0, (struct cond_entry *)NULL, (struct cond_entry *)NULL);
 	(void) rule->add_prefix(*prefix);
-	prof.rule_ents.push_back(rule);
+	prof.main_block->add_rule(rule);
+	prof.main_block->add_compat_net(static_cast<network_rule *>(rule));
 	
 	/* rules that have not been converted to use rule.h */
 
@@ -105,7 +106,7 @@ void all_rule::add_implied_rules(Profile &prof)
 		if (!entry_add_prefix(entry, *prefix, error)) {
 			yyerror(_("%s"), error);
 		}
-		add_entry_to_policy(&prof, entry);
+		prof.main_block->add_entry(entry);
 	}
 	// lower priority ix
 	{
@@ -136,23 +137,11 @@ void all_rule::add_implied_rules(Profile &prof)
 		if (!entry_add_prefix(entry, ix_prefix, error)) {
 			yyerror(_("%s"), error);
 		}
-		add_entry_to_policy(&prof, entry);
+		prof.main_block->add_entry(entry);
 	}
 	// caps
 	{
-		if (prefix->owner != owner_t::UNSPECIFIED)
-			yyerror(_("owner prefix not allowed on capability rules"));
-
-		if (rule_mode == rule_mode_t::DENY && audit == audit_t::FORCE) {
-			prof.caps.deny |= 0xffffffffffffffff;
-		} else if (rule_mode == rule_mode_t::DENY) {
-			prof.caps.deny |= 0xffffffffffffffff;
-			prof.caps.quiet |= 0xffffffffffffffff;
-		} else {
-			prof.caps.allow |= 0xffffffffffffffff;
-			if (audit != audit_t::UNSPECIFIED)
-				prof.caps.audit |= 0xffffffffffffffff;
-		}
+		prof.main_block->add_capabilities(*prefix, 0xffffffffffffffff);
 	}
 	
 	// TODO: rlimit

@@ -22,6 +22,8 @@
 
 #include <list>
 #include <ostream>
+#include <string.h>
+#include <utility>
 
 #include "perms.h"
 #include "policydb.h"
@@ -91,7 +93,21 @@ public:
 	rule_t *removed_by;
 
 	rule_t(int t): rule_type(t), flags(rule_flags_t::NONE), removed_by(NULL) { }
-	virtual ~rule_t() { };
+	rule_t(const rule_t &r) : rule_type(r.rule_type), flags(r.flags),
+				  removed_by(r.removed_by)
+	{
+		if (r.warned_name)
+			warned_name = warned_name;
+	}
+	rule_t(rule_t &&r) noexcept : rule_type(r.rule_type), flags(r.flags),
+				      removed_by(r.removed_by), warned_name(r.warned_name)
+	{
+		r.warned_name = NULL;
+	}
+
+	virtual ~rule_t()
+	{
+	};
 
 	bool is_type(int type) { return rule_type == type; }
 
@@ -152,12 +168,19 @@ public:
 	// called late frontend to generate data for regex backend
 	virtual rule_result_t gen_policy_re(Profile &prof) = 0;
 
+	virtual rule_t* clone() const = 0;
+
+	// does the rule use prompt mediation. overridden by rule
+	// types that carry a rule_mode (see prefix_rule_t).
+	virtual bool uses_prompt() const { return false; }
+
 protected:
 	const char *warned_name = NULL;
 	virtual void warn_once(const char *name, const char *msg);
 	virtual void warn_once(const char *name) = 0;
+	rule_t& operator=(const rule_t& r) = delete;
 
-
+	rule_t& operator=(rule_t&& r) noexcept = delete;
 };
 
 std::ostream &operator<<(std::ostream &os, rule_t &rule);
@@ -322,6 +345,37 @@ public:
 		owner = owner_t::UNSPECIFIED;
 	};
 
+	prefix_rule_t(const prefix_rule_t &p) : rule_t(p)
+	{
+		priority = p.priority;
+		audit = p.audit;
+		rule_mode = p.rule_mode;
+		owner = p.owner;
+	}
+
+	prefix_rule_t(prefix_rule_t &&p) noexcept : rule_t(std::move(p))
+	{
+		priority = p.priority;
+		audit = p.audit;
+		rule_mode = p.rule_mode;
+		owner = p.owner;
+		p.priority = 0;
+		p.audit = audit_t::UNSPECIFIED;
+		p.rule_mode = rule_mode_t::UNSPECIFIED;
+		p.owner = owner_t::UNSPECIFIED;
+	}
+
+	prefix_rule_t& operator=(const prefix_rule_t& p) = delete;
+
+	prefix_rule_t& operator=(prefix_rule_t&& p) noexcept = delete;
+
+	virtual ~prefix_rule_t() { }
+
+	virtual bool uses_prompt() const override
+	{
+		return rule_mode == rule_mode_t::PROMPT;
+	}
+
 	virtual bool valid_prefix(const prefixes &p, const char *&error) = 0;
 
 	virtual bool add_prefix(const prefixes &p, const char *&error) {
@@ -432,6 +486,16 @@ class class_rule_t: public prefix_rule_t {
 public:
 	class_rule_t(int c): prefix_rule_t(RULE_TYPE_CLASS + c) { }
 
+	class_rule_t(const class_rule_t &r) : prefix_rule_t(r) { }
+
+	class_rule_t(class_rule_t &&r) noexcept : prefix_rule_t(std::move(r)) { }
+
+	~class_rule_t() { }
+
+	class_rule_t& operator=(const class_rule_t &r) = delete;
+
+	class_rule_t& operator=(class_rule_t &&r) = delete;
+
 	int aa_class(void) { return rule_type - RULE_TYPE_CLASS; }
 
 	/* inherit cmp */
@@ -460,6 +524,18 @@ public:
 class perms_rule_t: public class_rule_t {
 public:
 	perms_rule_t(int c): class_rule_t(c), perms(0), saved(0) { };
+
+	perms_rule_t(const perms_rule_t &r) : class_rule_t(r),
+					      perms(r.perms), saved(r.saved) { };
+
+	perms_rule_t(perms_rule_t &&r) noexcept : class_rule_t(std::move(r)),
+						  perms(r.perms), saved(r.saved) { }
+
+	~perms_rule_t() { }
+
+	perms_rule_t& operator=(const perms_rule_t &r) = delete;
+
+	perms_rule_t& operator=(perms_rule_t &&r) = delete;
 
 	int cmp(rule_t const &rhs) const override {
 		/* don't compare perms so they can be merged */
@@ -499,6 +575,18 @@ public:
 class dedup_perms_rule_t: public class_rule_t {
 public:
 	dedup_perms_rule_t(int c): class_rule_t(c), perms(0) { };
+
+	dedup_perms_rule_t(const dedup_perms_rule_t &r) : class_rule_t(r),
+							  perms(r.perms) { };
+
+	dedup_perms_rule_t(dedup_perms_rule_t &&r) noexcept : class_rule_t(std::move(r)),
+							      perms(r.perms) { }
+
+	~dedup_perms_rule_t() { }
+
+	dedup_perms_rule_t& operator=(const dedup_perms_rule_t &r) = delete;
+
+	dedup_perms_rule_t& operator=(dedup_perms_rule_t &&r) = delete;
 
 	int cmp(rule_t const &rhs) const override {
 		int res = class_rule_t::cmp(rhs);

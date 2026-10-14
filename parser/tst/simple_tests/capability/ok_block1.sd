@@ -1,0 +1,17 @@
+#
+#=DESCRIPTION capability rules accept allow/deny/audit prefixes via a block
+#=EXRESULT PASS
+
+/does/not/exist {
+  deny {
+    capability chown,
+    audit capability kill,
+  }
+  audit {
+    capability sys_admin,
+    deny capability net_admin,
+  }
+  {
+    capability setuid,
+  }
+}

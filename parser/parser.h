@@ -166,6 +166,19 @@ struct cod_entry {
 struct aa_rlimits {
 	unsigned int specified;			/* limits that are set */
 	rlim_t limits[RLIMIT_NLIMITS];
+
+	bool add_prefix(const prefixes &p, const char *&error)
+	{
+		if (specified != 0 &&
+		    (p.rule_mode != rule_mode_t::UNSPECIFIED ||
+		     p.audit != audit_t::UNSPECIFIED ||
+		     p.owner != owner_t::UNSPECIFIED ||
+		     p.priority != 0)) {
+			error = _("prefix not allowed on rlimit rules");
+			return false;
+		}
+		return true;
+	}
 };
 
 struct alt_name {
@@ -452,6 +465,8 @@ extern int clear_and_convert_entry(std::string& buffer, const char *entry);
 extern bool process_profile_name_xmatch(Profile *prof);
 extern int process_profile_regex(Profile *prof);
 extern int process_profile_policydb(Profile *prof);
+extern bool process_dfa_entry(aare_rules *dfarules, struct cod_entry *entry);
+extern int process_profile_rules(Profile *prof);
 
 extern void filter_slashes(char *path);
 extern const char *local_name(const char *name);
@@ -502,11 +517,9 @@ extern long long convert_time_units(long long value, long long base, const char 
 
 /* parser_alias.c */
 extern int new_alias(const char *from, const char *to);
+extern int replace_entries_aliases(Profile *prof, struct cod_entry *entries);
 extern int replace_profile_aliases(Profile *prof);
 extern void free_aliases(void);
-
-/* parser_merge.c */
-extern int profile_merge_rules(Profile *prof);
 
 /* parser_interface.c */
 extern int load_profile(int option, aa_kernel_interface *kernel_interface,
@@ -522,7 +535,6 @@ extern int cache_fd;
 extern void add_to_list(Profile *profile);
 extern void add_hat_to_policy(Profile *policy, Profile *hat);
 extern int post_process_policy(int debug_only);
-extern Profile *merge_policy(Profile *a, Profile *b);
 extern int load_policy(int option, aa_kernel_interface *kernel_interface,
 		       int cache_fd);
 extern int load_hats(std::ostringstream &buf, Profile *prof);

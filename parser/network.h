@@ -153,7 +153,7 @@ public:
 
 	bool is_none = false;
 
-	void free_conds() {
+	void free_conds(void) {
 		if (sip) {
 			free(sip);
 			sip = NULL;
@@ -162,9 +162,56 @@ public:
 			free(sport);
 			sport = NULL;
 		}
-		if (iface)
+		if (iface) {
 			free(iface);
+			iface = NULL;
+		}
+		if (label_match) {
+			free(label_match);
+			label_match = NULL;
+		}
 	}
+
+	ip_conds(void) {}
+
+	~ip_conds(void)
+	{
+		free_conds();
+	}
+
+	ip_conds(const ip_conds &r) : sip(NULL), sport(NULL),
+				      iface(NULL), label_match(NULL),
+				      is_ip(r.is_ip), is_port(r.is_port),
+				      from_port(r.from_port),
+				      to_port(r.to_port), ip(r.ip),
+				      is_none(r.is_none)
+	{
+		if (r.sip)
+			sip = strdup(r.sip);
+		if (r.sport)
+			sport = strdup(r.sport);
+		if (r.iface)
+			iface = strdup(r.iface);
+		if (r.label_match)
+			label_match = strdup(r.label_match);
+	}
+
+	ip_conds(ip_conds &&r) noexcept : sip(r.sip), sport(r.sport),
+					  iface(r.iface), label_match(r.label_match),
+					  is_ip(r.is_ip), is_port(r.is_port),
+					  from_port(r.from_port),
+					  to_port(r.to_port), ip(r.ip),
+					  is_none(r.is_none)
+	{
+		r.sip = NULL;
+		r.sport = NULL;
+		r.iface = NULL;
+		r.label_match = NULL;
+	}
+
+	ip_conds& operator=(const ip_conds& r) = delete;
+
+	ip_conds& operator=(ip_conds&& r) noexcept = delete;
 };
 
 class network_rule: public dedup_perms_rule_t {
@@ -213,7 +260,7 @@ public:
 	bool gen_ip_conds(Profile &prof, std::list<std::ostringstream> &streams, ip_conds &entry, bool is_peer, bool is_cmd, bool is_iface);
 	bool gen_net_rule(Profile &prof, unsigned int netclass, u16 family, unsigned int type_mask, unsigned int protocol, bool skb);
 	void set_netperm(unsigned int family, unsigned int type, unsigned int protocol);
-	void update_compat_net(void);
+	void update_compat_net(const prefixes &p);
 	bool parse_address(ip_conds &entry);
 	bool parse_port(ip_conds &entry);
 	bool parse_iface(ip_conds &entry);
@@ -234,8 +281,57 @@ public:
 	bool add_prefix(const prefixes &p, const char *&error) override {
 		bool rc = dedup_perms_rule_t::add_prefix(p, error);
 		/* update compat net needs to run after adding the prefix */
-		update_compat_net();
+		update_compat_net(p);
 		return rc;
+	}
+
+	void apply_compat_prefix(const prefixes &p) {
+		if (!allow)	/* no aggregated network rules */
+			return;
+
+		if (p.rule_mode == rule_mode_t::UNSPECIFIED &&
+		    p.audit == audit_t::UNSPECIFIED)
+			return;	/* nothing to change */
+
+		for (size_t i = 0; i < get_af_max(); i++) {
+			/* nothing to do if there are no perms for family */
+			if ((allow[i] | audit[i] | deny[i] | quiet[i]) == 0)
+				continue;
+
+			/* decompose current state into the four
+			 * mutually exclusive groups */
+			uint64_t allow_noaudit = allow[i] & ~audit[i] & ~deny[i];
+			uint64_t allow_audit = allow[i] & audit[i] & ~deny[i];
+			uint64_t deny_quiet = deny[i] & quiet[i];	/* plain deny */
+			uint64_t deny_audit = deny[i] & ~quiet[i];	/* audit deny */
+
+			allow[i] = audit[i] = deny[i] = quiet[i] = 0;
+
+			if (p.rule_mode == rule_mode_t::DENY) {
+				/* deny wins: every perm becomes
+				 * denied. what was quiet remains
+				 * quiet unless the audit prefix was
+				 * specified.
+				 */
+				deny[i] = allow_noaudit | allow_audit | deny_quiet | deny_audit;
+				unsigned int  audited = allow_audit | deny_audit;
+				if (p.audit == audit_t::FORCE) {
+					audited |= (allow_noaudit | deny_quiet);
+				}
+				quiet[i] = (allow_noaudit | deny_quiet) & ~audited;
+			} else {	/* audit prefix, not deny */
+				allow[i] = allow_noaudit | allow_audit;
+				deny[i] = deny_quiet | deny_audit;
+				if (p.audit == audit_t::FORCE) {
+					audit[i] = allow[i];
+					/* audited denials are no longer quieted */
+					quiet[i] = 0;
+				} else {
+					audit[i] = allow_audit;
+					quiet[i] = deny_quiet;
+				}
+			}
+		}
 	}
 
 	ostream &dump(ostream &os) override;
@@ -247,12 +343,48 @@ public:
 
 	/* array of type masks indexed by AF_FAMILY */
 	/* allow, audit, deny and quiet are used for compatibility with AA_CLASS_NET */
-	static unsigned int *allow;
-	static unsigned int *audit;
-	static unsigned int *deny;
-	static unsigned int *quiet;
+	unsigned int *allow = NULL;
+	unsigned int *audit = NULL;
+	unsigned int *deny = NULL;
+	unsigned int *quiet = NULL;
 
 	bool alloc_net_table(void);
+
+	network_rule(const network_rule &r) : dedup_perms_rule_t(r),
+					      network_map(r.network_map),
+					      network_perms(r.network_perms),
+					      peer(r.peer), local(r.local)
+	{
+		if (r.allow) {
+			if (!alloc_net_table())
+				yyerror(_("Memory allocation error."));
+			for (size_t i = 0; i < get_af_max(); i++) {
+				allow[i] = r.allow[i];
+				audit[i] = r.audit[i];
+				deny[i] = r.deny[i];
+				quiet[i] = r.quiet[i];
+			}
+		}
+	}
+
+	network_rule(network_rule &&r) noexcept : dedup_perms_rule_t(std::move(r)),
+						  network_map(std::move(r.network_map)),
+						  network_perms(std::move(r.network_perms)),
+						  peer(std::move(r.peer)), local(std::move(r.local)),
+						  allow(r.allow), audit(r.audit),
+						  deny(r.deny), quiet(r.quiet)
+	{
+		r.allow = NULL;
+		r.audit = NULL;
+		r.deny = NULL;
+		r.quiet = NULL;
+	}
+
+	network_rule& operator=(const network_rule& r) = delete;
+
+	network_rule& operator=(network_rule&& r) noexcept = delete;
+
+	rule_t* clone() const { return new network_rule(*this); }
 
 protected:
 	void warn_once(const char *name) override;

@@ -207,6 +207,7 @@ static void abi_features(char *filename, bool search);
 	#include "all_rule.h"
 	#include "cond_expr.h"
 	#include "symtab.h"
+	#include "block.h"
 }
 
 %union {
@@ -217,6 +218,7 @@ static void abi_features(char *filename, bool search);
 	Profile *prof;
 	struct cod_net_entry *net_entry;
 	struct cod_entry *user_entry;
+	block *rule_block;
 
 	mnt_rule *mnt_entry;
 	dbus_rule *dbus_entry;
@@ -248,6 +250,7 @@ static void abi_features(char *filename, bool search);
 	audit_t audit;
 	rule_mode_t rule_mode;
 	cond_expr *cond;
+	cond_expr_set *conds;
 }
 
 %type <id> 	TOK_ID
@@ -257,11 +260,11 @@ static void abi_features(char *filename, bool search);
 %type <fperms>   file_perms
 %type <prof>	profile_base
 %type <prof> 	profile
-%type <prof>	rules
-%type <prof>	block
+%type <rule_block>	rules
+%type <rule_block>	block
 %type <prof>	hat
 %type <prof>	local_profile
-%type <prof>	cond_rule
+%type <conds>	cond_rule
 %type <network_entry> network_rule
 %type <user_entry> rule
 %type <user_entry> file_rule
@@ -395,9 +398,8 @@ profile_base: TOK_ID opt_id_or_var opt_cond_list identities flags TOK_OPEN
 	}
     rules TOK_CLOSE
 	{
-		Profile *prof = $8;
 		bool self_stack = false;
-
+		Profile *prof = new Profile();
 		if (!prof) {
 			yyerror(_("Memory allocation error."));
 		}
@@ -444,6 +446,7 @@ profile_base: TOK_ID opt_id_or_var opt_cond_list identities flags TOK_OPEN
 			 */
 			prof->flags.mode = profile_mode::COMPLAIN;
 
+		prof->add_block($8);
 		prof->post_parse_profile();
 		prof->flags.debug(cerr);
 
@@ -707,13 +710,13 @@ opt_prefix: opt_priority opt_audit_flag opt_rule_mode opt_owner_flag
 		$$.owner = $4;
 	}
 
-rules:	{ /* nothing */ 
-	Profile *prof = new Profile();
-		if (!prof) {
+rules:	{ /* nothing */
+		block *rule_block = new block();
+		if (!rule_block) {
 			yyerror(_("Memory allocation error."));
 		}
 
-		$$ = prof;
+		$$ = rule_block;
 	};
 
 rules: rules abi_rule { /* nothing */ }
@@ -728,7 +731,7 @@ rules:  rules opt_prefix rule
 		if (!entry_add_prefix($3, $2, error)) {
 			yyerror(_("%s"), error);
 		}
-		add_entry_to_policy($1, $3);
+		$1->add_entry($3);
 		$$ = $1;
 	};
 
@@ -739,32 +742,20 @@ block: TOK_OPEN rules TOK_CLOSE
 
 rules: rules opt_prefix block
 	{
-		struct cod_entry *entry, *tmp;
-
-		if (($2).priority != 0) {
-			yyerror(_("priority is not allowed on rule blocks"));
-		}
+		const char *error;
+		block *subblock = $3;
+		block *current = $1;
 		PDEBUG("matched: %s%s%s%sblock\n",
 		       $2.audit == audit_t::FORCE ? "audit " : "",
 		       $2.rule_mode == rule_mode_t::DENY ? "deny " : "",
 		       $2.rule_mode == rule_mode_t::PROMPT ? "prompt " : "",
 		       $2.owner == owner_t::SPECIFIED ? "owner " : "");
-		list_for_each_safe($3->entries, entry, tmp) {
-			const char *error;
-			entry->next = NULL;
-			if (!entry_add_prefix(entry, $2, error)) {
-				yyerror(_("%s"), error);
-			}
-			/* transfer rule for now, TODO keep block and just
-			 * apply add_prefix to block rule and have it do
-			 * the work
-			 */
-			add_entry_to_policy($1, entry);
-		}
-		$3->entries = NULL;
-		// fix me transfer rules and free sub profile
-		delete $3;
-		$$ = $1;
+
+		if (!subblock->add_prefix($2, error))
+			yyerror(_("%s"), error);
+		if (!current->add_subblock(subblock, error))
+			yyerror(_("%s"), error);
+		$$ = current;
 	};
 
 rules: rules opt_prefix network_rule
@@ -777,13 +768,17 @@ rules: rules opt_prefix network_rule
 		if (nm_af_unix != $3->network_map.end()) {
 			for (auto& entry : nm_af_unix->second) {
 				unix_rule *rule = new unix_rule(entry.type,
-								$2.audit, $2.rule_mode);
+								audit_t::UNSPECIFIED,
+								rule_mode_t::UNSPECIFIED);
 				if (!rule)
 					yyerror(_("Memory allocation error."));
-				$1->rule_ents.push_back(rule);
+				if (!rule->add_prefix($2, error))
+					yyerror("%s", error);
+				$1->add_rule(rule);
 			}
 		}
-		$1->rule_ents.push_back($3);
+		$1->add_rule($3);
+		$1->add_compat_net($3);
 		$$ = $1;
 	}
 
@@ -802,7 +797,7 @@ rules:  rules opt_prefix prefix_rule
 		const char *error;
 		if (!$3->add_prefix($2, error))
 			yyerror("%s", error);
-		$1->rule_ents.push_back($3);
+		$1->add_rule($3);
 		$$ = $1;
 	}
 
@@ -819,26 +814,13 @@ rules:	rules opt_prefix change_profile
 		if (!generic_add_prefix($3, $2, error))
 			yyerror("%s", error);
 
-		add_entry_to_policy($1, $3);
+		$1->add_entry($3);
 		$$ = $1;
 	};
 
 rules:  rules opt_prefix capability
 	{
-		if ($2.owner != owner_t::UNSPECIFIED)
-			yyerror(_("owner conditional not allowed on capability rules"));
-
-		if ($2.rule_mode == rule_mode_t::DENY && $2.audit == audit_t::FORCE) {
-			$1->caps.deny |= $3;
-		} else if ($2.rule_mode == rule_mode_t::DENY) {
-			$1->caps.deny |= $3;
-			$1->caps.quiet |= $3;
-		} else {
-			$1->caps.allow |= $3;
-			if ($2.audit != audit_t::UNSPECIFIED)
-				$1->caps.audit |= $3;
-		}
-
+		$1->add_capabilities($2, $3);
 		$$ = $1;
 	};
 
@@ -847,7 +829,7 @@ rules:	rules hat
 		PDEBUG("Matched: hat rule\n");
 		if (!$2)
 			yyerror(_("Assert: 'hat rule' returned NULL."));
-		add_hat_to_policy($1, $2);
+		$1->add_hat($2);
 		$$ = $1;
 	};
 
@@ -856,156 +838,64 @@ rules:	rules local_profile
 		PDEBUG("Matched: hat rule\n");
 		if (!$2)
 			yyerror(_("Assert: 'local_profile rule' returned NULL."));
-		add_hat_to_policy($1, $2);
+		$1->add_hat($2);
 		$$ = $1;
 	};
 
 rules:	rules cond_rule
 	{
 		PDEBUG("Matched: conditional rules\n");
-		$$ = merge_policy($1, $2);
+		$1->add_cond_set($2);
+		$$ = $1;
 	}
 
 rules: rules TOK_SET TOK_RLIMIT TOK_ID TOK_LE TOK_VALUE opt_id TOK_END_OF_RULE
 	{
-		rlim_t value = RLIM_INFINITY;
-		long long tmp;
-		char *end;
-
-		int limit = get_rlimit($4);
-		if (limit == -1)
-			yyerror("INVALID RLIMIT '%s'\n", $4);
-
-		if (strcmp($6, "infinity") == 0) {
-			value = RLIM_INFINITY;
-		} else {
-			const char *kb = "KB";
-			const char *mb = "MB";
-			const char *gb = "GB";
-
-			tmp = strtoll($6, &end, 0);
-			switch (limit) {
-			case RLIMIT_CPU:
-				if (!end || $6 == end || tmp < 0)
-					yyerror("RLIMIT '%s' invalid value %s\n", $4, $6);
-				tmp = convert_time_units(tmp, SECONDS_P_MS, $7);
-				if (tmp == -1LL)
-					yyerror("RLIMIT '%s %s' < minimum value of 1s\n", $4, $6);
-				else if (tmp < 0LL)
-					yyerror("RLIMIT '%s' invalid value %s\n", $4, $6);
-				if (!$7)
-					pwarn(WARN_MISSING, _("RLIMIT 'cpu' no units specified using default units of seconds\n"));
-				value = tmp;
-				break;
-#ifdef RLIMIT_RTTIME
-			case RLIMIT_RTTIME:
-				/* RTTIME is measured in microseconds */
-				if (!end || $6 == end || tmp < 0)
-					yyerror("RLIMIT '%s' invalid value %s %s\n", $4, $6, $7 ? $7 : "");
-				tmp = convert_time_units(tmp, 1LL, $7);
-				if (tmp < 0LL)
-					yyerror("RLIMIT '%s' invalid value %s %s\n", $4, $6, $7 ? $7 : "");
-				if (!$7)
-					pwarn(WARN_MISSING, _("RLIMIT 'rttime' no units specified using default units of microseconds\n"));
-				value = tmp;
-				break;
-#endif
-			case RLIMIT_NOFILE:
-			case RLIMIT_NPROC:
-			case RLIMIT_LOCKS:
-			case RLIMIT_SIGPENDING:
-#ifdef RLIMIT_RTPRIO
-			case RLIMIT_RTPRIO:
-				if (!end || $6 == end || $7 || tmp < 0)
-					yyerror("RLIMIT '%s' invalid value %s %s\n", $4, $6, $7 ? $7 : "");
-				value = tmp;
-				break;
-#endif
-#ifdef RLIMIT_NICE
-			case RLIMIT_NICE:
-				if (!end || $6 == end || $7)
-					yyerror("RLIMIT '%s' invalid value %s %s\n", $4, $6, $7 ? $7 : "");
-				if (tmp < -20 || tmp > 19)
-					yyerror("RLIMIT '%s' out of range (-20 .. 19) %lld\n", $4, tmp);
-				value = tmp + 20;
-				break;
-#endif
-			case RLIMIT_FSIZE:
-			case RLIMIT_DATA:
-			case RLIMIT_STACK:
-			case RLIMIT_CORE:
-			case RLIMIT_RSS:
-			case RLIMIT_AS:
-			case RLIMIT_MEMLOCK:
-			case RLIMIT_MSGQUEUE:
-				if ($6 == end || tmp < 0)
-					yyerror("RLIMIT '%s' invalid value %s %s\n", $4, $6, $7 ? $7 : "");
-				if (!$7) {
-					; /* use default of bytes */
-				} else if (strstr(kb, $7) == kb) {
-					tmp *= 1024;
-				} else if (strstr(mb, $7) == mb) {
-					tmp *= 1024*1024;
-				} else if (strstr(gb, $7) == gb) {
-					tmp *= 1024*1024*1024;
-				} else {
-					yyerror("RLIMIT '%s' invalid value %s %s\n", $4, $6, $7);
-				}
-				value = tmp;
-				break;
-			default:
-				yyerror("Unknown RLIMIT %s\n", $4);
-			}
-		}
-		$1->rlimits.specified |= 1 << limit;
-		$1->rlimits.limits[limit] = value;
+		$1->add_rlimit($4, $6, $7);
 		free($4);
 		free($6);
+		free($7);
 		$$ = $1;
 	};
 
 
 cond_rule: TOK_IF expr block
 	{
-		Profile *ret = NULL;
 		PDEBUG("Matched: found conditional rules\n");
-		if ($2->eval()) {
-			ret = $3;
-		} else {
-			delete $3;
-		}
-		delete $2;
-		$$ = ret;
+		$2->cond_block = $3;
+
+		cond_expr_set *l = new cond_expr_set();
+		l->add_cond($2);
+		$$ = l;
 	}
 
 cond_rule: TOK_IF expr block TOK_ELSE block
 	{
-		Profile *ret = NULL;
 		PDEBUG("Matched: found conditional else rules\n");
-		if ($2->eval()) {
-			ret = $3;
-			delete $5;
-		} else {
-			ret = $5;
-			delete $3;
-		}
-		delete $2;
-		$$ = ret;
+
+		cond_expr *if_cond = $2;
+		cond_expr *else_cond = new cond_expr(!(if_cond->eval()));
+		if_cond->cond_block = $3;
+		else_cond->cond_block = $5;
+
+		cond_expr_set *l = new cond_expr_set();
+		l->add_cond(if_cond);
+		l->add_cond(else_cond);
+
+		$$ = l;
 	}
 
 cond_rule: TOK_IF expr block TOK_ELSE cond_rule
 	{
-		Profile *ret = NULL;
 		PDEBUG("Matched: found conditional else-if rules\n");
-		if ($2->eval()) {
-			ret = $3;
-			delete $5;
-		} else {
-			ret = $5;
-			delete $3;
-		}
-		delete $2;
-		$$ = ret;
+		cond_expr *if_cond = $2;
+		if_cond->cond_block = $3;
+
+		cond_expr_set *l = new cond_expr_set();
+		l->add_cond(if_cond);
+		l->merge($5);
+		delete $5;
+		$$ = l;
 	}
 
 

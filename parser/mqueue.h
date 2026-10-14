@@ -138,6 +138,29 @@ public:
 		return null_strcmp(label, trhs.label);
 	};
 
+	mqueue_rule(const mqueue_rule &r) : perms_rule_t(r), qtype(r.qtype),
+					    qname(NULL), label(NULL)
+	{
+		if (r.qname)
+			qname = strdup(r.qname);
+		if (r.label)
+			label = strdup(r.label);
+	}
+
+	mqueue_rule(mqueue_rule &&r) noexcept : perms_rule_t(std::move(r)), qtype(r.qtype),
+						qname(r.qname), label(r.label)
+	{
+		r.qtype = mqueue_type::unspecified;
+		r.qname = NULL;
+		r.label = NULL;
+	}
+
+	mqueue_rule& operator=(const mqueue_rule& r) = delete;
+
+	mqueue_rule& operator=(mqueue_rule&& r) noexcept = delete;
+
+	rule_t* clone() const { return new mqueue_rule(*this); }
+
 protected:
 	void warn_once(const char *name) override;
 	void validate_qname(void);

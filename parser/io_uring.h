@@ -65,6 +65,23 @@ public:
 			       (rule_cast<io_uring_rule const &>(rhs)).label);
 	};
 
+	io_uring_rule(const io_uring_rule &r) : perms_rule_t(r), label(NULL)
+	{
+		if (r.label)
+			label = strdup(r.label);
+	}
+
+	io_uring_rule(io_uring_rule &&r) noexcept : perms_rule_t(std::move(r)), label(r.label)
+	{
+		r.label = NULL;
+	}
+
+	io_uring_rule& operator=(const io_uring_rule& r) = delete;
+
+	io_uring_rule& operator=(io_uring_rule&& r) noexcept = delete;
+
+	rule_t* clone() const { return new io_uring_rule(*this); }
+
 protected:
 	void warn_once(const char *name) override;
 };

@@ -41,6 +41,8 @@ class all_rule: public prefix_rule_t {
 public:
 	all_rule(void): prefix_rule_t(RULE_TYPE_ALL) { }
 
+	~all_rule() { }
+
 	bool valid_prefix(const prefixes &p, const char *&error) override {
 		if (p.priority != 0) {
 			error = _("priority prefix not allowed on all rules");
@@ -73,6 +75,16 @@ public:
 	void add_implied_rules(Profile &prof) override;
 
 	rule_result_t gen_policy_re(Profile &prof aa_unused) override { return rule_result_t::OK; };
+
+	all_rule(const all_rule &r) : prefix_rule_t(r) {}
+
+	all_rule(all_rule &&r) noexcept : prefix_rule_t(std::move(r)) {}
+
+	all_rule& operator=(const all_rule& r) = delete;
+
+	all_rule& operator=(all_rule&& r) noexcept = delete;
+
+	rule_t* clone() const { return new all_rule(*this); }
 
 protected:
   void warn_once(const char *name aa_unused, const char *msg aa_unused) override { };

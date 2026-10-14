@@ -190,16 +190,20 @@ static void process_name(const void *nodep, VISIT value, int level aa_unused)
 	}
 }
 
+int replace_entries_aliases(Profile *prof, struct cod_entry *entries)
+{
+	target_list = entries;
+	target_prof = prof;
+	twalk(alias_table, process_entries);
+	return 0;
+}
+
 int replace_profile_aliases(Profile *prof)
 {
 	target_prof = prof;
 	twalk(alias_table, process_name);
 
-	if (prof->entries) {
-		target_list = prof->entries;
-		target_prof = prof;
-		twalk(alias_table, process_entries);
-	}
+	prof->main_block->apply_aliases();
 
 	return 0;
 }

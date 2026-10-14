@@ -1,0 +1,9 @@
+#
+#=DESCRIPTION capability rules do not support an owner prefix, even via a block
+#=EXRESULT FAIL
+
+/does/not/exist {
+  owner {
+    capability chown,
+  }
+}

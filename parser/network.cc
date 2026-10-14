@@ -1171,12 +1171,6 @@ fail:
 
 }
 
-/* initialize static members */
-unsigned int *network_rule::allow = NULL;
-unsigned int *network_rule::audit = NULL;
-unsigned int *network_rule::deny = NULL;
-unsigned int *network_rule::quiet = NULL;
-
 bool network_rule::alloc_net_table()
 {
 	if (allow && audit && deny && quiet)
@@ -1219,11 +1213,11 @@ out:
  * network_rule object, we don't have owner, rule_mode, or audit
  * set.
  */
-void network_rule::update_compat_net(void)
+void network_rule::update_compat_net(const prefixes &p)
 {
-	/* there is no need to generate compat_net since rules are
-	 * already stored in policydb */
-	if (features_supports_network_policydb)
+	/* there is no need to generate compat_net when rules are
+	 * already stored in policydb, same if network_map is empty */
+	if (features_supports_network_policydb || network_map.empty())
 		return;
 
 	if (!alloc_net_table())
@@ -1233,23 +1227,23 @@ void network_rule::update_compat_net(void)
 		for (auto& entry : nm.second) {
 			if (entry.type > SOCK_PACKET) {
 				/* setting mask instead of a bit */
-				if (rule_mode == rule_mode_t::DENY) {
+				if (p.rule_mode == rule_mode_t::DENY) {
 					deny[entry.family] |= entry.type;
-					if (dedup_perms_rule_t::audit != audit_t::FORCE)
+					if (p.audit != audit_t::FORCE)
 						quiet[entry.family] |= entry.type;
 				} else {
 					allow[entry.family] |= entry.type;
-					if (dedup_perms_rule_t::audit == audit_t::FORCE)
+					if (p.audit == audit_t::FORCE)
 						audit[entry.family] |= entry.type;
 				}
 			} else {
-				if (rule_mode == rule_mode_t::DENY) {
+				if (p.rule_mode == rule_mode_t::DENY) {
 					deny[entry.family] |= 1 << entry.type;
-					if (dedup_perms_rule_t::audit != audit_t::FORCE)
+					if (p.audit != audit_t::FORCE)
 						quiet[entry.family] |= 1 << entry.type;
 				} else {
 					allow[entry.family] |= 1 << entry.type;
-					if (dedup_perms_rule_t::audit == audit_t::FORCE)
+					if (p.audit == audit_t::FORCE)
 						audit[entry.family] |= 1 << entry.type;
 				}
 			}

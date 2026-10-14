@@ -63,6 +63,25 @@ public:
 	bool is_mergeable(void) override { return true; }
 	int cmp(rule_t const &rhs) const override;
 
+	signal_rule(const signal_rule &r) : perms_rule_t(r), signals(r.signals),
+					    peer_label(NULL)
+	{
+		if (r.peer_label)
+			peer_label = strdup(r.peer_label);
+	}
+
+	signal_rule(signal_rule &&r) noexcept : perms_rule_t(std::move(r)), signals(std::move(r.signals)),
+						peer_label(r.peer_label)
+	{
+		r.peer_label = NULL;
+	}
+
+	signal_rule& operator=(const signal_rule& r) = delete;
+
+	signal_rule& operator=(signal_rule&& r) noexcept = delete;
+
+	rule_t* clone() const { return new signal_rule(*this); }
+
 protected:
 	void warn_once(const char *name) override;
 };

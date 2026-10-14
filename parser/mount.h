@@ -185,8 +185,48 @@ public:
 
 	bool is_mergeable(void) override { return true; }
 	int cmp(rule_t const &rhs) const override;
-
 	// for now use default merge/dedup
+
+	mnt_rule(const mnt_rule &r) : perms_rule_t(r), mnt_point(NULL), device(NULL),
+				      trans(NULL), dev_type(NULL), opts(NULL),
+				      flagsv(r.flagsv), opt_flagsv(r.opt_flagsv)
+	{
+		struct value_list *entry;
+		if (r.mnt_point)
+			mnt_point = strdup(r.mnt_point);
+		if (r.device)
+			device = strdup(r.device);
+		if (r.trans)
+			trans = strdup(r.trans);
+
+		list_for_each(r.dev_type, entry) {
+			struct value_list *tmp = new_value_list(strdup(entry->value));
+			tmp->next = dev_type;
+			dev_type = tmp;
+		}
+		list_for_each(r.opts, entry) {
+			struct value_list *tmp = new_value_list(strdup(entry->value));
+			tmp->next = opts;
+			opts = tmp;
+		}
+	}
+
+	mnt_rule(mnt_rule &&r) noexcept : perms_rule_t(std::move(r)), mnt_point(r.mnt_point), device(r.device),
+					  trans(r.trans), dev_type(r.dev_type), opts(r.opts),
+					  flagsv(std::move(r.flagsv)), opt_flagsv(std::move(r.opt_flagsv))
+	{
+		r.mnt_point = NULL;
+		r.device = NULL;
+		r.trans = NULL;
+		r.dev_type = NULL;
+		r.opts = NULL;
+	}
+
+	mnt_rule& operator=(const mnt_rule& r) = delete;
+
+	mnt_rule& operator=(mnt_rule&& r) noexcept = delete;
+
+	rule_t* clone() const { return new mnt_rule(*this); }
 
 protected:
 	void warn_once(const char *name) override;

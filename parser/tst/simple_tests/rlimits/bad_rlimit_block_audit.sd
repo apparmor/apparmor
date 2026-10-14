@@ -1,0 +1,9 @@
+#
+#=DESCRIPTION rlimits do not support an audit prefix, even via a block
+#=EXRESULT FAIL
+
+profile rlimit {
+  audit {
+    set rlimit cpu <= 10,
+  }
+}

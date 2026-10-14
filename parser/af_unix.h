@@ -81,6 +81,28 @@ public:
 		return null_strcmp(peer_addr, trhs.peer_addr);
 	};
 
+	unix_rule(const unix_rule &r) : af_rule(r), addr(NULL), peer_addr(NULL),
+					downgrade(r.downgrade)
+	{
+		if (r.addr)
+			addr = strdup(r.addr);
+		if (r.peer_addr)
+			peer_addr = strdup(r.peer_addr);
+	}
+
+	unix_rule(unix_rule &&r) noexcept : af_rule(std::move(r)), addr(r.addr), peer_addr(r.peer_addr),
+					    downgrade(r.downgrade)
+	{
+		r.addr = NULL;
+		r.peer_addr = NULL;
+	}
+
+	unix_rule& operator=(const unix_rule& r) = delete;
+
+	unix_rule& operator=(unix_rule&& r) noexcept = delete;
+
+	rule_t* clone() const { return new unix_rule(*this); }
+
 protected:
 	void warn_once(const char *name) override;
 };

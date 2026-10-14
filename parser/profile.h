@@ -31,14 +31,15 @@
 #include <iostream>
 #include <map>
 
-#include "capability.h"
 #include "parser.h"
 #include "rule.h"
 #include "network.h"
+#include "libapparmor_re/aare_rules.h"
 #include "signal.h"
 #include "immunix.h"
 #include "perms.h"
-#include "profilelist.h"
+#include "block_rules.h"
+#include "block.h"
 
 class aare_rules;
 
@@ -374,27 +375,6 @@ public:
 	}
 };
 
-struct capabilities {
-	uint64_t allow;
-	uint64_t audit;
-	uint64_t deny;
-	uint64_t quiet;
-
-	capabilities(void) { allow = audit = deny = quiet = 0; }
-
-	void dump()
-		{
-			if (allow != 0ull)
-				__debug_capabilities(allow, "Capabilities");
-			if (audit != 0ull)
-				__debug_capabilities(audit, "Audit Caps");
-			if (deny != 0ull)
-				__debug_capabilities(deny, "Deny Caps");
-			if (quiet != 0ull)
-				__debug_capabilities(quiet, "Quiet Caps");
-		};
-};
-
 struct dfa_stuff {
 	aare_rules *rules;
 	void *dfa;
@@ -406,7 +386,6 @@ struct dfa_stuff {
 
 class Profile final {
 public:
-	bool uses_prompt_rules;
 	char *ns;
 	char *name;
 	char *attachment;
@@ -425,23 +404,14 @@ public:
 	Profile *parent;
 
 	flagvals flags;
-	struct capabilities caps;
-	network_rule net;
 
-	struct aa_rlimits rlimits;
-
-	char *exec_table[AA_EXEC_COUNT];
-	struct cod_entry *entries;
-	RuleList rule_ents;
-
-	ProfileList hat_table;
+	block *main_block;
 
 	struct dfa_stuff dfa;
 	struct dfa_stuff policy;
 
 	Profile(void)
 	{
-		uses_prompt_rules = false;
 		ns = name = attachment = NULL;
 		altnames = NULL;
 		xmatch = NULL;
@@ -455,11 +425,7 @@ public:
 		parent = NULL;
 
 		flags.init();
-		rlimits = {0, {}};
-
-		std::fill(exec_table, exec_table + AA_EXEC_COUNT, (char *)NULL);
-
-		entries = NULL;
+		main_block = NULL;
 	};
 
 	~Profile();
@@ -483,71 +449,6 @@ public:
 	 * cmp(), is_mergeable() and merge()
 	 */
 	virtual int merge_rules(void);
-
-	void dump(void)
-	{
-		if (ns)
-			printf("Ns:\t\t%s\n", ns);
-
-		if (name)
-			printf("Name:\t\t%s\n", name);
-		else
-			printf("Name:\t\t<NULL>\n");
-		if (attachment)
-			printf("Attachment:\t%s\n", attachment);
-		else {
-			const char *local = local_name(name);
-			printf("Attachment:\t%s\n", local[0] == '/' ? local : "<NULL>");
-		}
-		if (parent)
-			printf("Local To:\t%s\n", parent->name);
-		else
-			printf("Local To:\t<NULL>\n");
-
-		if (identities) {
-			printf("Identities:\t(");
-			print_value_list(identities, std::cout);
-			printf(")\n");
-		}
-
-		flags.dump(cerr);
-		caps.dump();
-
-		if (entries)
-			debug_cod_entries(entries);
-
-		std::map<rule_t *, unsigned int> visible_rule_lines;
-		unsigned int fake_lineno = 1;
-		for (auto i = rule_ents.cbegin(); i != rule_ents.cend(); i++) {
-			if ((*i)->skip()) {
-				if (((*i)->flags & rule_flags_t::MERGED) != rule_flags_t::NONE && (*i)->removed_by)
-					fake_lineno += 2;  // merged rules print two lines.
-				continue;
-			}
-			visible_rule_lines[*i] = fake_lineno++;
-		}
-
-		fake_lineno = 1;
-		for (auto i = rule_ents.cbegin(); i != rule_ents.cend(); i++) {
-			if ((*i)->skip()) {
-				if (((*i)->flags & rule_flags_t::MERGED) != rule_flags_t::NONE && (*i)->removed_by) {
-					auto merged_into = visible_rule_lines.find((*i)->removed_by);
-					std::cout << fake_lineno << ": # The following rule was merged into a rule on line " << merged_into->second << std::endl;
-					fake_lineno++;
-					std::cout << fake_lineno << ": # ";
-					(*i)->dump(std::cout);
-					fake_lineno++; // account for the extra comment.
-				}
-				continue;
-			}
-			std::cout << fake_lineno << ": ";
-			(*i)->dump(std::cout);
-			fake_lineno++;
-		}
-
-		printf("\n");
-		hat_table.dump();
-	}
 
 	std::string hname(void)
 	{
@@ -579,6 +480,8 @@ public:
 		std::cout << get_name(fqp);;
 	}
 
+	void dump(void);
+	void add_block(block *b);
 	void post_parse_profile(void);
 	void add_implied_rules(void);
 

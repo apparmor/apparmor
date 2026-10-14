@@ -468,6 +468,10 @@ syntax_failure = (
     'mount/regression1.sd',
     'mount/regression2.sd',
     'mount/regression3.sd',
+
+    # block prefixes
+    'capability/ok_block1.sd',
+    'rlimits/ok_rlimit_19.sd',
 )
 
 

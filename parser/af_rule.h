@@ -53,6 +53,31 @@ public:
 		sock_type_n(-1), proto(NULL), proto_n(0), label(NULL),
 		peer_label(NULL) { }
 
+	af_rule(const af_rule &r) : perms_rule_t(r), af(r.af), sock_type(NULL),
+				    sock_type_n(r.sock_type_n), proto(NULL),
+				    proto_n(r.proto_n), label(NULL), peer_label(NULL)
+	{
+		if (r.sock_type)
+			sock_type = strdup(r.sock_type);
+		if (r.proto)
+			proto = strdup(r.proto);
+		if (r.label)
+			label = strdup(r.label);
+		if (r.peer_label)
+			peer_label = strdup(r.peer_label);
+	}
+
+	af_rule(af_rule &&r) noexcept : perms_rule_t(std::move(r)), af(r.af), sock_type(r.sock_type),
+					sock_type_n(r.sock_type_n), proto(r.proto),
+					proto_n(r.proto_n), label(r.label), peer_label(r.peer_label)
+	{
+		r.sock_type = NULL;
+		r.proto = NULL;
+		r.label = NULL;
+		r.peer_label = NULL;
+		r.af = r.sock_type_n = r.proto_n = 0;
+	}
+
 	~af_rule() override
 	{
 		free(sock_type);
@@ -105,6 +130,10 @@ public:
 		return null_strcmp(peer_label, trhs.peer_label);
 	};
 
+protected:
+	af_rule& operator=(const af_rule& r) = delete;
+
+	af_rule& operator=(af_rule&& r) noexcept = delete;
 };
 
 #endif /* __AA_AF_RULE_H */
