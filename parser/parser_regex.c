@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <limits.h>
 #include <sys/stat.h>
+#include <vector>
 #endif
 #include <linux/limits.h>
 #include <sys/apparmor.h>
@@ -42,6 +43,10 @@
 #include "libapparmor_re/aare_rules.h"
 #include "policydb.h"
 #include "rule.h"
+#ifdef USE_DFA_CACHE
+#include "block.h"
+#include "cond_expr.h"
+#endif
 
 enum class error_type {
 	no_error,
@@ -921,30 +926,49 @@ struct dfa_perms_header {
 /* FNV-1a add hash helper */
 #define FNV1A_ADD_TO_HASH(hash, val) do { (hash) ^= (uint64_t)(val); (hash) *= 0x100000001b3ULL; } while (0)
 
+/* Collect the blocks whose file rules (cod_entry) are compiled into the
+ * profile's file DFA. Must walk the same blocks, in the same order, as
+ * block::gen_policy_re(): the block itself, its subblocks, then the
+ * selected branch of each conditional. Hats are separate profiles. */
+static void collect_file_rule_blocks(block *b, std::vector<block *> &blocks)
+{
+	blocks.push_back(b);
+	for (block *sb : b->subblocks)
+		collect_file_rule_blocks(sb, blocks);
+	for (cond_expr_set *ces : b->conds) {
+		if (ces->set_block)
+			collect_file_rule_blocks(ces->set_block, blocks);
+	}
+}
+
 /* Compute FNV-1a 64-bit hash of a profile's expanded file rules (cod_entry).
  * Used as the cache filename (fast addressing). */
 static uint64_t hash_profile_file_rules(Profile *profile)
 {
 	uint64_t hash = 0xcbf29ce484222325ULL;
 	struct cod_entry *entry;
+	std::vector<block *> blocks;
 
-	list_for_each(profile->main_block->rules.entries, entry) {
-		if (entry->name) {
-			for (const char *p = entry->name; *p; p++)
-				FNV1A_ADD_TO_HASH(hash, (unsigned char)*p);
-		}
-		FNV1A_ADD_TO_HASH(hash, entry->perms);
-		FNV1A_ADD_TO_HASH(hash, entry->audit.audit);
-		FNV1A_ADD_TO_HASH(hash, entry->rule_mode);
-		FNV1A_ADD_TO_HASH(hash, entry->priority);
-		if (entry->link_name) {
-			for (const char *p = entry->link_name; *p; p++)
-				FNV1A_ADD_TO_HASH(hash, (unsigned char)*p);
-			FNV1A_ADD_TO_HASH(hash, entry->subset);
-		}
-		if (entry->nt_name) {
-			for (const char *p = entry->nt_name; *p; p++)
-				FNV1A_ADD_TO_HASH(hash, (unsigned char)*p);
+	collect_file_rule_blocks(profile->main_block, blocks);
+	for (block *b : blocks) {
+		list_for_each(b->rules.entries, entry) {
+			if (entry->name) {
+				for (const char *p = entry->name; *p; p++)
+					FNV1A_ADD_TO_HASH(hash, (unsigned char)*p);
+			}
+			FNV1A_ADD_TO_HASH(hash, entry->perms);
+			FNV1A_ADD_TO_HASH(hash, entry->audit.audit);
+			FNV1A_ADD_TO_HASH(hash, entry->rule_mode);
+			FNV1A_ADD_TO_HASH(hash, entry->priority);
+			if (entry->link_name) {
+				for (const char *p = entry->link_name; *p; p++)
+					FNV1A_ADD_TO_HASH(hash, (unsigned char)*p);
+				FNV1A_ADD_TO_HASH(hash, entry->subset);
+			}
+			if (entry->nt_name) {
+				for (const char *p = entry->nt_name; *p; p++)
+					FNV1A_ADD_TO_HASH(hash, (unsigned char)*p);
+			}
 		}
 	}
 
@@ -968,35 +992,39 @@ static void compute_content_hash(Profile *profile, uint8_t digest[32])
 	struct cod_entry *entry;
 	uint8_t sep = 0xff; /* field separator */
 	uint8_t null_marker = 0x00; /* marks a NULL field */
+	std::vector<block *> blocks;
 
 	sha256_init(&ctx);
 
-	list_for_each(profile->main_block->rules.entries, entry) {
-		if (entry->name)
-			sha256_update(&ctx, entry->name, strlen(entry->name) + 1);
-		else
-			sha256_update(&ctx, &null_marker, 1);
-		sha256_update(&ctx, &sep, 1);
+	collect_file_rule_blocks(profile->main_block, blocks);
+	for (block *b : blocks) {
+		list_for_each(b->rules.entries, entry) {
+			if (entry->name)
+				sha256_update(&ctx, entry->name, strlen(entry->name) + 1);
+			else
+				sha256_update(&ctx, &null_marker, 1);
+			sha256_update(&ctx, &sep, 1);
 
-		sha256_update(&ctx, &entry->perms, sizeof(entry->perms));
-		sha256_update(&ctx, &entry->audit.audit, sizeof(entry->audit.audit));
-		sha256_update(&ctx, &entry->rule_mode, sizeof(entry->rule_mode));
-		sha256_update(&ctx, &entry->priority, sizeof(entry->priority));
-		sha256_update(&ctx, &sep, 1);
+			sha256_update(&ctx, &entry->perms, sizeof(entry->perms));
+			sha256_update(&ctx, &entry->audit.audit, sizeof(entry->audit.audit));
+			sha256_update(&ctx, &entry->rule_mode, sizeof(entry->rule_mode));
+			sha256_update(&ctx, &entry->priority, sizeof(entry->priority));
+			sha256_update(&ctx, &sep, 1);
 
-		if (entry->link_name) {
-			sha256_update(&ctx, entry->link_name, strlen(entry->link_name) + 1);
-			sha256_update(&ctx, &entry->subset, sizeof(entry->subset));
-		} else {
-			sha256_update(&ctx, &null_marker, 1);
+			if (entry->link_name) {
+				sha256_update(&ctx, entry->link_name, strlen(entry->link_name) + 1);
+				sha256_update(&ctx, &entry->subset, sizeof(entry->subset));
+			} else {
+				sha256_update(&ctx, &null_marker, 1);
+			}
+			sha256_update(&ctx, &sep, 1);
+
+			if (entry->nt_name)
+				sha256_update(&ctx, entry->nt_name, strlen(entry->nt_name) + 1);
+			else
+				sha256_update(&ctx, &null_marker, 1);
+			sha256_update(&ctx, &sep, 1);
 		}
-		sha256_update(&ctx, &sep, 1);
-
-		if (entry->nt_name)
-			sha256_update(&ctx, entry->nt_name, strlen(entry->nt_name) + 1);
-		else
-			sha256_update(&ctx, &null_marker, 1);
-		sha256_update(&ctx, &sep, 1);
 	}
 
 	/* Include global state that affects DFA compilation */
