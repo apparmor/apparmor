@@ -97,6 +97,23 @@ kernel (2.6.37 patches should apply cleanly to 2.6.38 source).
 Without these patches applied to the kernel, the AppArmor userspace
 will not function correctly.
 
+------------------
+Build Dependencies
+------------------
+
+libapparmor and the parser are needed by every other component, so their
+dependencies are required for any build. Everything else is only needed for
+the component or the test suite it is listed against.
+
+| Needed for | Debian, Ubuntu | openSUSE | Fedora |
+| --- | --- | --- | --- |
+| required | `build-essential autoconf autoconf-archive automake libtool pkg-config bison flex perl gettext libzstd-dev` | `gcc gcc-c++ make which autoconf autoconf-archive automake libtool pkg-config bison flex perl gettext libzstd-devel` | `gcc gcc-c++ make autoconf autoconf-archive automake libtool pkg-config bison flex perl gettext libzstd-devel` |
+| `utils` | `python3 python3-setuptools` | `python3 python3-setuptools` | `python3 python3-setuptools` |
+| `changehat` | `apache2-dev libpam0g-dev` | `apache2-devel pam-devel` | `httpd-devel pam-devel` |
+| libapparmor bindings, `utils` `make check` | `swig python3-all-dev python3-setuptools` | `swig python3-devel python3-setuptools` | `swig python3-devel python3-setuptools` |
+| `make check` | `dejagnu flake8 python3-pytest-xdist` | `dejagnu python3-flake8 python3-pytest-xdist` | `dejagnu python3-flake8 python3-pytest-xdist` |
+| regression tests | `attr dosfstools fuse-overlayfs libdbus-1-dev liburing-dev` | `attr dosfstools fuse-overlayfs dbus-1-devel liburing2-devel` | `attr dosfstools dbus-devel liburing-devel` |
+
 ------------------------------------------
 Building and Installing AppArmor Userspace
 ------------------------------------------
