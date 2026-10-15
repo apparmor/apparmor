@@ -1,0 +1,17 @@
+#
+#=DESCRIPTION validate combining profile and path flags in one list preserves all bits regardless of order.
+#=EXRESULT PASS
+# vim:ft=apparmor
+# Last Modified: Mon Sep 07 19:36:25 2026
+#
+/does/not/exist flags=(chroot_relative, interruptible) {
+  /usr/X11R6/lib/lib*so* r,
+  /does/not/exist r,
+}
+
+/does/not/exist1 flags=(interruptible, chroot_relative) {
+  #include <includes/base>
+
+  /usr/X11R6/lib/lib*so* r,
+  /does/not/exist r,
+}
