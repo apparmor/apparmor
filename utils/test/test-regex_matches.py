@@ -520,6 +520,29 @@ class Test_parse_profile_start_line(AATest):
         ('  profile @{foo} /bar {',       {'profile': '@{foo}',                            'plainprofile': None,     'namedprofile': '@{foo}',  'attachment': '/bar',   'flags': None,         'comment': None}),
         ('  profile foo @{bar} {',        {'profile': 'foo',                               'plainprofile': None,     'namedprofile': 'foo',     'attachment': '@{bar}', 'flags': None,         'comment': None}),
         ('  profile @{foo} @{bar} {',     {'profile': '@{foo}',                            'plainprofile': None,     'namedprofile': '@{foo}',  'attachment': '@{bar}', 'flags': None,         'comment': None}),
+
+        ('   /foo {',                                                      {'profile': '/foo', 'identities': []}),
+        ('   /foo + identities=(bar) {',                                   {'profile': '/foo', 'identities': ['bar']}),
+        ('   profile foo + identities=(bar) {',                            {'profile': 'foo',  'identities': ['bar']}),
+        ('   profile foo + identities=(bar, baz) {',                       {'profile': 'foo',  'identities': ['bar', 'baz']}),
+        ('   profile foo + identities=(bar baz) {',                        {'profile': 'foo',  'identities': ['bar', 'baz']}),  # space separated
+        ('   profile foo + identities=(  bar , baz  ) {',                   {'profile': 'foo',  'identities': ['bar', 'baz']}),
+        ('   profile foo + identities=(bar)+ identities=("/baz") {',       {'profile': 'foo',  'identities': ['bar', '/baz']}),  # multiple groups
+        ('   profile foo + identities=(bar) + identities=("/b z" qux) {',  {'profile': 'foo',  'identities': ['bar', '/b z', 'qux']}),  # quoted path with spaces
+        ('   profile foo + identities=(bar, bar) {',                       {'profile': 'foo',  'identities': ['bar']}),  # duplicates
+        ('   profile foo + identities=("/a b") {',                         {'profile': 'foo',  'identities': ['/a b']}),  # path with space
+        ('   profile foo /attach + identities=(bar) flags=(complain) {',   {'profile': 'foo',  'identities': ['bar'], 'attachment': '/attach', 'flags': 'complain'}),
+        ('   profile foo "/at tach" + identities=("/a b") {',              {'profile': 'foo',  'identities': ['/a b'], 'attachment': '/at tach'}),
+        ('   profile foo xattrs=(user.x=y) + identities=(bar) {',          {'profile': 'foo',  'identities': ['bar'], 'xattrs': {'user.x': 'y'}}),
+        ('   ^hat + identities=(bar) {',                                   {'profile': 'hat',  'identities': ['bar']}),
+        ('   hat foo + identities=(bar) flags=(complain) {',               {'profile': 'foo',  'identities': ['bar'], 'flags': 'complain'}),
+        ('   profile foo +identities=(bar) {',                             {'profile': 'foo',  'identities': ['bar']}),  # no space after '+'
+        ('   profile foo + identities = ( bar ) {',                        {'profile': 'foo',  'identities': ['bar']}),  # spaces around '='
+        ('   profile foo +identities=(bar)+identities=(baz) {',            {'profile': 'foo',  'identities': ['bar', 'baz']}),  # no space between groups
+        ('   profile foo xattrs=(user.x=y)+identities=(bar) {',           {'profile': 'foo',  'identities': ['bar'], 'xattrs': {'user.x': 'y'}}),  # or after xattrs
+        ('   profile g++ + identities=(bar) {',                            {'profile': 'g++',  'identities': ['bar']}),  # '+' in a name
+        ('   profile foo+identities {',                                    {'profile': 'foo+identities', 'identities': []}),  # no '=', so part of the name
+        ('   profile "foo+identities=(bar)" {',                            {'profile': 'foo+identities=(bar)', 'identities': []}),  # quoted, so part of the name
     )
 
     def _run_test(self, line, expected):
@@ -588,6 +611,38 @@ class Test_check_space_before_delegation(AATest):
                 check_space_before_delegation(text, text.rindex('+'), keyword)
         else:
             check_space_before_delegation(text, text.rindex('+'), keyword)
+
+
+class TestInvalid_identities(AATest):
+    tests = (
+        ('profile foo + identities=() {',           AppArmorException),  # empty set of identities
+        ('profile foo + identities=(bar) + identities=() {', AppArmorException),
+        ('profile foo + identities=(\\invalid\\) {',   AppArmorException),  # backslash isn't an identity character
+        ('profile foo + identities=("a,b") {',      AppArmorException),  # neither are '"', '!', ',', '(', ')', '{', '}' and '=', even quoted
+        ('profile foo + identities=("a!b") {',      AppArmorException),
+        ('profile foo + identities=("/a(b") {',     AppArmorException),
+        ('profile foo + identities=(a{b}) {',       AppArmorException),
+        ('profile foo + identities=(a=b) {',        AppArmorException),
+        ('profile foo + identities=(a"b) {',        AppArmorException),
+        ('profile foo + identities=("a a") {',      AppArmorException),  # space is only allowed in a path identity
+        ('profile foo + identities=("a a", b) {',   AppArmorException),
+        ('profile foo identities=(bar) {',          AppArmorBug),  # the '+' is mandatory
+        ('profile foo + {',                         AppArmorBug),  # '+' without identities
+        ('profile foo+identities=(bar) {',          AppArmorException),  # no whitespace before '+identities='
+        ('profile foo+ identities=(bar) {',         AppArmorException),
+        ('profile foo+identities=(bar baz) {',      AppArmorException),
+        ('profile foo /attach+identities=(bar) {',  AppArmorException),
+        ('/foo+identities=(bar) {',                 AppArmorException),
+        ('profile "foo"+identities=(bar) {',        AppArmorException),
+        ('^hat+identities=(bar) {',                 AppArmorException),
+        ('hat foo+identities=(bar) {',              AppArmorException),
+        ('profile foo+objects={} {',                AppArmorException),  # same for '+objects='
+        ('profile +identities=(bar) {',             AppArmorException),  # no profile name
+    )
+
+    def _run_test(self, line, expected):
+        with self.assertRaises(expected):
+            parse_profile_start_line(line, 'somefile')
 
 
 class Test_re_match_include(AATest):
