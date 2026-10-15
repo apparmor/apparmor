@@ -49,7 +49,7 @@ $bar = true
   change_profile,
 
 
-  hat bar {
+  hat bar + identities=(hatident) {
     capability sys_admin,
 
     /etc/passwd r,
@@ -98,6 +98,10 @@ $bar = true
     set rlimit cpu <= 10,
 
   }
+
+}
+/what/ever/identity + identities=(ident, "/path with space") {
+  /what/ever r,
 
 }
 /what/ever/xattr xattrs=(foo=bar) flags=(  complain ) {

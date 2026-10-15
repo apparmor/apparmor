@@ -68,7 +68,7 @@ $foo = false
 
 	mount options=(rw,suid) /c -> /3,
 
-  hat bar flags=(complain) {
+  hat bar + identities=(hatident) flags=(complain) {
         /etc/passwd r,
         capability sys_admin,
         }
@@ -106,6 +106,10 @@ $foo = false
   }
   audit { }
 }
+
+/what/ever/identity    + identities=(ident,  "/path with space") {
+ /what/ever r,
+ }
 
 /what/ever/xattr   xattrs=(   foo=bar      )
        flags=(  complain
