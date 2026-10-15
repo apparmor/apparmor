@@ -35,8 +35,8 @@ from apparmor.common import (
 from apparmor.profile_list import ProfileList, preamble_ruletypes
 from apparmor.profile_storage import ProfileStorage, add_or_remove_flag, ruletypes
 from apparmor.regex import (
-    RE_HAS_COMMENT_SPLIT, RE_PROFILE_CHANGE_HAT, RE_PROFILE_CONDITIONAL_START,
-    RE_PROFILE_CONDITIONAL_ELSE, RE_PROFILE_END,
+    RE_HAS_COMMENT_SPLIT, RE_PROFILE_BLOCK_START, RE_PROFILE_CHANGE_HAT,
+    RE_PROFILE_CONDITIONAL_START, RE_PROFILE_CONDITIONAL_ELSE, RE_PROFILE_END,
     RE_PROFILE_HAT_DEF, RE_PROFILE_START, RE_METADATA_LOGPROF_SUGGEST,
     RE_RULE_HAS_COMMA, parse_profile_start_line, re_match_include)
 from apparmor.rule.abi import AbiRule
@@ -590,6 +590,9 @@ def change_profile_flags(prof_filename, program, flag, set_flag):
 
                     line = prof_storage.get_header(depth, False)
                     line = '%s\n' % line[0]
+                elif RE_PROFILE_BLOCK_START.search(line) or RE_PROFILE_CONDITIONAL_START.search(line):
+                    # count rule block and 'if' openers so that their '}' isn't taken for the end of a profile or hat
+                    depth += 1
                 elif RE_PROFILE_END.search(line):
                     depth -= 1
                     # TODO: restore 'profile' and 'hat' to previous values (not really needed/used for aa-complain etc., but can't hurt)

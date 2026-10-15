@@ -271,6 +271,37 @@ class AaTest_change_profile_flags(AaTestWithTempdir):
         # XXX changes the flags for the child profile (which happens to have the same profile name) to 'complain'
         self._test_change_profile_flags('/foo', 'flags=(complain)', 'complain', True, 'complain', more_rules='  profile /foo {\n}', expected_more_rules='  profile /foo flags=(complain) {\n}')
 
+    # tests proper depth handling of '{' and '}' with blocks
+    def test_change_profile_flags_blocks_01(self):
+        self._test_change_profile_flags(
+            '/foo', 'flags=(complain)', 'complain', True, 'complain',
+            more_rules='  audit {\n    /block r,\n  }\n  ^hat {\n    /hat r,\n  }',
+            expected_more_rules='  audit {\n    /block r,\n  }\n  ^hat flags=(complain) {\n    /hat r,\n  }')
+
+    def test_change_profile_flags_blocks_02(self):
+        self._test_change_profile_flags(
+            '/foo', 'flags=(complain)', 'complain', True, 'complain',
+            more_rules='  {\n    /block r,\n  }\n  profile /foo {\n  }',
+            expected_more_rules='  {\n    /block r,\n  }\n  profile /foo flags=(complain) {\n  }')
+
+    def test_change_profile_flags_blocks_03(self):
+        self._test_change_profile_flags(
+            '/foo', 'flags=(complain)', 'complain', True, 'complain',
+            more_rules='  owner { /block r, }\n  ^hat {\n  }',
+            expected_more_rules='  owner { /block r, }\n  ^hat flags=(complain) {\n  }')
+
+    def test_change_profile_flags_blocks_04(self):
+        self._test_change_profile_flags(
+            '/foo', 'flags=(complain)', 'complain', True, 'complain',
+            more_rules='  deny other {\n    /block w,\n  }\n  ^hat {\n  }',
+            expected_more_rules='  deny other {\n    /block w,\n  }\n  ^hat flags=(complain) {\n  }')
+
+    def test_change_profile_flags_blocks_05(self):
+        self._test_change_profile_flags(
+            '/foo', 'flags=(complain)', 'complain', True, 'complain',
+            more_rules='  if $foo {\n    /if r,\n  } else {\n    /else r,\n  }\n  ^hat {\n  }',
+            expected_more_rules='  if $foo {\n    /if r,\n  } else {\n    /else r,\n  }\n  ^hat flags=(complain) {\n  }')
+
     # tests that change the flags
     def test_change_profile_flags_01(self):
         self._test_change_profile_flags('/foo', '', 'audit', True, 'audit')
