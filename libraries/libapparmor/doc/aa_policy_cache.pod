@@ -26,6 +26,8 @@ aa_policy_cache - an opaque object representing an AppArmor policy cache
 
 aa_policy_cache_new - create a new aa_policy_cache object from a path
 
+aa_policy_cache_add_ro_dir - add a read-only cache directory to an aa_policy_cache object
+
 aa_policy_cache_ref - increments the ref count of an aa_policy_cache object
 
 aa_policy_cache_unref - decrements the ref count and frees the aa_policy_cache object when 0
