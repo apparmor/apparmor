@@ -106,6 +106,12 @@ class AaTest_get_header_01(AATest):
         ({'name': '/foo',            'xattrs': {'user.foo': 'bar'},                                             'embedded_hat': True}, 'profile /foo xattrs=(user.foo=bar) {'),
         ({'name': '/foo',            'xattrs': {'user.foo': None},                                             'embedded_hat': True}, 'profile /foo xattrs=(user.foo) {'),
         ({'name': '/foo',            'xattrs': {'user.foo': None, 'user.bar': None},                                             'embedded_hat': True}, 'profile /foo xattrs=(user.bar user.foo) {'),
+        ({'name': 'foo',  'identities': ['bar'],                                               'profile_keyword': True},             'profile foo + identities=(bar) {'),
+        ({'name': 'foo',  'identities': ['bar', 'baz'],                                        'profile_keyword': True},             'profile foo + identities=(bar, baz) {'),
+        ({'name': 'foo',  'identities': ['bar', '/baz qux'],                                   'profile_keyword': True},             'profile foo + identities=(bar, "/baz qux") {'),
+        ({'name': 'foo',  'identities': ['bar'], 'flags': 'complain',                          'profile_keyword': True},             'profile foo + identities=(bar) flags=(complain) {'),
+        ({'name': 'foo',  'identities': ['bar'], 'xattrs': {'user.x': 'y'}, 'flags': 'complain', 'profile_keyword': True},           'profile foo xattrs=(user.x=y) + identities=(bar) flags=(complain) {'),
+        ({'name': 'foo',  'identities': [],                                                    'profile_keyword': True},             'profile foo {'),
     )
 
     def _run_test(self, params, expected):
@@ -115,7 +121,7 @@ class AaTest_get_header_01(AATest):
 
         prof_storage = ProfileStorage(name, '', 'test')
 
-        for param in ('flags', 'attachment', 'profile_keyword', 'header_comment', 'xattrs'):
+        for param in ('flags', 'attachment', 'profile_keyword', 'header_comment', 'xattrs', 'identities'):
             if params.get(param) is not None:
                 prof_storage[param] = params[param]
 
@@ -178,6 +184,16 @@ class AaTest_get_header_after_parse(AATest):
         (('hat "bar//foo space" {',                            None,    None, True,        0),   ('hat "bar//foo space" {')),
         (('^"/space bar//foo" flags=(complain) {',             None,    None, True,        1),   ('  ^"/space bar//foo" flags=(complain) {')),
         (('hat "space ba//foo" flags=(attach_disconnected) {', None,    None, True,        0),   ('hat "space ba//foo" flags=(attach_disconnected) {')),
+
+        (('profile foo + identities=(bar) {',                  None,    None, False,       0),   ('profile foo + identities=(bar) {')),
+        (('profile foo + identities=(bar baz) {',              None,    None, False,       1),   ('  profile foo + identities=(bar, baz) {')),  # normalised separator
+        (('profile foo +identities=(a)+identities=("/b c") {', None,  None, False,       0),   ('profile foo + identities=(a, "/b c") {')),  # groups get merged
+        (('/foo + identities=(bar) {',                         None,    None, False,       0),   ('/foo + identities=(bar) {')),
+        (('profile foo /attach + identities=(bar) flags=(complain) {', None, None, False,  0),   ('profile foo /attach + identities=(bar) flags=(complain) {')),
+        (('profile foo xattrs=(user.x=y) + identities=(bar) {', None,   None, False,       0),   ('profile foo xattrs=(user.x=y) + identities=(bar) {')),
+        (('profile foo + identities=(bar) {',                  '/bar',  None, False,       1),   ('  profile foo + identities=(bar) {')),  # child profile
+        (('^hat + identities=(bar) {',                         None,    None, True,        1),   ('  ^hat + identities=(bar) {')),
+        (('hat foo + identities=(bar) flags=(complain) {',     None,    None, True,        0),   ('hat foo + identities=(bar) flags=(complain) {')),
     )
 
     def _run_test(self, params, expected):
@@ -195,6 +211,7 @@ class TestSetInvalid(AATest):
         (('filename',        True),  AppArmorBug),  # expects string or None
         (('allow',           None),  AppArmorBug),  # doesn't allow overwriting at all
         (('xattrs',          0),     AppArmorBug),  # Invalid type
+        (('identities',      'foo'), AppArmorBug),  # expects list
     )
 
     def _run_test(self, params, expected):
