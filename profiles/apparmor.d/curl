@@ -29,7 +29,7 @@ profile curl /usr/bin/curl {
 
   # allow reading other configuration files/certs from $HOME
   # (see --config, --cacert options)
-  # allow writing output to $HOME, /tmp (see -o option)
+  # allow reading from and writing output to $HOME and /tmp (see --form-upload and -o options, /tmp is handled via abstractions/user-tmp)
   owner file rw @{HOME}/**,
 
   # allows UDP (for DNS), TCP (for http, https, etc), abstract Unix sockets, IPv4, IPv6
