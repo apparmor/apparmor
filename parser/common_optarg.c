@@ -121,6 +121,8 @@ optflag_table_t dfaoptflag_table[] = {
 	  CONTROL_DFA_FLAGS_TABLE },
 	{ 1, "zstd-recompress", "Recompress if the compressed level is higher than the existing cache",
 	  CONTROL_ZSTD_FLAGS_RECOMPRESS },
+	{ 1, "expr-vector", "use vector based expr tree simplification",
+	  CONTROL_DFA_TREE_VECTOR },
 	{ 0, NULL, NULL, 0 },
 };
 

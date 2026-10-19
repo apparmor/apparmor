@@ -37,8 +37,8 @@
 #include <cstddef>
 #include <map>
 #include <set>
-#include <stack>
 #include <ostream>
+#include <vector>
 
 #include <stdint.h>
 
@@ -195,6 +195,16 @@ template<class T> std::set<T> operator+(const std::set<T> &a, const std::set<T> 
 	return c;
 }
 
+/* Move the contents of src into dst, inserting the smaller set into the
+ * larger. src is left in an unspecified state.
+ */
+template<class T> void merge_into(std::set<T> &dst, std::set<T> &src)
+{
+	if (dst.size() < src.size())
+		dst.swap(src);
+	dst.insert(src.begin(), src.end());
+}
+
 /**
  * When creating DFAs from regex trees, a DFA state is constructed from
  * a set of important nodes in the syntax tree. This includes AcceptNodes,
@@ -234,7 +244,7 @@ enum class node_type_t : uint32_t {
 	NODE = 0,
 	INNER = (1u << 0),
 	ONECHILD = (1u << 1),
-	TWOCHILD = (1u << 2),
+	NCHILD = (1u << 2),
 	LEAF = (1u << 3),
 	EPS = (1u << 4),
 	IMPORTANT = (1u << 5),
@@ -246,16 +256,16 @@ enum class node_type_t : uint32_t {
 	STAR = (1u << 11),
 	OPTIONAL = (1u << 12),
 	PLUS = (1u << 13),
-	CAT = (1u << 14),
-	ALT = (1u << 15),
-	SHARED = (1u << 16),
-	ACCEPT = (1u << 17),
-	MATCHFLAG = (1u << 18),
-	EXACTMATCHFLAG = (1u << 19),
-	DENYMATCHFLAG = (1u << 20),
-	PROMPTMATCHFLAG = (1u << 21),
-	SHAREDTREE = (1u << 22),
-	NULLABLE = (1u << 31),
+	ALT = (1u << 14),
+	SHARED = (1u << 15),
+	ACCEPT = (1u << 16),
+	MATCHFLAG = (1u << 17),
+	EXACTMATCHFLAG = (1u << 18),
+	DENYMATCHFLAG = (1u << 19),
+	PROMPTMATCHFLAG = (1u << 20),
+	SHAREDTREE = (1u << 21),
+	// CAT NODE needs to be last for factoring
+	CAT = (1u << 22),
 };
 
 constexpr inline node_type_t operator|(node_type_t lhs, node_type_t rhs)
@@ -284,31 +294,17 @@ constexpr inline bool has_type(node_type_t flags, node_type_t type)
 /* An abstract node in the syntax tree. */
 class Node {
 public:
-	Node(): type_flags(node_type_t::NODE), label(0)
-	{
-		child[0] = child[1] = 0;
-	}
-	Node(Node *left): type_flags(node_type_t::NODE), label(0)
-	{
-		child[0] = left;
-		child[1] = 0;
-	}
-	Node(Node *left, Node *right): type_flags(node_type_t::NODE), label(0)
-	{
-		child[0] = left;
-		child[1] = right;
-	}
-	virtual ~Node()
-	{
-		if (child[0])
-			child[0]->release();
-		if (child[1])
-			child[1]->release();
-	}
+	Node(): child(2), type_flags(node_type_t::NODE), label(0) { }
+	Node(Node *left): child{left, NULL}, type_flags(node_type_t::NODE),
+		label(0) { }
+	Node(Node *left, Node *right): child{left, right},
+		type_flags(node_type_t::NODE), label(0) { }
+	/* children are released by OneChildNode and NChildNode */
+	virtual ~Node() { }
 
 	/**
-	 * firstpos, lastpos, and followpos are used to convert the syntax tree
-	 * to a DFA.
+	 * nullable, firstpos, lastpos, and followpos are used to convert the
+	 * syntax tree to a DFA.
 	 *
 	 * firstpos holds nodes that can match the first character of a string
 	 * that matches the syntax tree. For the regex 'a*bcd', firstpos holds
@@ -329,11 +325,16 @@ public:
 	 *
 	 * See the "Dragon Book" 2nd Edition section 3.9.2 for an in-depth
 	 * explanation.
+	 *
+	 * compute_pos computes followpos for the subtree, adds the subtree's
+	 * firstpos and lastpos to the passed in sets, and returns nullable.
+	 * The passed in sets may already contain the positions of other
+	 * subtrees (eg. the left side of an alternation), so a node must
+	 * not use them to compute followpos.
 	 */
-	virtual void compute_nullable() { }
-	virtual void compute_firstpos() = 0;
-	virtual void compute_lastpos() = 0;
-	virtual void compute_followpos() { }
+	virtual bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) = 0;
+	/* clear the state computed by compute_pos() */
+	virtual void clear_pos(void) { followpos.clear(); }
 
 	/*
 	 * min_match_len determines the smallest string that can match the
@@ -347,22 +348,33 @@ public:
 	 */
 	virtual bool contains_oob() const { return false; }
 
-	virtual int eq(const Node *other) const = 0;
+	/*
+	 * cmp provides a total ordering of nodes, returning < 0, 0, or > 0.
+	 * Nodes are ordered first by type, and then by subclasses on their
+	 * contents. cmp() == 0 iff the nodes are equivalent.
+	 */
+	virtual int cmp(const Node *other) const
+	{
+		uint32_t a = static_cast<uint32_t>(type_flags);
+		uint32_t b = static_cast<uint32_t>(other->type_flags);
+
+		if (a < b)
+			return -1;
+		else if (a > b)
+			return 1;
+		return 0;
+	}
+	virtual int eq(const Node *other) const { return cmp(other) == 0; }
 	virtual ostream &dump(ostream &os) const = 0;
 	void dump_syntax_tree(ostream &os) const;
-	virtual void normalize(int dir)
-	{
-		if (child[dir])
-			child[dir]->normalize(dir);
-		if (child[!dir])
-			child[!dir]->normalize(dir);
-	}
+	virtual void normalize(int dir __attribute__ ((unused))) {}
 	/* return false if no work done */
 	virtual int normalize_eps(int dir __attribute__((unused))) { return 0; }
 
-	NodeSet firstpos, lastpos, followpos;
+	NodeSet followpos;
 	/* child 0 is left, child 1 is right */
-	Node *child[2];
+	std::vector<Node *> child;
+
 	/*
 	 * Bitmap that stores supported pointer casts for the Node, composed
 	 * by node_type_t flags. This is used by is_type() as a substitute
@@ -397,15 +409,97 @@ public:
 	{
 		type_flags |= node_type_t::ONECHILD;
 	};
+	virtual ~OneChildNode()
+	{
+		if (child[0])
+			child[0]->release();
+	};
+	void normalize(int dir) override
+	{
+		if (child[0])
+			child[0]->normalize(dir);
+	}
+	bool contains_oob() const override {
+		return child[0]->contains_oob();
+	}
+
+	int cmp(const Node *other) const override
+	{
+		int tmp = InnerNode::cmp(other);
+		if (tmp != 0)
+			return tmp;
+
+		return child[0]->cmp(other->child[0]);
+	}
 };
 
-class TwoChildNode: public InnerNode {
+
+class NChildNode: public InnerNode {
 public:
-	TwoChildNode(Node *left, Node *right): InnerNode(left, right)
+	NChildNode(Node *left, Node *right): InnerNode(left, right)
 	{
-		type_flags |= node_type_t::TWOCHILD;
+		type_flags |= node_type_t::NCHILD;
 	};
+	/* takes the contents of @children, leaving it empty */
+	NChildNode(std::vector<Node *> &children): InnerNode()
+	{
+		type_flags |= node_type_t::NCHILD;
+		child.swap(children);
+	};
+	virtual ~NChildNode()
+	{
+		std::vector<Node *>::iterator it;
+		for (it = child.begin(); it != child.end(); it++) {
+			/* old factoring NULLs out children before release */
+			if (*it)
+				(*it)->release();
+		}
+	};
+
+	void normalize(int dir) override
+	{
+		std::vector<Node *>::iterator it;
+		for (it = child.begin(); it != child.end(); it++)
+			(*it)->normalize(dir);
+	}
 	int normalize_eps(int dir) override;
+
+	bool contains_oob() const override {
+		std::vector<Node *>::const_iterator it;
+		for (it = child.begin(); it != child.end(); it++) {
+			if ((*it)->contains_oob())
+				return true;
+		}
+		return false;
+	}
+
+	// assumes ordered as desired/sorted, this really only affects
+	// alt nodes. But is not different than the TwoChild node treating
+	// (a|b) as not equal to (b|a). Sorting alt node vectors before
+	// comparing removes the ambiguity
+	int cmp(const Node *other) const override
+	{
+		int tmp = InnerNode::cmp(other);
+		if (tmp != 0)
+			return tmp;
+
+		std::vector<Node *>::const_iterator left;
+		std::vector<Node *>::const_iterator right;
+
+		if (child.size() < other->child.size())
+			return -1;
+		else if (child.size() > other->child.size())
+			return 1;
+
+		left = child.begin();
+		right = other->child.begin();
+		for ( ; left != child.end(); left++, right++) {
+			tmp = (*left)->cmp(*right);
+			if (tmp != 0)
+				return tmp;
+		}
+		return 0;
+	}
 };
 
 class LeafNode: public Node {
@@ -419,7 +513,7 @@ class EpsNode: public LeafNode {
 public:
 	EpsNode(): LeafNode()
 	{
-		type_flags |= (node_type_t::EPS | node_type_t::NULLABLE);
+		type_flags |= node_type_t::EPS;
 		label = 0;
 	}
 	void release(void) override
@@ -429,14 +523,13 @@ public:
 		 */
 	}
 
-	void compute_firstpos() override { }
-	void compute_lastpos() override { }
-	int eq(const Node *other) const override
+	bool compute_pos(NodeSet &firstpos __attribute__((unused)),
+			 NodeSet &lastpos __attribute__((unused))) override
 	{
-		if (other->is_type(node_type_t::EPS))
-			return 1;
-		return 0;
+		/* nullable, no changes is NodeSets */
+		return true;
 	}
+
 	ostream &dump(ostream &os) const override
 	{
 		return os << "[]";
@@ -451,8 +544,13 @@ public:
 class ImportantNode: public LeafNode {
 public:
 	ImportantNode(): LeafNode() { type_flags |= node_type_t::IMPORTANT; }
-	void compute_firstpos() override { firstpos.insert(this); }
-	void compute_lastpos() override { lastpos.insert(this); }
+	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
+	{
+		firstpos.insert(this);
+		lastpos.insert(this);
+
+		return false; 		/* nullable */
+	}
 	virtual void follow(Cases &cases) const = 0;
 	virtual int is_accept(void) const = 0;
 };
@@ -481,13 +579,14 @@ public:
 		}
 		(*x)->insert(followpos.begin(), followpos.end());
 	}
-	int eq(const Node *other) const override
+	int cmp(const Node *other) const override
 	{
-		if (other->is_type(node_type_t::CHAR)) {
-			const CharNode *o = static_cast<const CharNode *>(other);
-			return c == o->c;
-		}
-		return 0;
+		int tmp = CNode::cmp(other);
+		if (tmp != 0)
+			return tmp;
+
+		const CharNode *o = static_cast<const CharNode *>(other);
+		return c.c - o->c.c;
 	}
 	ostream &dump(ostream &os) const override
 	{
@@ -531,21 +630,25 @@ public:
 			(*x)->insert(followpos.begin(), followpos.end());
 		}
 	}
-	int eq(const Node *other) const override
+	int cmp(const Node *other) const override
 	{
-		if (!other->is_type(node_type_t::CHARSET))
-			return 0;
+		int tmp = CNode::cmp(other);
+		if (tmp != 0)
+			return tmp;
 
 		const CharSetNode *o = static_cast<const CharSetNode *>(other);
-		if (chars.size() != o->chars.size())
-			return 0;
+		if (chars.size() < o->chars.size())
+			return -1;
+		else if (chars.size() > o->chars.size())
+			return 1;
 
 		for (Chars::const_iterator i = chars.begin(), j = o->chars.begin();
 		     i != chars.end() && j != o->chars.end(); i++, j++) {
-			if (*i != *j)
-				return 0;
+			tmp = i->c - j->c;
+			if (tmp != 0)
+				return tmp;
 		}
-		return 1;
+		return 0;
 	}
 	ostream &dump(ostream &os) const override
 	{
@@ -604,21 +707,25 @@ public:
 						  followpos.end());
 		}
 	}
-	int eq(const Node *other) const override
+	int cmp(const Node *other) const override
 	{
-		if (!other->is_type(node_type_t::NOTCHARSET))
-			return 0;
+		int tmp = CNode::cmp(other);
+		if (tmp != 0)
+			return tmp;
 
 		const NotCharSetNode *o = static_cast<const NotCharSetNode *>(other);
-		if (chars.size() != o->chars.size())
-			return 0;
+		if (chars.size() < o->chars.size())
+			return -1;
+		else if (chars.size() > o->chars.size())
+			return 1;
 
 		for (Chars::const_iterator i = chars.begin(), j = o->chars.begin();
 		     i != chars.end() && j != o->chars.end(); i++, j++) {
-			if (*i != *j)
-				return 0;
+			tmp = i->c - j->c;
+			if (tmp != 0)
+				return tmp;
 		}
-		return 1;
+		return 0;
 	}
 	ostream &dump(ostream &os) const override
 	{
@@ -664,12 +771,6 @@ public:
 			if (i->first.c >= 0)
 				i->second->insert(followpos.begin(), followpos.end());
 	}
-	int eq(const Node *other) const override
-	{
-		if (other->is_type(node_type_t::ANYCHAR))
-			return 1;
-		return 0;
-	}
 	ostream &dump(ostream &os) const override { return os << "."; }
 };
 
@@ -678,22 +779,22 @@ class StarNode: public OneChildNode {
 public:
 	StarNode(Node *left): OneChildNode(left)
 	{
-		type_flags |= (node_type_t::STAR | node_type_t::NULLABLE);
+		type_flags |= node_type_t::STAR;
 	}
-	void compute_firstpos() override { firstpos = child[0]->firstpos; }
-	void compute_lastpos() override { lastpos = child[0]->lastpos; }
-	void compute_followpos() override
+	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
 	{
-		NodeSet from = child[0]->lastpos, to = child[0]->firstpos;
-		for (NodeSet::iterator i = from.begin(); i != from.end(); i++) {
-			(*i)->followpos.insert(to.begin(), to.end());
+		NodeSet first, last;
+
+		(void) child[0]->compute_pos(first, last);
+
+		for (NodeSet::iterator i = last.begin(); i != last.end(); i++) {
+			(*i)->followpos.insert(first.begin(), first.end());
 		}
-	}
-	int eq(const Node *other) const override
-	{
-		if (other->is_type(node_type_t::STAR))
-			return child[0]->eq(other->child[0]);
-		return 0;
+
+		merge_into(firstpos, first);
+		merge_into(lastpos, last);
+
+		return true;	/* nullable */
 	}
 	ostream &dump(ostream &os) const override
 	{
@@ -701,8 +802,6 @@ public:
 		child[0]->dump(os);
 		return os << ")*";
 	}
-
-	bool contains_oob() const override { return child[0]->contains_oob(); }
 };
 
 /* Match a node zero or one times. */
@@ -710,15 +809,13 @@ class OptionalNode: public OneChildNode {
 public:
 	OptionalNode(Node *left): OneChildNode(left)
 	{
-		type_flags |= (node_type_t::OPTIONAL | node_type_t::NULLABLE);
+		type_flags |= node_type_t::OPTIONAL;
 	}
-	void compute_firstpos() override { firstpos = child[0]->firstpos; }
-	void compute_lastpos() override { lastpos = child[0]->lastpos; }
-	int eq(const Node *other) const override
+	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
 	{
-		if (other->is_type(node_type_t::OPTIONAL))
-			return child[0]->eq(other->child[0]);
-		return 0;
+		(void) child[0]->compute_pos(firstpos, lastpos);
+
+		return true;	/* nullable */
 	}
 	ostream &dump(ostream &os) const override
 	{
@@ -726,6 +823,11 @@ public:
 		child[0]->dump(os);
 		return os << ")?";
 	}
+	/* OptionalNode has never reported oob from its child, keep that
+	 * so min_match_len() is unchanged by the move to OneChildNode.
+	 * TODO: decide whether this should report child[0]->contains_oob()
+	 */
+	bool contains_oob() const override { return false; }
 };
 
 /* Match a node one or more times. (This is a unary operator.) */
@@ -735,25 +837,20 @@ public:
 	{
 		type_flags |= node_type_t::PLUS;
 	}
-	void compute_nullable() override {
-		// The nullable bit is only ever set so no need for else branch
-		if (has_type(child[0]->type_flags, node_type_t::NULLABLE)) {
-			type_flags |= node_type_t::NULLABLE;
-		}
-	}
-	void compute_firstpos() override { firstpos = child[0]->firstpos; }
-	void compute_lastpos() override { lastpos = child[0]->lastpos; }
-	void compute_followpos() override
+	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
 	{
-		NodeSet from = child[0]->lastpos, to = child[0]->firstpos;
-		for (NodeSet::iterator i = from.begin(); i != from.end(); i++) {
-			(*i)->followpos.insert(to.begin(), to.end());
+		NodeSet first, last;
+
+		bool nullable = child[0]->compute_pos(first, last);
+
+		for (NodeSet::iterator i = last.begin(); i != last.end(); i++) {
+			(*i)->followpos.insert(first.begin(), first.end());
 		}
-	}
-	int eq(const Node *other) const override {
-		if (other->is_type(node_type_t::PLUS))
-			return child[0]->eq(other->child[0]);
-		return 0;
+
+		merge_into(firstpos, first);
+		merge_into(lastpos, last);
+
+		return nullable;
 	}
 	ostream &dump(ostream &os) const override {
 		os << '(';
@@ -761,7 +858,6 @@ public:
 		return os << ")+";
 	}
 	int min_match_len() const override { return child[0]->min_match_len(); }
-	bool contains_oob() const override { return child[0]->contains_oob(); }
 };
 
 /*
@@ -783,7 +879,8 @@ public:
  */
 class SharedTreeNode: public OneChildNode {
 public:
-	SharedTreeNode(Node *tree): OneChildNode(tree), refcount(1)
+	SharedTreeNode(Node *tree): OneChildNode(tree), refcount(1),
+		computed(false), nullable(false), pos_uses(0)
 	{
 		type_flags |= node_type_t::SHAREDTREE;
 	}
@@ -797,168 +894,211 @@ public:
 		if (--refcount == 0)
 			delete this;
 	}
-	/* computed for every reference, followpos within the subtree is
-	 * the same each time as the context is the same
-	 * TODO: cache firstpos/lastpos so the subtree is only walked once
+	/*
+	 * The subtree is only walked for the first reference, its firstpos
+	 * and lastpos are cached for the remaining references. followpos
+	 * within the subtree is the same for every reference as the
+	 * context is the same.
+	 *
+	 * During a dfa build every reference to the node is in the tree,
+	 * so the cache is handed to the last reference instead of being
+	 * kept until clear_pos().
 	 */
-	void compute_nullable() override
+	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
 	{
-		// The nullable bit is only ever set so no need for else branch
-		if (has_type(child[0]->type_flags, node_type_t::NULLABLE))
-			type_flags |= node_type_t::NULLABLE;
+		if (!computed) {
+			nullable = child[0]->compute_pos(first_cache,
+							 last_cache);
+			computed = true;
+		}
+		if (++pos_uses == refcount) {
+			merge_into(firstpos, first_cache);
+			merge_into(lastpos, last_cache);
+			first_cache.clear();
+			last_cache.clear();
+		} else {
+			firstpos.insert(first_cache.begin(), first_cache.end());
+			lastpos.insert(last_cache.begin(), last_cache.end());
+		}
+		return nullable;
 	}
-	void compute_firstpos() override { firstpos = child[0]->firstpos; }
-	void compute_lastpos() override { lastpos = child[0]->lastpos; }
+	void clear_pos(void) override
+	{
+		OneChildNode::clear_pos();
+		computed = false;
+		pos_uses = 0;
+		first_cache.clear();
+		last_cache.clear();
+	}
 	/* only equal to itself */
-	int eq(const Node *other) const override { return (this == other); }
+	int cmp(const Node *other) const override
+	{
+		int tmp = Node::cmp(other);
+		if (tmp != 0)
+			return tmp;
+
+		if (this < other)
+			return -1;
+		else if (this > other)
+			return 1;
+		return 0;
+	}
 	void normalize(int dir __attribute__((unused))) override { }
 	ostream &dump(ostream &os) const override
 	{
 		return child[0]->dump(os);
 	}
 	int min_match_len() const override { return child[0]->min_match_len(); }
-	bool contains_oob() const override { return child[0]->contains_oob(); }
 
 	unsigned int refcount;
+private:
+	/* compute_pos() cache */
+	bool computed;
+	bool nullable;
+	unsigned int pos_uses;
+	NodeSet first_cache, last_cache;
 };
 
 /* Match a pair of consecutive nodes. */
-class CatNode: public TwoChildNode {
+class CatNode: public NChildNode {
 public:
-	CatNode(Node *left, Node *right): TwoChildNode(left, right)
+	CatNode(Node *left, Node *right): NChildNode(left, right)
 	{
 		type_flags |= node_type_t::CAT;
 	}
-	void compute_nullable() override
+	CatNode(std::vector<Node *> &children): NChildNode(children)
 	{
-		/*
-		 * To check that both children are nullable, we can bitwise-AND
-		 * both of the type_flags together and then check if the
-		 * node_type_t::NULLABLE bit is set on the result.
+		type_flags |= node_type_t::CAT;
+	}
+	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
+	{
+		/* being careful about the construction we can reduce the
+		 * number of sets being built in computing_pos.
+		 * The set of cat nodes is treated as left normalized for
+		 * purpose of pos computation
 		 *
-		 * The nullable bit is only ever set so no need for else branch
+		 *                   .
+		 *                  / \
+		 *                 .   f[4]
+		 *                / \
+		 *               .   e[3]
+		 *              / \
+		 *             /   \
+		 *            /     \
+		 *           /       \
+		 *          .         |[2]
+		 *         / \       / \
+		 *     [0]*   *[1]  c   d
+		 *        |   |
+		 *        a   b
+		 * The computed firstpos, lastpos from the previous iteration
+		 * are the left, firstpos/lastpos of the next iteration
 		 */
-		if (has_type(child[0]->type_flags & child[1]->type_flags,
-			     node_type_t::NULLABLE)) {
-			type_flags |= node_type_t::NULLABLE;
+
+		NodeSet left_lastpos;
+
+		std::vector<Node *>::iterator it = child.begin();
+		bool nullable = (*it)->compute_pos(firstpos, left_lastpos);
+
+		for (it++; it != child.end(); it++) {
+			NodeSet right_firstpos, right_lastpos;
+
+			bool rnullable = (*it)->compute_pos(right_firstpos,
+							    right_lastpos);
+
+			for (NodeSet::iterator i = left_lastpos.begin();
+			     i != left_lastpos.end(); i++) {
+				(*i)->followpos.insert(right_firstpos.begin(),
+						       right_firstpos.end());
+			}
+
+			/* children so far are all nullable */
+			if (nullable)
+				merge_into(firstpos, right_firstpos);
+
+			/* left_lastpos becomes lastpos of children so far */
+			if (rnullable)
+				merge_into(right_lastpos, left_lastpos);
+			left_lastpos.swap(right_lastpos);
+
+			nullable = nullable && rnullable;
 		}
-	}
-	void compute_firstpos() override
-	{
-		if (has_type(child[0]->type_flags, node_type_t::NULLABLE))
-			firstpos = child[0]->firstpos + child[1]->firstpos;
-		else
-			firstpos = child[0]->firstpos;
-	}
-	void compute_lastpos() override
-	{
-		if (has_type(child[1]->type_flags, node_type_t::NULLABLE))
-			lastpos = child[0]->lastpos + child[1]->lastpos;
-		else
-			lastpos = child[1]->lastpos;
-	}
-	void compute_followpos() override
-	{
-		NodeSet from = child[0]->lastpos, to = child[1]->firstpos;
-		for (NodeSet::iterator i = from.begin(); i != from.end(); i++) {
-			(*i)->followpos.insert(to.begin(), to.end());
-		}
-	}
-	int eq(const Node *other) const override
-	{
-		if (other->is_type(node_type_t::CAT)) {
-			if (!child[0]->eq(other->child[0]))
-				return 0;
-			return child[1]->eq(other->child[1]);
-		}
-		return 0;
+		merge_into(lastpos, left_lastpos);
+
+		return nullable;
 	}
 	ostream &dump(ostream &os) const override
 	{
-		child[0]->dump(os);
-		child[1]->dump(os);
+		std::vector<Node *>::const_iterator it;
+		for (it = child.begin(); it != child.end(); it++) {
+			(*it)->dump(os);
+		}
 		return os;
 	}
 	void normalize(int dir) override;
 	int min_match_len() const override
 	{
-		int len = child[0]->min_match_len();
-		if (child[0]->contains_oob()) {
-			// oob characters are used to indicate when the DFA transitions
-			// from matching the path to matching the xattrs. If the left child
-			// contains an oob character, the right side doesn't contribute to
-			// the path match.
-			return len;
+		int len = 0;
+		std::vector<Node *>::const_iterator it;
+		for (it = child.begin(); it != child.end(); it++) {
+			len += (*it)->min_match_len();
+			if ((*it)->contains_oob()) {
+				// oob characters are used to indicate when
+				// the DFA transitions from matching the path
+				// to matching the xattrs. If the left child
+				// contains an oob character, the nodes to
+				// the right don't contribute to the path match.
+				return len;
+			}
 		}
-		return len + child[1]->min_match_len();
-	}
-	bool contains_oob() const override
-	{
-		return child[0]->contains_oob() || child[1]->contains_oob();
+		return len;
 	}
 };
 
 /* Match one of two alternative nodes. */
-class AltNode: public TwoChildNode {
+class AltNode: public NChildNode {
 public:
-	AltNode(Node *left, Node *right): TwoChildNode(left, right)
+	AltNode(Node *left, Node *right): NChildNode(left, right)
 	{
 		type_flags |= node_type_t::ALT;
 	}
-	void compute_nullable() override
+	AltNode(std::vector<Node *> &children): NChildNode(children)
 	{
-		/*
-		 * To check that either child is nullable, we can bitwise-OR
-		 * both of the type_flags together and then check if the
-		 * node_type_t::NULLABLE bit is set on the result.
-		 *
-		 * The nullable bit is only ever set so no need for else branch
-		 */
-		if (has_type(child[0]->type_flags | child[1]->type_flags,
-			     node_type_t::NULLABLE)) {
-			type_flags |= node_type_t::NULLABLE;
-		}
+		type_flags |= node_type_t::ALT;
 	}
-	void compute_lastpos() override
+	bool compute_pos(NodeSet &firstpos, NodeSet &lastpos) override
 	{
-		lastpos = child[0]->lastpos + child[1]->lastpos;
-	}
-	void compute_firstpos() override
-	{
-		firstpos = child[0]->firstpos + child[1]->firstpos;
-	}
-	int eq(const Node *other) const override
-	{
-		if (other->is_type(node_type_t::ALT)) {
-			if (!child[0]->eq(other->child[0]))
-				return 0;
-			return child[1]->eq(other->child[1]);
-		}
-		return 0;
+		/* all children must be computed, so don't short circuit */
+		bool nullable = false;
+		std::vector<Node *>::iterator it;
+		for (it = child.begin(); it != child.end(); it++)
+			nullable |= (*it)->compute_pos(firstpos, lastpos);
+
+		return nullable;
 	}
 	ostream &dump(ostream &os) const override
 	{
 		os << '(';
-		child[0]->dump(os);
-		os << '|';
-		child[1]->dump(os);
+		std::vector<Node *>::const_iterator it;
+		for (it = child.begin(); it != child.end(); it++) {
+			if (it != child.begin())
+				os << '|';
+			(*it)->dump(os);
+		}
 		os << ')';
 		return os;
 	}
 	void normalize(int dir) override;
 	int min_match_len() const override
 	{
-		int m1, m2;
-		m1 = child[0]->min_match_len();
-		m2 = child[1]->min_match_len();
-		if (m1 < m2) {
-			return m1;
+		int m = child[0]->min_match_len();
+		std::vector<Node *>::const_iterator it;
+		for (it = ++child.begin(); it != child.end(); it++) {
+			int n = (*it)->min_match_len();
+			if (n < m)
+				m = n;
 		}
-		return m2;
-	}
-	bool contains_oob() const override
-	{
-		return child[0]->contains_oob() || child[1]->contains_oob();
+		return m;
 	}
 };
 
@@ -982,6 +1122,19 @@ public:
 
 	/* requires shared nodes to be common by pointer */
 	int eq(const Node *other) const override { return (this == other); }
+	/* must be consistent with eq(), only the same node compares equal */
+	int cmp(const Node *other) const override
+	{
+		int tmp = ImportantNode::cmp(other);
+		if (tmp != 0)
+			return tmp;
+
+		if (this < other)
+			return -1;
+		else if (this > other)
+			return 1;
+		return 0;
+	}
 };
 
 /**
@@ -1002,6 +1155,25 @@ public:
 	}
 	
 	ostream &dump(ostream &os) const override { return os << "< 0x" << std::hex << perms << std::dec << '>'; }
+
+	/* order by content so sorting is stable across runs, fall back
+	 * to SharedNode::cmp so only the same node compares equal
+	 */
+	int cmp(const Node *other) const override
+	{
+		int tmp = Node::cmp(other);
+		if (tmp != 0)
+			return tmp;
+
+		const MatchFlag *o = static_cast<const MatchFlag *>(other);
+		if (priority != o->priority)
+			return priority < o->priority ? -1 : 1;
+		if (perms != o->perms)
+			return perms < o->perms ? -1 : 1;
+		if (audit != o->audit)
+			return audit < o->audit ? -1 : 1;
+		return SharedNode::cmp(other);
+	}
 
 	int priority;
 	perm32_t perms;
@@ -1034,34 +1206,58 @@ public:
 
 
 /* Traverse the syntax tree depth-first in an iterator-like manner. */
+/*
+ * Post order depth first traversal of the expression tree.
+ *
+ * Iterative so deep trees don't use the C stack, and only tracks the
+ * path from the root to the current node, so memory use is O(depth)
+ * of the tree, regardless of how many children a node has.
+ *
+ * A node is visited after all of its children. The visited node's
+ * children may be modified (eg. reordered by flip_tree()), but the
+ * number of children must not change while the node is visited.
+ */
 template<class node_type>
 class basic_depth_first_traversal {
-	std::stack<node_type *>pos;
-	void push_left(node_type *node) {
-		pos.push(node);
+	struct frame {
+		node_type *node;
+		size_t next;	/* index of next child to visit */
+		frame(node_type *node): node(node), next(0) { }
+	};
+	std::vector<frame> pos;
 
-		while (node->is_type(node_type_t::INNER)) {
-			pos.push(node->child[0]);
-			node = node->child[0];
+	/* descend until the node on top of the stack has no unvisited
+	 * children. Leaf nodes and OneChildNodes have NULL entries in
+	 * their child vector, which are skipped.
+	 */
+	void descend(void)
+	{
+		while (pos.back().node->is_type(node_type_t::INNER)) {
+			frame &f = pos.back();
+			node_type *c = NULL;
+
+			while (!c && f.next < f.node->child.size())
+				c = f.node->child[f.next++];
+			if (!c)
+				return;
+			/* invalidates f */
+			pos.push_back(frame(c));
 		}
 	}
 public:
-	basic_depth_first_traversal(node_type *node) { push_left(node); }
-	node_type *operator*() { return pos.top(); }
-	node_type *operator->() { return pos.top(); }
+	basic_depth_first_traversal(node_type *node)
+	{
+		pos.push_back(frame(node));
+		descend();
+	}
+	node_type *operator*() { return pos.back().node; }
+	node_type *operator->() { return pos.back().node; }
 	operator bool() { return !pos.empty(); }
 	void operator++(int)
 	{
-		node_type *last = pos.top();
-		pos.pop();
-
-		if (!pos.empty()) {
-			node_type *node = pos.top();
-			if (node->child[1] &&
-			    node->child[1] != last) {
-				push_left(node->child[1]);
-			}
-		}
+		pos.pop_back();
+		if (!pos.empty())
+			descend();
 	}
 };
 
