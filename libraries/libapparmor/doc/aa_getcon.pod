@@ -63,8 +63,8 @@ and "Firefox". The string can consist of any non-NUL characters but it will be
 NUL-terminated. The *label string must be freed using free().
 
 The possible *mode strings are "enforce", "complain", and "unconfined".
-Additionally,*mode may be NULL when *label is "unconfined".
-B<The *mode stringmust not be freed>. The *label and *mode strings come from a
+Additionally, *mode may be NULL when *label is "unconfined".
+B<The *mode string must not be freed.> The *label and *mode strings come from a
 single buffer allocation and are separated by a NUL character.
 
 The aa_gettaskcon function is like the aa_getcon function except it will work
