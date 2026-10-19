@@ -38,7 +38,8 @@ aare_rules::~aare_rules(void)
 	if (root)
 		root->release();
 
-	unique_perms.clear();
+	/* a shared unique_perms cache is owned by the caller */
+	local_perms.clear();
 	expr_map.clear();
 }
 
@@ -145,51 +146,44 @@ err:
 }
 
 /*
- * append_rule is like add_rule, but appends the rule to any existing rules
- * with a separating transition. The appended rule matches with the same
- * permissions as the rule it's appended to. If there are no existing rules
- * append_rule returns true.
+ * Finish constructing the expr tree from the different permission set
+ * trees, simplifying each. Each permission set's tree is followed by its
+ * accept node, or if @tail is set by
+ *     (accept | tail)
+ * so a rule keeps its permissions at the point the tail is appended, and
+ * the tail provides the permissions for matches that continue into it.
+ * As the tail has the same context (nothing following it) everywhere it
+ * is referenced it is a pure right factor, and can be shared.
  *
- * This is used by xattrs matching where, after matching the path, the DFA is
- * advanced by a null character for each xattr.
+ * The trees in expr_map are consumed.
+ * @min_match_len: set to the shortest match, not including the tail
+ * Returns: the tree, or NULL if there are no rules
  */
-bool aare_rules::append_rule(const char *rule, bool oob, bool with_perm,
-			     optflags const &opts)
+Node *aare_rules::build_tree(optflags const &opts, SharedTreeNode *tail,
+			     int *min_match_len)
 {
 	Node *tree = NULL;
-	if (regex_parse(&tree, rule))
-		return false;
+	PermExprMap::iterator i;
 
-	if (opts.dump & DUMP_DFA_RULE_EXPR) {
-		cerr << "rule: ";
-		cerr << rule;
-		cerr << "  ->  ";
-		tree->dump(cerr);
-		cerr << "\n\n";
-	}
+	for (i = expr_map.begin(); i != expr_map.end(); i++) {
+		Node *tmp = i->second;
+		if (opts.control & CONTROL_DFA_TREE_SIMPLE)
+			tmp = simplify_tree(tmp, opts);
 
-	/*
-	 * For each matching state, we want to create an optional path
-	 * separated by a separating character.
-	 *
-	 * When matching xattrs, the DFA must end up in an accepting state for
-	 * the path, then each value of the xattrs. Using an optional node
-	 * lets each rule end up in an accepting state.
-	 */
-	tree = new CatNode(oob ? new CharNode(transchar(-1, true)) : new CharNode(0), tree);
-	if (expr_map.size() == 0) {
-		// There's nothing to append to. Free the tree reference.
-		delete tree;
-		return true;
+		/* same as min_match_len() of the tree without the tail */
+		int len = tmp->min_match_len();
+		if (!tree || len < *min_match_len)
+			*min_match_len = len;
+
+		Node *end = i->first;
+		if (tail)
+			end = new AltNode(end, tail->get());
+		Node *n = new CatNode(tmp, end);
+		tree = tree ? new AltNode(tree, n) : n;
 	}
-	PermExprMap::const_iterator it;
-	for (it = expr_map.cbegin(); it != expr_map.cend(); it++) {
-		if (with_perm)
-			expr_map[it->first] = new CatNode(it->second, new AltNode(it->first, tree));
-		else
-			expr_map[it->first] = new CatNode(it->second, tree);
-	}
-	return true;
+	expr_map.clear();
+
+	return tree;
 }
 
 /* create a chfa from the ruleset
@@ -200,29 +194,38 @@ bool aare_rules::append_rule(const char *rule, bool oob, bool with_perm,
 CHFA *aare_rules::create_chfa(int *min_match_len,
 			      vector <aa_perms> &perms_table,
 			      optflags const &opts, bool filedfa,
-			      int permstable32_version)
+			      int permstable32_version, aare_rules *tail,
+			      bool tail_oob)
 {
 	bool extended_perms = permstable32_version >= 2;
+	SharedTreeNode *shared = NULL;
 
-	/* finish constructing the expr tree from the different permission
-	 * set nodes */
-	PermExprMap::const_iterator i = expr_map.cbegin();
-	if (i != expr_map.cend()) {
-		if (opts.control & CONTROL_DFA_TREE_SIMPLE) {
-			Node *tmp = simplify_tree(i->second, opts);
-			root = new CatNode(tmp, i->first);
-		} else
-			root = new CatNode(i->second, i->first);
-		for (i++; i != expr_map.end(); i++) {
-			Node *tmp;
-			if (opts.control & CONTROL_DFA_TREE_SIMPLE) {
-				tmp = simplify_tree(i->second, opts);
-			} else
-				tmp = i->second;
-			root = new AltNode(root, new CatNode(tmp, i->first));
+	if (tail) {
+		/* the tail's accept nodes must have the same lifetime as
+		 * ours, and appending to a flipped tree doesn't work
+		 */
+		if (&tail->unique_perms != &unique_perms ||
+		    reverse || tail->reverse)
+			return NULL;
+
+		int tail_len;
+		Node *t = tail->build_tree(opts, NULL, &tail_len);
+		if (t) {
+			Node *sep;
+			if (tail_oob)
+				sep = new CharNode(transchar(-1, true));
+			else
+				sep = new CharNode(0);
+			shared = new SharedTreeNode(new CatNode(sep, t));
 		}
 	}
-	*min_match_len = root->min_match_len();
+
+	root = build_tree(opts, shared, min_match_len);
+	/* drop the reference held while building, root holds the rest */
+	if (shared)
+		shared->release();
+	if (!root)
+		return NULL;
 
 	/* dumping of the none simplified tree without -O no-expr-simplify
 	 * is broken because we need to build the tree above first, and
@@ -349,7 +352,8 @@ CHFA *aare_rules::create_chfa(int *min_match_len,
 void *aare_rules::create_dfablob(size_t *size, int *min_match_len,
 				 vector <aa_perms> &perms_table,
 				 optflags const &opts, bool filedfa,
-				 int permstable32_version)
+				 int permstable32_version, aare_rules *tail,
+				 bool tail_oob)
 {
 	char *buffer = NULL;
 	stringstream stream;
@@ -357,7 +361,7 @@ void *aare_rules::create_dfablob(size_t *size, int *min_match_len,
 	try {
 		CHFA *chfa = create_chfa(min_match_len, perms_table,
 					 opts, filedfa,
-					 permstable32_version);
+					 permstable32_version, tail, tail_oob);
 		if (!chfa) {
 			*size = 0;
 			return NULL;

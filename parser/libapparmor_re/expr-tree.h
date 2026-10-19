@@ -254,6 +254,7 @@ enum class node_type_t : uint32_t {
 	EXACTMATCHFLAG = (1u << 19),
 	DENYMATCHFLAG = (1u << 20),
 	PROMPTMATCHFLAG = (1u << 21),
+	SHAREDTREE = (1u << 22),
 	NULLABLE = (1u << 31),
 };
 
@@ -761,6 +762,64 @@ public:
 	}
 	int min_match_len() const override { return child[0]->min_match_len(); }
 	bool contains_oob() const override { return child[0]->contains_oob(); }
+};
+
+/*
+ * A subtree that is referenced from multiple places in the expr tree.
+ * The important nodes in the subtree are shared, so the dfa build only
+ * has one set of positions for them. This is only valid where the
+ * subtree has the same context everywhere it is referenced, eg. as a
+ * common tail (right factor) appended to every rule, otherwise the
+ * contexts are merged.
+ *
+ * The node is reference counted, get() takes a reference and release()
+ * drops one. The subtree is owned by the node, and released with it.
+ *
+ * Tree simplification treats the node as opaque. It doesn't descend into
+ * the subtree or factor across it, and the node is only equal to itself.
+ *
+ * depth_first_traversal visits the subtree once per reference, so
+ * flip_tree() must not be used on a tree containing a SharedTreeNode.
+ */
+class SharedTreeNode: public OneChildNode {
+public:
+	SharedTreeNode(Node *tree): OneChildNode(tree), refcount(1)
+	{
+		type_flags |= node_type_t::SHAREDTREE;
+	}
+	SharedTreeNode *get(void)
+	{
+		refcount++;
+		return this;
+	}
+	void release(void) override
+	{
+		if (--refcount == 0)
+			delete this;
+	}
+	/* computed for every reference, followpos within the subtree is
+	 * the same each time as the context is the same
+	 * TODO: cache firstpos/lastpos so the subtree is only walked once
+	 */
+	void compute_nullable() override
+	{
+		// The nullable bit is only ever set so no need for else branch
+		if (has_type(child[0]->type_flags, node_type_t::NULLABLE))
+			type_flags |= node_type_t::NULLABLE;
+	}
+	void compute_firstpos() override { firstpos = child[0]->firstpos; }
+	void compute_lastpos() override { lastpos = child[0]->lastpos; }
+	/* only equal to itself */
+	int eq(const Node *other) const override { return (this == other); }
+	void normalize(int dir __attribute__((unused))) override { }
+	ostream &dump(ostream &os) const override
+	{
+		return child[0]->dump(os);
+	}
+	int min_match_len() const override { return child[0]->min_match_len(); }
+	bool contains_oob() const override { return child[0]->contains_oob(); }
+
+	unsigned int refcount;
 };
 
 /* Match a pair of consecutive nodes. */

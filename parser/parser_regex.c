@@ -514,8 +514,13 @@ bool process_profile_name_xmatch(Profile *prof)
 		prof->xmatch_len = 0;
 		prof->xmatch_size = 0;
 	} else {
-		/* build a dfa */
-		aare_rules *rules = new aare_rules();
+		/* build a dfa
+		 * the xattrs are a tail ruleset appended to the attachment
+		 * rules, so it must share their accept node cache
+		 */
+		UniquePermsCache perms_cache;
+		aare_rules *tail = NULL;
+		aare_rules *rules = new aare_rules(&perms_cache);
 		if (!rules)
 			return false;
 		if (!rules->add_rule(tbuf.c_str(), 0, rule_mode_t::ALLOW,
@@ -547,6 +552,7 @@ bool process_profile_name_xmatch(Profile *prof)
 				goto build;
 			}
 
+			std::vector<std::string> xattrs;
 			for (entry = prof->xattrs.list; entry; entry = entry->next) {
 				xattr_value = get_xattr_value(entry);
 				if (!xattr_value)
@@ -576,7 +582,24 @@ bool process_profile_name_xmatch(Profile *prof)
 				convert_aaregex_to_pcre(xattr_value, 0,
 							glob_null, tbuf,
 							&len);
-				if (!rules->append_rule(tbuf.c_str(), true, true, parseopts)) {
+				xattrs.push_back(tbuf);
+			}
+
+			/* the attachment matches after each matched xattr, so
+			 * the tail has a rule for each prefix of the xattrs,
+			 * separated by oob transitions
+			 *    x1 | x1 \x-1 x2 | x1 \x-1 x2 \x-1 x3 ...
+			 */
+			std::vector<const char *> rulev;
+			tail = new aare_rules(&perms_cache);
+			for (size_t i = 0; i < xattrs.size(); i++) {
+				rulev.push_back(xattrs[i].c_str());
+				if (!tail->add_rule_vec(0, rule_mode_t::ALLOW,
+							AA_MAY_EXEC, 0,
+							rulev.size(),
+							rulev.data(),
+							parseopts, true)) {
+					delete tail;
 					delete rules;
 					return false;
 				}
@@ -592,7 +615,9 @@ build:
 		prof->xmatch = rules->create_dfablob(&prof->xmatch_size,
 						    &prof->xmatch_len,
 						    prof->xmatch_perms_table,
-						    parseopts, false, -1);
+						    parseopts, false, -1,
+						    tail, true);
+		delete tail;
 		delete rules;
 		if (!prof->xmatch)
 			return false;
@@ -1676,6 +1701,186 @@ static int test_aaregex_to_pcre(void)
 	return rc;
 }
 
+/* build an xattr style dfa (see process_profile_name_xmatch), with a
+ * tail ruleset appended to the rules.
+ * The rules and the tail are patterns with the same perms, so they share
+ * an accept node, which the second dfa built with the cache reuses.
+ * @cache: shared cache, or NULL to use a cache local to this dfa build
+ * Returns: the dfa blob as a string, empty on failure
+ */
+static std::string build_shared_perms_dfa(UniquePermsCache *cache)
+{
+	std::vector <aa_perms> perms_table;
+	size_t size = 0;
+	int len = 0;
+	std::string blob;
+	/* the tail must use the same cache as the rules, so a local cache
+	 * can't be the aare_rules' own
+	 */
+	UniquePermsCache local;
+
+	if (!cache)
+		cache = &local;
+
+	const char *tailv[] = { "o[^/]e", "t[^/]o" };
+	aare_rules *rules = new aare_rules(cache);
+	aare_rules *tail = new aare_rules(cache);
+	if (rules->add_rule("/foo/[^/]*", 0, rule_mode_t::ALLOW, AA_MAY_EXEC, 0,
+			    parseopts) &&
+	    rules->add_rule("/bar/[^/]*", 0, rule_mode_t::ALLOW, AA_MAY_EXEC, 0,
+			    parseopts) &&
+	    tail->add_rule_vec(0, rule_mode_t::ALLOW, AA_MAY_EXEC, 0, 1, tailv,
+			       parseopts, false) &&
+	    tail->add_rule_vec(0, rule_mode_t::ALLOW, AA_MAY_EXEC, 0, 2, tailv,
+			       parseopts, false)) {
+		void *dfa = rules->create_dfablob(&size, &len, perms_table,
+						  parseopts, false, -1,
+						  tail, false);
+		if (dfa) {
+			blob.assign((char *) dfa, size);
+			free(dfa);
+		}
+	}
+	delete rules;
+	delete tail;
+
+	return blob;
+}
+
+static int test_shared_perms_cache(void)
+{
+	int rc = 0;
+	UniquePermsCache cache;
+
+	std::string local = build_shared_perms_dfa(NULL);
+	MY_TEST(!local.empty(), "shared perms cache: build dfa with local cache");
+
+	std::string shared1 = build_shared_perms_dfa(&cache);
+	MY_TEST(shared1 == local, "shared perms cache: first dfa matches local cache dfa");
+	MY_TEST(cache.nodes.size() == 1, "shared perms cache: accept node added to shared cache");
+
+	/* the second dfa reuses the accept node, and must not be affected
+	 * by state left from building the first dfa
+	 */
+	std::string shared2 = build_shared_perms_dfa(&cache);
+	MY_TEST(shared2 == local, "shared perms cache: second dfa matches local cache dfa");
+	MY_TEST(cache.nodes.size() == 1, "shared perms cache: accept node shared between dfas");
+
+	return rc;
+}
+
+/* build the dfa for two pattern rules, with "o[^/]e" appended to them
+ * separated by \x00, either by passing a tail ruleset to
+ * create_dfablob(), or by adding the joined rules to the ruleset.
+ * Returns: the dfa blob as a string, empty on failure
+ */
+static std::string build_tail_dfa(UniquePermsCache *cache, bool use_tail)
+{
+	std::vector <aa_perms> perms_table;
+	size_t size = 0;
+	int len = 0;
+	std::string blob;
+	void *dfa = NULL;
+
+	aare_rules *rules = new aare_rules(cache);
+	aare_rules *tail = new aare_rules(cache);
+	const char *foov[] = { "/foo/[^/]*", "o[^/]e" };
+	const char *barv[] = { "/bar/[^/]*", "o[^/]e" };
+	if (rules->add_rule("/foo/[^/]*", 0, rule_mode_t::ALLOW, AA_MAY_EXEC, 0,
+			    parseopts) &&
+	    rules->add_rule("/bar/[^/]*", 0, rule_mode_t::ALLOW, AA_MAY_EXEC, 0,
+			    parseopts)) {
+		if (use_tail) {
+			if (tail->add_rule("o[^/]e", 0, rule_mode_t::ALLOW,
+					   AA_MAY_EXEC, 0, parseopts))
+				dfa = rules->create_dfablob(&size, &len,
+							    perms_table,
+							    parseopts, false,
+							    -1, tail,
+							    false);
+		} else if (rules->add_rule_vec(0, rule_mode_t::ALLOW, AA_MAY_EXEC, 0,
+					       2, foov, parseopts, false) &&
+			   rules->add_rule_vec(0, rule_mode_t::ALLOW, AA_MAY_EXEC, 0,
+					       2, barv, parseopts, false)) {
+			dfa = rules->create_dfablob(&size, &len, perms_table,
+						    parseopts, false, -1);
+		}
+	}
+	if (dfa) {
+		blob.assign((char *) dfa, size);
+		free(dfa);
+	}
+	delete rules;
+	delete tail;
+
+	return blob;
+}
+
+static int test_tail_rules(void)
+{
+	int rc = 0;
+	std::vector <aa_perms> perms_table;
+	size_t size = 0;
+	int len = 0;
+	void *dfa;
+
+	{
+		/* the tail rule has the same perms as the rules, so they
+		 * share an accept node, and the dfa is the same as adding
+		 * the joined rules to the ruleset
+		 */
+		UniquePermsCache cache;
+		std::string joined = build_tail_dfa(&cache, false);
+		std::string tail = build_tail_dfa(&cache, true);
+		MY_TEST(!joined.empty(), "tail rules: build dfa with joined rules");
+		MY_TEST(!tail.empty(), "tail rules: build dfa with tail ruleset");
+		MY_TEST(tail == joined, "tail rules: tail ruleset dfa matches joined rules dfa");
+	}
+	{
+		/* a literal and a pattern rule have different accept nodes,
+		 * so the tail is shared between two permission sets
+		 */
+		UniquePermsCache cache;
+		aare_rules *rules = new aare_rules(&cache);
+		aare_rules *tail = new aare_rules(&cache);
+		dfa = NULL;
+		if (rules->add_rule("/foo", 0, rule_mode_t::ALLOW, AA_MAY_EXEC, 0,
+				    parseopts) &&
+		    rules->add_rule("/bar/[^/]*", 0, rule_mode_t::ALLOW, AA_MAY_EXEC,
+				    0, parseopts) &&
+		    tail->add_rule("o[^/]e", 0, rule_mode_t::ALLOW, AA_MAY_EXEC, 0,
+				   parseopts))
+			dfa = rules->create_dfablob(&size, &len, perms_table,
+						    parseopts, false, -1,
+						    tail);
+		MY_TEST(dfa != NULL, "tail rules: tail shared between accept nodes");
+		MY_TEST(cache.nodes.size() == 2, "tail rules: tail shares the pattern accept node");
+		free(dfa);
+		delete rules;
+		delete tail;
+	}
+	{
+		/* a tail must use the same UniquePermsCache */
+		UniquePermsCache cache;
+		aare_rules *rules = new aare_rules(&cache);
+		aare_rules *tail = new aare_rules();
+		dfa = NULL;
+		if (rules->add_rule("/foo/[^/]*", 0, rule_mode_t::ALLOW, AA_MAY_EXEC,
+				    0, parseopts) &&
+		    tail->add_rule("o[^/]e", 0, rule_mode_t::ALLOW, AA_MAY_EXEC, 0,
+				   parseopts))
+			dfa = rules->create_dfablob(&size, &len, perms_table,
+						    parseopts, false, -1,
+						    tail);
+		MY_TEST(dfa == NULL, "tail rules: tail with a different cache is rejected");
+		free(dfa);
+		delete rules;
+		delete tail;
+	}
+
+	return rc;
+}
+
 int main(void)
 {
 	int rc = 0;
@@ -1683,6 +1888,14 @@ int main(void)
 
 	// Default is parser_common.c, but it should be this source file instead
 	progname = __FILE__;
+
+	retval = test_shared_perms_cache();
+	if (retval != 0)
+		rc = retval;
+
+	retval = test_tail_rules();
+	if (retval != 0)
+		rc = retval;
 
 	retval = test_filter_slashes();
 	if (retval != 0)

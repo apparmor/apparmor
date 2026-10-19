@@ -433,7 +433,8 @@ static Node *basic_simplify(Node *t, int dir)
  */
 Node *simplify_tree_base(Node *t, int dir, bool &mod)
 {
-	if (t->is_type(node_type_t::IMPORTANT))
+	/* shared subtrees are opaque to simplification */
+	if (t->is_type(node_type_t::IMPORTANT | node_type_t::SHAREDTREE))
 		return t;
 
 	for (int i = 0; i < 2; i++) {

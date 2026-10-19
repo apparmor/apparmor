@@ -478,7 +478,12 @@ DFA::DFA(Node *root, optflags const &opts, bool buildfiledfa): root(root), filed
 	if (opts.dump & DUMP_DFA_PROGRESS)
 		fprintf(stderr, "Creating dfa:\r");
 
+	/* Accept nodes are shared, and can be shared between trees (see
+	 * UniquePermsCache), so can have followpos from a previous dfa.
+	 * Clear followpos for all nodes before any is computed.
+	 */
 	for (depth_first_traversal i(root); i; i++) {
+		(*i)->followpos.clear();
 		(*i)->compute_nullable();
 		(*i)->compute_firstpos();
 		(*i)->compute_lastpos();

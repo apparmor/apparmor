@@ -106,13 +106,32 @@ typedef std::map<Node *, Node *> PermExprMap;
 class aare_rules final {
 	Node *root;
 	void add_to_rules(Node *tree, Node *perms);
-	UniquePermsCache unique_perms;
+	/* used when a shared UniquePermsCache isn't provided */
+	UniquePermsCache local_perms;
+	/* the cache of accept nodes, either local_perms or a cache shared
+	 * with other aare_rules. A shared cache must outlive the aare_rules
+	 * and the dfas created from them, and is not cleared when the
+	 * aare_rules is destroyed.
+	 * TODO: a shared cache is not safe for concurrent use, it is only
+	 *       shared within a process (eg. -j 0)
+	 */
+	UniquePermsCache &unique_perms;
 	PermExprMap expr_map;
+	Node *build_tree(optflags const &opts, SharedTreeNode *tail,
+			 int *min_match_len);
  public:
 	int reverse;
 	int rule_count;
-	aare_rules(void): root(NULL), unique_perms(), expr_map(), reverse(0), rule_count(0) { };
-	aare_rules(int reverse): root(NULL), unique_perms(), expr_map(), reverse(reverse), rule_count(0) { };
+	aare_rules(void): root(NULL), local_perms(), unique_perms(local_perms), expr_map(), reverse(0), rule_count(0) { };
+	aare_rules(int reverse): root(NULL), local_perms(), unique_perms(local_perms), expr_map(), reverse(reverse), rule_count(0) { };
+	/* perms_cache: shared cache to use, or NULL to use a local cache */
+	aare_rules(UniquePermsCache *perms_cache, int reverse = 0):
+		root(NULL), local_perms(),
+		unique_perms(perms_cache ? *perms_cache : local_perms),
+		expr_map(), reverse(reverse), rule_count(0) { };
+	/* not copyable, a copy would reference the original's local cache */
+	aare_rules(const aare_rules &) = delete;
+	aare_rules &operator=(const aare_rules &) = delete;
 	~aare_rules();
 
 	bool add_rule(const char *rule, int priority, rule_mode_t mode,
@@ -120,16 +139,21 @@ class aare_rules final {
 	bool add_rule_vec(int priority, rule_mode_t mode, perm32_t perms,
 			  perm32_t audit, int count, const char **rulev,
 			  optflags const &opts, bool oob);
-	bool append_rule(const char *rule, bool oob, bool with_perm, optflags const &opts);
+	/* @tail: optional ruleset appended to every rule of this ruleset,
+	 *        see build_tree(). It must use the same UniquePermsCache
+	 *        as this ruleset, and its rules are consumed.
+	 * @tail_oob: separate the tail with an oob transition, else \x00
+	 */
 	CHFA *create_chfa(int *min_match_len,
 			  std::vector <aa_perms> &perms_table,
 			  optflags const &opts, bool filedfa,
-			  int permstable32_version);
+			  int permstable32_version, aare_rules *tail = NULL,
+			  bool tail_oob = true);
 	void *create_dfablob(size_t *size, int *min_match_len,
 			 std::vector <aa_perms> &perms_table,
 			 optflags const &opts,
-			 bool filedfa,
-			 int permstable32_version);
+			 bool filedfa, int permstable32_version,
+			 aare_rules *tail = NULL, bool tail_oob = true);
 };
 
 #endif				/* __LIBAA_RE_RULES_H */
