@@ -40,6 +40,7 @@ class UnixTestParse(AATest):
         ('unix peer=(addr=@/tmp/foo-??????),',              UnixRule(UnixRule.ALL,      UnixRule.ALL,                     UnixRule.ALL,                 {'addr': '@/tmp/foo-??????'},   False, False, False, '')),
         ('unix peer=(addr="@/tmp/f o-??????"),',            UnixRule(UnixRule.ALL,      UnixRule.ALL,                     UnixRule.ALL,                 {'addr': '@/tmp/f o-??????'},   False, False, False, '')),
         ('unix peer=(addr=@/tmp/foo-*),',                   UnixRule(UnixRule.ALL,      UnixRule.ALL,                     UnixRule.ALL,                 {'addr': '@/tmp/foo-*'},        False, False, False, '')),
+        ('unix peer=(addr="@/tmp/{foo,bar}-*"),',           UnixRule(UnixRule.ALL,      UnixRule.ALL,                     UnixRule.ALL,                 {'addr': '@/tmp/{foo,bar}-*'},  False, False, False, '')),
         ('unix (accept, rw) protocol=AA type=BB opt=AA label=bb peer=(addr=a label=bb),',
                                                             UnixRule(('accept', 'rw'),  {'type': 'BB', 'protocol': 'AA'}, {'opt': 'AA', 'label': 'bb'}, {'addr': 'a', 'label': 'bb'},   False, False, False, '')),  # noqa: E127
         ('unix peer=( label=la, addr="@/h"),',              UnixRule(UnixRule.ALL,      UnixRule.ALL,                     UnixRule.ALL,                {'addr': '@/h', 'label': 'la'},  False, False, False, '')),
@@ -185,6 +186,13 @@ class UnixTestClean(AATest):
         ('     audit  unix                                                                                                                   ,    # foo  ', 'audit unix, # foo'),
         ('     audit deny unix                                                   label  =  foo                                               ,           ', 'audit deny unix label=foo,'),
         ('     audit allow unix                                                  peer  =  (addr  =  a)                                       ,    # foo  ', 'audit allow unix peer=(addr=a), # foo'),
+        ('     audit allow unix                                                            addr  = "@/tmp/{foo,bar}-*"                       ,    # foo  ', 'audit allow unix addr=@/tmp/{foo,bar}-*, # foo'),           # no quotes needed (only inside parenthesis)
+        ('     audit allow unix                                                            addr  = "@/tmp/foo(bar"                           ,    # foo  ', 'audit allow unix addr=@/tmp/foo(bar, # foo'),               # no quotes needed (only inside parenthesis)
+        ('     audit allow unix                                                            addr  = "@/tmp/foo bar"                           ,    # foo  ', 'audit allow unix addr="@/tmp/foo bar", # foo'),             # quotes needed (space)
+        ('     audit allow unix                                                  peer  =  (addr  =  @/tmp/{foo,bar}-* )                      ,    # foo  ', 'audit allow unix peer=(addr="@/tmp/{foo,bar}-*"), # foo'),  # quotes needed inside parenthesis
+        ('     audit allow unix                                                  peer  =  (addr  = "@/tmp/{foo,bar}-*")                      ,    # foo  ', 'audit allow unix peer=(addr="@/tmp/{foo,bar}-*"), # foo'),  # quotes needed inside parenthesis
+        ('     audit allow unix                                                  peer  =  (addr  = "@/tmp/foo(bar")                          ,    # foo  ', 'audit allow unix peer=(addr="@/tmp/foo(bar"), # foo'),      # quotes needed inside parenthesis
+        ('     audit allow unix                                                  peer  =  (addr  = "@/tmp/foo bar")                          ,    # foo  ', 'audit allow unix peer=(addr="@/tmp/foo bar"), # foo'),      # quotes needed (space)
         ('     deny unix                                                   type  =  foo                                                      ,           ', 'deny unix type=foo,'),
         ('     allow unix                                                              peer  =  (label=bb)                                   ,    # foo  ', 'allow unix peer=(label=bb), # foo'),
         ('     unix                                                                                                                          ,    # foo  ', 'unix, # foo'),

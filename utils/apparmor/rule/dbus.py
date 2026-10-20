@@ -190,24 +190,21 @@ class DbusRule(BaseRule):
         interface   = self._get_aare_rule_part('interface', self.interface, self.all_interfaces)  # noqa: E221
         member      = self._get_aare_rule_part('member',    self.member,    self.all_members)  # noqa: E221
 
-        peername    = self._get_aare_rule_part('name',      self.peername,  self.all_peernames)  # noqa: E221
-        peerlabel   = self._get_aare_rule_part('label',     self.peerlabel, self.all_peerlabels)  # noqa: E221
+        peername    = self._get_aare_rule_part('name',      self.peername,  self.all_peernames,     True)  # noqa: E221
+        peerlabel   = self._get_aare_rule_part('label',     self.peerlabel, self.all_peerlabels,    True)  # noqa: E221
         peer = peername + peerlabel
         if peer:
             peer = ' peer=(%s)' % peer.strip()
 
         return ('%s%sdbus%s%s%s%s%s%s%s,%s' % (space, self.modifiers_str(), access, bus, path, name, interface, member, peer, self.comment))
 
-    def _get_aare_rule_part(self, prefix, value, all_values):
+    def _get_aare_rule_part(self, prefix, value, all_values, inside_parenthesis=False):
         """helper function to write a rule part
            value is expected to be a AARE"""
         if all_values:
             return ''
         elif value:
-            if re.match("(?<!@){", value.regex):  # apparmor_parser doesn't properly handle unquoted {} AARE
-                return ' %(prefix)s="%(value)s"' % {'prefix': prefix, 'value': value.regex}
-            else:
-                return ' %(prefix)s=%(value)s' % {'prefix': prefix, 'value': quote_if_needed(value.regex)}
+            return ' %(prefix)s=%(value)s' % {'prefix': prefix, 'value': quote_if_needed(value.regex, inside_parenthesis)}
         else:
             raise AppArmorBug('Empty %(prefix_name)s in %(rule_name)s rule' % {'prefix_name': prefix, 'rule_name': self.rule_name})
 

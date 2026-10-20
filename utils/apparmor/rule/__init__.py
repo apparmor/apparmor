@@ -637,10 +637,22 @@ def parse_modifiers(matches):
     return (priority, audit, deny, allow_keyword, comment)
 
 
-def quote_if_needed(data):
-    """quote data if it contains whitespace"""
+def quote_if_needed(data, inside_parenthesis=False):
+    """quote data if it contains whitespace or (if inside parenthesis) more special characters"""
+    if inside_parenthesis:
+        return quote_for_parenthesis(data)
+
     if ' ' in data:
         data = '"' + data + '"'
+    return data
+
+
+def quote_for_parenthesis(data):
+    """quote data if it contains whitespace or other characters that are special/ambiguous inside parenthesis"""
+    for char in [' ', '{', '}', '(', ')']:
+        if char in data:
+            return '"' + data + '"'
+
     return data
 
 
@@ -673,7 +685,7 @@ def tuple_to_dict(t, keys):
 def print_dict_values(d, type_all, prefix=None):
     if d == type_all:
         return ''
-    to_print = ' '.join(f'{k}={quote_if_needed(str(v))}' for k, v in d.items())
+    to_print = ' '.join(f'{k}={quote_if_needed(str(v), bool(prefix))}' for k, v in d.items())
     if prefix:
         return f' {prefix}=({to_print})'
     else:
