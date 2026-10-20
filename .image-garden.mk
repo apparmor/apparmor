@@ -133,3 +133,9 @@ packages:
 package_upgrade: true
 package_update: true
 endef
+
+# image-garden fetches the image over http and its SHA256SUMS over https, so a
+# cached http response can keep returning the previous noble/current serial,
+# which no retry clears. Fetch both the same way. Make warns about the override.
+$(GARDEN_DL_DIR)/ubuntu/ubuntu-cloud-24.04.x86_64.url: $(MAKEFILE_LIST) | $(GARDEN_DL_DIR)/ubuntu
+	echo https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img >$@
