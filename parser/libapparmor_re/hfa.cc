@@ -1592,6 +1592,17 @@ static int pri_update_perm(optflags const &opts, vector<int> &priority, int i,
 		perms.allow &= ~amask;
 		perms.audit &= ~amask;
 		perms.prompt &= ~amask;
+		/* TODO: this is a hack that needs to be dropped once
+		 * we support perms dependent on follow on perms. The
+		 * cont_match will become dependent on another perm being
+		 * dependent, and resolved post deny.
+		 *
+		 * The continue-match bit is structural, not a grantable
+		 * permission: a deny rule must not clear it from the allow
+		 * set, or conditional rules sharing the same DFA prefix
+		 * would become unreachable.
+		 */
+		perms.allow |= match->perms & amask & AA_COMPAT_CONT_MATCH;
 	} else if (match->is_type(node_type_t::EXACTMATCHFLAG)) {
 		/* exact match only asserts dominance on the XTYPE */
 		if (opts.dump & DUMP_DFA_PERMS)

@@ -32,6 +32,7 @@
 #include <assert.h>
 
 #include "expr-tree.h"
+#include "../perms.h"
 enum class prompt_compat_t : int;
 extern prompt_compat_t prompt_compat_mode;
 
@@ -107,6 +108,12 @@ public:
 		if (deny) {
 			allow &= ~deny;
 			prompt &= ~deny;
+			/* The continue-match bit is structural: it marks states
+			 * with more specific permissions deeper in the DFA. A
+			 * deny rule must never clear it, or conditional rules
+			 * sharing the same prefix would become unreachable.
+			 */
+			allow |= deny & AA_COMPAT_CONT_MATCH;
 			/* don't change audit or quiet based on clearing
 			 * deny at this stage. This was made unique in
 			 * accept_perms, and the info about whether
