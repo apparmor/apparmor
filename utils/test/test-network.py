@@ -312,7 +312,10 @@ class WriteNetworkTestAATest(AATest):
         (' priority=+123    allow network         tcp      ,# foo bar',       'priority=123 allow network tcp, # foo bar'),
         ('   network interface=eth0,',                                       'network interface=eth0,'),
         ('   network label="foo bar",',                                      'network label="foo bar",'),
+        ('   network label={foo,bar},',                                      'network label={foo,bar},'),  # no quotes needed
         ('   network peer=(label=bar),',                                     'network peer=(label=bar),'),
+        ('   network peer=(label={foo,bar}),',                               'network peer=(label="{foo,bar}"),'),  # quotes needed inside parenthesis
+        ('   network peer=(label="{foo,bar}"),',                             'network peer=(label="{foo,bar}"),'),  # quotes needed inside parenthesis
 
     )
 

@@ -424,10 +424,13 @@ class WriteDbusTest(AATest):
         ('dbus receive,',                                                    'dbus receive,'),
         ('dbus eavesdrop,',                                                  'dbus eavesdrop,'),
         ('dbus bind bus = foo name = bar,',                                  'dbus bind bus=foo name=bar,'),
+        ('dbus bind bus = foo name = {foo,bar},',                            'dbus bind bus=foo name={foo,bar},'),
         ('dbus send peer=(  label = /foo ) ,',                               'dbus send peer=(label=/foo),'),
         ('dbus (receive) member=baz,',                                       'dbus receive member=baz,'),
         ('dbus send path = /foo,',                                           'dbus send path=/foo,'),
         ('dbus receive peer=(label=foo),',                                   'dbus receive peer=(label=foo),'),
+        ('dbus receive peer=(label={foo,bar}),',                             'dbus receive peer=(label="{foo,bar}"),'),  # quotes needed inside parenthesis
+        ('dbus receive peer=(label="{foo,bar}"),',                           'dbus receive peer=(label="{foo,bar}"),'),  # quotes needed inside parenthesis
         ('dbus (send receive) peer=(name=/usr/bin/bar),',                    'dbus (receive send) peer=(name=/usr/bin/bar),'),
         ('dbus (,  receive  ,,, send  ,) interface=/sbin/baz,',              'dbus (receive send) interface=/sbin/baz,'),  # XXX leading and trailing ',' inside (...) causes error
         ('  priority=123 deny dbus         send      interface = ( foo ),',  'priority=123 deny dbus send interface=foo,'),
