@@ -315,6 +315,7 @@ TESTS=aa_exec \
       file_unbindable_mount \
       fork \
       i18n \
+      kill_signal \
       link \
       link_subset \
       linkat_tmpfile \
