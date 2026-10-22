@@ -91,6 +91,22 @@ $foo = false
 	allow /home/foo/bar r,
 }
 
+/what/ever/block {
+   audit    {
+ /what/ever r,
+     deny {
+   /what/never w,
+  }
+ }
+ owner {
+ /what/owned rw,
+ }
+  {
+  set rlimit cpu <= 10,
+  }
+  audit { }
+}
+
 /what/ever/xattr   xattrs=(   foo=bar      )
        flags=(  complain
 	   ) {
