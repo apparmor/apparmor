@@ -36,6 +36,7 @@ from apparmor.rule.mount import MountRule, MountRuleset
 from apparmor.rule.pivot_root import PivotRootRule, PivotRootRuleset
 from apparmor.rule.unix import UnixRule, UnixRuleset
 from apparmor.rule.conditional import ConditionalBlock, ConditionalBlockset
+from apparmor.rule.block import BlockRule, BlockRuleset
 
 from apparmor.translations import init_translation
 
@@ -60,6 +61,7 @@ ruletypes = {
     'pivot_root':     {'rule': PivotRootRule,     'ruleset': PivotRootRuleset},
     'unix':           {'rule': UnixRule,          'ruleset': UnixRuleset},
     'cond_block':     {'rule': ConditionalBlock,  'ruleset': ConditionalBlockset},
+    'block':          {'rule': BlockRule,         'ruleset': BlockRuleset},
 }
 
 
@@ -183,6 +185,7 @@ class ProfileStorage:
             'rlimit',
             'capability',
             'cond_block',
+            'block',
             'network',
             'dbus',
             'mount',

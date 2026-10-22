@@ -35,7 +35,7 @@ from apparmor.common import (
 from apparmor.profile_list import ProfileList, preamble_ruletypes
 from apparmor.profile_storage import ProfileStorage, add_or_remove_flag, ruletypes
 from apparmor.regex import (
-    RE_HAS_COMMENT_SPLIT, RE_PROFILE_BLOCK_START, RE_PROFILE_CHANGE_HAT,
+    RE_HAS_COMMENT_SPLIT, RE_PROFILE_BLOCK_OPEN, RE_PROFILE_CHANGE_HAT,
     RE_PROFILE_CONDITIONAL_START, RE_PROFILE_CONDITIONAL_ELSE, RE_PROFILE_END,
     RE_PROFILE_HAT_DEF, RE_PROFILE_START, RE_METADATA_LOGPROF_SUGGEST,
     RE_RULE_HAS_COMMA, parse_profile_start_line, re_match_include)
@@ -43,6 +43,7 @@ from apparmor.rule.abi import AbiRule
 from apparmor.rule.file import FileRule
 from apparmor.rule.include import IncludeRule
 from apparmor.rule.conditional import ConditionalBlock
+from apparmor.rule.block import BlockRule
 from apparmor.logparser import ReadLog
 from apparmor.translations import init_translation
 
@@ -540,6 +541,14 @@ def get_profile_flags(filename, program):
     raise AppArmorException(_('%s contains no profile') % filename)
 
 
+def opens_a_block(line):
+    """check if the line opens a rule block that it doesn't close again on the same line"""
+
+    matches = RE_PROFILE_BLOCK_OPEN.search(line)
+
+    return bool(matches) and not matches.group('rest').strip()
+
+
 def change_profile_flags(prof_filename, program, flag, set_flag):
     """Reads the old profile file and updates the flags accordingly"""
     # TODO: count the number of matching lines (separated by profile and hat?) and return it
@@ -590,7 +599,7 @@ def change_profile_flags(prof_filename, program, flag, set_flag):
 
                     line = prof_storage.get_header(depth, False)
                     line = '%s\n' % line[0]
-                elif RE_PROFILE_BLOCK_START.search(line) or RE_PROFILE_CONDITIONAL_START.search(line):
+                elif opens_a_block(line) or RE_PROFILE_CONDITIONAL_START.search(line):
                     # count rule block and 'if' openers so that their '}' isn't taken for the end of a profile or hat
                     depth += 1
                 elif RE_PROFILE_CONDITIONAL_ELSE.search(line):
@@ -1796,11 +1805,11 @@ def attach_profile_data(profiles, profile_data):
         profiles[p] = deepcopy(profile_data[p])
 
 
-def parse_conditional(conditional_block, profile_data, data, lineno, file, do_include, in_preamble, profname, profile, debug_lineno):
+def parse_conditional(conditional_block, profile_data, data, lineno, file, do_include, in_preamble, profname, profile, debug_lineno, in_block=False):
     cond_storage = ProfileStorage(profile_data[profname]['info']['profile'],
                                   profile_data[profname]['info']['hat'],
                                   profile_data[profname]['info']['calledby'] + ' in cond')
-    ret_lineno, ret_profile_data, end_of_block = parse_block(data[lineno + 1:], file, do_include, in_preamble, profname, profile, cond_storage, debug_lineno, in_if=True)
+    ret_lineno, ret_profile_data, end_of_block = parse_block(data[lineno + 1:], file, do_include, in_preamble, profname, profile, cond_storage, debug_lineno, in_if=True, in_block=in_block)
     conditional_block.store_profile_data(ret_profile_data)
     lineno = lineno + ret_lineno
 
@@ -1829,7 +1838,39 @@ def parse_conditional(conditional_block, profile_data, data, lineno, file, do_in
     return lineno, conditional_block
 
 
-def parse_block(data, file, do_include, in_preamble, profname, profile, prof_storage, src_lineno, in_if=False):
+MAX_BLOCK_DEPTH = 100  # a deeper nesting would end in a RecursionError
+
+
+def parse_rule_block(block_rule, profile_data, data, lineno, file, do_include, profname, profile, debug_lineno, depth=0):
+    """parse the rules of a rule block and store them in block_rule"""
+
+    if depth >= MAX_BLOCK_DEPTH:
+        raise AppArmorException(
+            _('Syntax Error: Rule blocks nested too deeply in file: %(file)s line: %(line)s')
+            % {'file': file, 'line': debug_lineno + 1})
+
+    block_storage = ProfileStorage(profile_data[profname]['info']['profile'],
+                                   profile_data[profname]['info']['hat'],
+                                   profile_data[profname]['info']['calledby'] + ' in block')
+
+    ret_lineno, ret_profile_data, end_of_block = parse_block(
+        data[lineno + 1:], file, do_include, False, profname, profile, block_storage,
+        debug_lineno + 1, in_block=True, block_depth=depth + 1)
+
+    if not end_of_block:
+        raise AppArmorException(
+            _('Syntax Error: Missing "}" for the rule block in file: %(file)s line: %(line)s')
+            % {'file': file, 'line': debug_lineno + 1})
+
+    block_rule.store_profile_data(ret_profile_data)
+    block_rule.validate_body()
+
+    profile_data[profname]['block'].add(block_rule)
+
+    return lineno + ret_lineno
+
+
+def parse_block(data, file, do_include, in_preamble, profname, profile, prof_storage, src_lineno, in_if=False, in_block=False, block_depth=0):
     profile_data = {}
     hat = None
     in_contained_hat = None
@@ -1872,6 +1913,11 @@ def parse_block(data, file, do_include, in_preamble, profname, profile, prof_sto
                         load_include(incname, in_preamble)
 
         elif RE_PROFILE_START.search(line) or RE_PROFILE_HAT_DEF.search(line):  # Starting line of a profile/hat
+            if in_block:
+                raise AppArmorException(
+                    _('A child profile or hat inside a rule block is not supported by the tools yet, found in file: %(file)s line: %(line)s')
+                    % {'file': file, 'line': debug_lineno + 1})
+
             # in_contained_hat is needed to know if we are already in a profile or not. Simply checking if we are in a hat doesn't work,
             # because something like "profile foo//bar" will set profile and hat at once, and later (wrongfully) expect another "}".
             # The logic is simple and resembles a "poor man's stack" (with limited/hardcoded height).
@@ -1901,7 +1947,7 @@ def parse_block(data, file, do_include, in_preamble, profname, profile, prof_sto
 
             initial_comment = ''
 
-            ret_lineno, ret_profile_data, end_of_block = parse_block(data[lineno + 1:], file, do_include, in_preamble, profname, profile, prof_storage, debug_lineno + 1, in_if)
+            ret_lineno, ret_profile_data, end_of_block = parse_block(data[lineno + 1:], file, do_include, in_preamble, profname, profile, prof_storage, debug_lineno + 1, in_if, in_block)
             profile_data[profname]['in_cond'] = in_if
             lineno = lineno + ret_lineno
 
@@ -1930,7 +1976,7 @@ def parse_block(data, file, do_include, in_preamble, profname, profile, prof_sto
 
         elif RE_PROFILE_CONDITIONAL_START.search(line):
             conditional_block = ConditionalBlock(line, active_profiles.files[file])
-            lineno, conditional_block = parse_conditional(conditional_block, profile_data, data, lineno, file, do_include, in_preamble, profname, profile, debug_lineno + 1)
+            lineno, conditional_block = parse_conditional(conditional_block, profile_data, data, lineno, file, do_include, in_preamble, profname, profile, debug_lineno + 1, in_block)
 
         elif RE_PROFILE_CONDITIONAL_ELSE.search(line):
             if not in_if and conditional_block is None:
@@ -1945,7 +1991,26 @@ def parse_block(data, file, do_include, in_preamble, profname, profile, prof_sto
                 raise AppArmorException(_('Syntax Error: Unexpected else found without previous if in file: %(file)s line: %(line)s')
                                         % {'file': file, 'line': debug_lineno + 1})
             conditional_block.add_conditional(line, active_profiles.files[file])
-            lineno, conditional_block = parse_conditional(conditional_block, profile_data, data, lineno, file, do_include, in_preamble, profname, profile, debug_lineno + 1)
+            lineno, conditional_block = parse_conditional(conditional_block, profile_data, data, lineno, file, do_include, in_preamble, profname, profile, debug_lineno + 1, in_block)
+
+        elif RE_PROFILE_BLOCK_OPEN.search(line):
+            if in_preamble:
+                raise AppArmorException(
+                    _('Syntax Error: Unexpected rule block outside of a profile in file: %(file)s line: %(line)s')
+                    % {'file': file, 'line': debug_lineno + 1})
+
+            block_rule = BlockRule.create_instance(line)
+            rest = RE_PROFILE_BLOCK_OPEN.search(line).group('rest').strip()
+
+            if rest == '}':  # an empty block on a single line
+                block_rule.store_profile_data({})
+                profile_data[profname]['block'].add(block_rule)
+            elif rest:  # the tools expect one rule per line, inside a block too
+                raise AppArmorException(
+                    _('Syntax Error: The tools only support a rule block with its rules on separate lines, found in file: %(file)s line: %(line)s')
+                    % {'file': file, 'line': debug_lineno + 1})
+            else:
+                lineno = parse_rule_block(block_rule, profile_data, data, lineno, file, do_include, profname, profile, debug_lineno, block_depth)
 
         elif RE_PROFILE_CHANGE_HAT.search(line):
             matches = RE_PROFILE_CHANGE_HAT.search(line).groups()

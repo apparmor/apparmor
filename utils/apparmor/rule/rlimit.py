@@ -46,6 +46,7 @@ class RlimitRule(BaseRule):
     ALL = __RlimitAll
 
     rule_name = 'rlimit'
+    supports_qualifiers = False
     _match_re = RE_PROFILE_RLIMIT
 
     def __init__(self, rlimit, value, audit=False, deny=False, allow_keyword=False,

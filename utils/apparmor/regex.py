@@ -22,7 +22,10 @@ from apparmor.translations import init_translation
 _ = init_translation()
 
 # Profile parsing Regex
-RE_PRIORITY_AUDIT_DENY = r'^\s*(priority\s*=\s*(?P<priority>[+-]?[0-9]*)\s+)?(?P<audit>audit\s+)?(?P<allow>allow\s+|deny\s+)?'  # line start, optionally: leading whitespace, <priority> = number, <audit> and <allow>/deny
+RE_QUALIFIER_END = r'(?:\s+|(?=\{))'  # whitespace, or directly the '{' of a rule block
+RE_PRIORITY_AUDIT = r'^\s*(priority\s*=\s*(?P<priority>[+-]?[0-9]*)\s+)?(?P<audit>audit' + RE_QUALIFIER_END + ')?'  # line start, optionally: leading whitespace, <priority> = number, <audit>
+RE_ALLOW_DENY = r'(?P<allow>(?:allow|deny)' + RE_QUALIFIER_END + ')'  # <allow>/deny
+RE_PRIORITY_AUDIT_DENY = RE_PRIORITY_AUDIT + RE_ALLOW_DENY + '?'  # RE_PRIORITY_AUDIT, optionally followed by <allow>/deny
 RE_EOL = r'\s*(?P<comment>#.*?)?\s*$'  # optional whitespace, optional <comment>, optional whitespace, end of the line
 RE_COMMA_EOL = r'\s*,' + RE_EOL  # optional whitespace, comma + RE_EOL
 
@@ -43,10 +46,12 @@ RE_ID_OR_VAR = r'(' + RE_VARIABLES + r'|' + RE_ID + r')'
 RE_ALL_VARIABLES = re.compile(RE_VARIABLES % {'label': ''})
 
 RE_PROFILE_END = re.compile(r'^\s*\}' + RE_EOL)
-# Opening line of a rule block: optional qualifiers, then '{' at the end of the line.
-# A block that opens and closes on the same line ('owner { /foo r, }') doesn't match,
-# and neither does RE_PROFILE_END, so such a line doesn't change the nesting depth.
-RE_PROFILE_BLOCK_START = re.compile(r'^\s*((audit|allow|deny|prompt|owner|other)\b\s*)*\{' + RE_EOL)
+# A rule block opener: the priority prefix, the qualifiers, and the rest of the line after '{'.
+RE_PROFILE_BLOCK_OPEN = re.compile(
+    RE_PRIORITY_AUDIT
+    + r'(?:' + RE_ALLOW_DENY + r'|(?P<prompt>prompt' + RE_QUALIFIER_END + '))?'
+    + r'(?P<owner>(?:owner|other)' + RE_QUALIFIER_END + ')?'
+    + r'\{(?P<rest>[^#]*)' + RE_EOL)
 RE_PROFILE_ALL = re.compile(RE_PRIORITY_AUDIT_DENY + r'all' + RE_COMMA_EOL)
 RE_PROFILE_CAP = re.compile(RE_PRIORITY_AUDIT_DENY + r'capability(?P<capability>(\s+\S+)+)?' + RE_COMMA_EOL)
 RE_PROFILE_ALIAS = re.compile(r'^\s*alias\s+(?P<orig_path>"??.+?"??)\s+->\s*(?P<target>"??.+?"??)' + RE_COMMA_EOL)

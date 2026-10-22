@@ -14,7 +14,7 @@ import unittest
 import apparmor.aa as aa
 from apparmor.common import AppArmorBug, AppArmorException
 from apparmor.regex import (
-    RE_PROFILE_CAP, RE_PROFILE_DBUS, RE_PROFILE_MOUNT, RE_PROFILE_PTRACE, RE_PROFILE_SIGNAL,
+    RE_PROFILE_BLOCK_OPEN, RE_PROFILE_CAP, RE_PROFILE_DBUS, RE_PROFILE_MOUNT, RE_PROFILE_PTRACE, RE_PROFILE_SIGNAL,
     RE_PROFILE_START, parse_profile_start_line, re_match_include, RE_PROFILE_UNIX,
     RE_PROFILE_PIVOT_ROOT,
     re_match_include_parse, strip_parenthesis, strip_quotes, resolve_variables, expand_path_braces,
@@ -229,6 +229,44 @@ class AARegexCapability(AARegexTest):
         ('   priority=1 capability,', ('priority=1', '1', None, None, None, None, None)),
         ('   priority=1 capability   ,  ', ('priority=1', '1', None, None, None, None, None)),
         ('   priority=1 capabilitynet_raw,', False),
+    )
+
+
+class AARegexBlockOpen(AARegexTest):
+    """Tests for RE_PROFILE_BLOCK_OPEN"""
+
+    def AASetup(self):
+        self.regex = RE_PROFILE_BLOCK_OPEN
+
+    # the helper strips the matched groups before comparing them
+    tests = (
+        ('  {',                     (None, None, None, None, None, None, '', None)),
+        ('  audit {',               (None, None, 'audit', None, None, None, '', None)),
+        ('  audit{',                (None, None, 'audit', None, None, None, '', None)),  # no space needed
+        ('  deny {',                (None, None, None, 'deny', None, None, '', None)),
+        ('  allow {',               (None, None, None, 'allow', None, None, '', None)),
+        ('  prompt {',              (None, None, None, None, 'prompt', None, '', None)),
+        ('  owner {',               (None, None, None, None, None, 'owner', '', None)),
+        ('  other {',               (None, None, None, None, None, 'other', '', None)),
+        ('  audit deny owner {',    (None, None, 'audit', 'deny', None, 'owner', '', None)),
+        ('  audit prompt other{',   (None, None, 'audit', None, 'prompt', 'other', '', None)),
+        ('  audit { }',             (None, None, 'audit', None, None, None, '}', None)),  # empty, on one line
+        ('  audit { /foo r, }',     (None, None, 'audit', None, None, None, '/foo r, }', None)),
+        ('  audit { # comment',     (None, None, 'audit', None, None, None, '', '# comment')),
+        ('  priority=1 {',          ('priority=1', '1', None, None, None, None, '', None)),  # rejected later on
+        ('  /foo r,',               False),
+        ('  owner /foo/{a,b} rw,',  False),  # an AARE brace is not a block
+        ('  }',                     False),
+        ('  profile p {',           False),
+        ('  ^hat {',                False),
+        ('  if defined $foo {',     False),
+        ('  auditdeny {',           False),  # not a qualifier
+        ('  owner audit {',         False),  # the parser only accepts the qualifiers in this order
+        ('  deny audit {',          False),
+        ('  audit audit {',         False),
+        ('  allow deny {',          False),  # a single mode
+        ('  deny prompt {',         False),
+        ('  owner other {',         False),
     )
 
 
