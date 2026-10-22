@@ -34,6 +34,7 @@ environment:
     TEST/i18n: 1
     TEST/introspect: 1
     TEST/io_uring: 1
+    TEST/kill_signal: 1
     TEST/link: 1
     TEST/link_subset: 1
     TEST/linkat_tmpfile: 1
