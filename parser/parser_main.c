@@ -1109,11 +1109,11 @@ void set_supported_features()
 							policy_features,
 							"io_uring");
 	features_supports_flag_interruptible = features_intersect(kernel_features,
-						policy_features,
-						"policy/profile/interruptible");
+								  policy_features,
+								  "domain/interruptible");
 	features_supports_flag_signal = features_intersect(kernel_features,
 							   policy_features,
-				      "policy/profile/kill.signal");
+							   "domain/kill.signal");
 	features_supports_flag_error = features_intersect(kernel_features,
 							  policy_features,
 							  "policy/profile/error");
