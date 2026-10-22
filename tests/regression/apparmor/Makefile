@@ -242,6 +242,7 @@ TESTS=aa_exec \
       fd_inheritance \
       fork \
       i18n \
+      kill_signal \
       link \
       link_subset \
       mkdir \
