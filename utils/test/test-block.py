@@ -16,7 +16,7 @@
 import unittest
 
 import apparmor.aa
-from apparmor.aa import parse_profile_data
+from apparmor.aa import is_known_rule, parse_profile_data
 from apparmor.common import AppArmorBug, AppArmorException
 from apparmor.rule.block import BlockRule
 from apparmor.rule.file import FileRule
@@ -175,6 +175,84 @@ class BlockTestOwner(AATest):
 
     def _run_test(self, params, expected):
         self.assertEqual(clean_profile(params), expected)
+
+
+class BlockTestEffectiveRules(AATest):
+    tests = (
+        # block                                                     effective file rules
+        ('  audit {\n    /foo r,\n  }',                             ['audit /foo r,']),
+        ('  deny {\n    /foo r,\n  }',                              ['deny /foo r,']),
+        ('  allow {\n    /foo r,\n  }',                             ['allow /foo r,']),
+        ('  owner {\n    /foo r,\n  }',                             ['owner /foo r,']),
+        ('  audit deny {\n    /foo r,\n  }',                        ['audit deny /foo r,']),
+        ('  audit {\n    audit /foo r,\n  }',                       ['audit /foo r,']),  # already audit
+        ('  audit {\n    deny /foo r,\n  }',                        ['audit deny /foo r,']),  # audit is orthogonal
+        ('  audit {\n    deny {\n      /foo r,\n    }\n  }',        ['audit deny /foo r,']),  # accumulated
+        ('  audit {\n    {\n      owner /foo r,\n    }\n  }',       ['audit owner /foo r,']),
+        ('  audit {\n    /foo r,\n  }\n  /bar w,',                  ['/bar w,', 'audit /foo r,']),  # flat rules too
+        ('  audit {\n    capability net_admin,\n  }',               []),  # not a file rule
+        # a rule only counts if its copy can carry all the qualifiers of the block
+        ('  prompt {\n    /foo r,\n  }',                            []),
+        ('  other {\n    /foo r,\n  }',                             []),
+    )
+
+    def _run_test(self, params, expected):
+        prof_storage = parse_block_profile(params)
+        effective = sorted(rule.get_clean() for rule in prof_storage.get_effective_rules('file').rules)
+        self.assertEqual(effective, expected)
+
+    def test_owner_on_a_rule_type_without_owner(self):
+        # a change_profile rule can't carry owner, so it doesn't count as known
+        for rules in ('  owner {\n    change_profile -> /bin/foo,\n  }',
+                      '  owner {\n    {\n      change_profile -> /bin/foo,\n    }\n  }'):
+            prof_storage = parse_block_profile(rules)
+            self.assertEqual(prof_storage.get_effective_rules('change_profile').rules, [])
+
+    def test_conditional_inside_a_block(self):
+        # the rules of a conditional are not part of the effective rules
+        rules = '  audit {\n    if defined $FOO {\n      /foo r,\n    }\n    /bar r,\n  }'
+        prof_storage = parse_block_profile(rules)
+        block = prof_storage['block'].rules[0]
+
+        self.assertEqual(clean_profile(rules),
+                         '  audit {\n    if defined $FOO {\n      /foo r,\n\n    }\n\n    /bar r,\n\n  }\n')
+        self.assertEqual([rule.get_clean() for rule in block.iter_rules()], ['/bar r,'])
+        self.assertEqual([rule.get_clean() for rule in prof_storage.get_effective_rules('file').rules],
+                         ['audit /bar r,'])
+
+    def test_rules_stay_in_the_block(self):
+        # the rules of a block must not leak into the flat rulesets
+        prof_storage = parse_block_profile('  audit {\n    /foo r,\n  }')
+        self.assertEqual(prof_storage['file'].rules, [])
+        self.assertEqual(len(prof_storage['block'].rules), 1)
+
+    def test_effective_rules_without_block(self):
+        prof_storage = parse_block_profile('  /foo r,')
+        # without a block the flat ruleset is handed out unchanged
+        self.assertIs(prof_storage.get_effective_rules('file'), prof_storage['file'])
+
+    def test_effective_rules_are_copies(self):
+        prof_storage = parse_block_profile('  audit {\n    /foo r,\n  }')
+        block = prof_storage['block'].rules[0]
+        effective = prof_storage.get_effective_rules('file').rules[0]
+        self.assertFalse(block.profile_data['/t']['file'].rules[0].audit)  # the original is unchanged
+        self.assertTrue(effective.audit)
+
+
+class BlockTestIsKnownRule(AATest):
+    tests = (
+        # rule                  is it covered by 'audit { /foo r, }' and 'owner { /baz rw, }'?
+        ('audit /foo r,',       True),
+        ('/foo r,',             True),  # covered, audit isn't checked
+        ('/foo w,',             False),
+        ('owner /baz rw,',      True),
+        ('/baz rw,',            False),  # an owner rule doesn't cover a non-owner one
+        ('/other r,',           False),
+    )
+
+    def _run_test(self, params, expected):
+        prof_storage = parse_block_profile('  audit {\n    /foo r,\n  }\n  owner {\n    /baz rw,\n  }')
+        self.assertEqual(is_known_rule(prof_storage, 'file', FileRule.create_instance(params)), expected)
 
 
 class BlockTestIsCovered(AATest):

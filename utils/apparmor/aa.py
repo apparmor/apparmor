@@ -1376,15 +1376,15 @@ def delete_all_duplicates(profile, incname, r_types):
 
     if include.get(incname, False):
         for rule_type in r_types:
-            deleted += profile[rule_type].delete_duplicates(include[incname][incname][rule_type])
+            deleted += profile[rule_type].delete_duplicates(effective_rules(include[incname][incname], rule_type))
 
     return deleted
 
 
 def ask_conflict_mode(old_profile, merge_profile):
     """ask user about conflicting exec rules"""
-    for oldrule in old_profile['file'].rules:
-        conflictingrules = merge_profile['file'].get_exec_conflict_rules(oldrule)
+    for oldrule in old_profile.get_effective_rules('file').rules:
+        conflictingrules = merge_profile.get_effective_rules('file').get_exec_conflict_rules(oldrule)
 
         if conflictingrules.rules:
             q = aaui.PromptQuestion()
@@ -1441,7 +1441,7 @@ def match_includes(profile, rule_type, rule_obj):
             continue
 
         # XXX type check should go away once we init all profiles correctly
-        if valid_include(incname) and include[incname][incname][rule_type].is_covered(rule_obj):
+        if valid_include(incname) and include[incname][incname].get_effective_rules(rule_type).is_covered(rule_obj):
             sug = include[incname][incname]['logprof_suggest'].split()
             if sug == []:
                 newincludes.append(rel_incname)
@@ -2303,10 +2303,19 @@ def write_profile(profile, is_attachment=False, out_dir=None):
             original_profiles.replace_profile(full_profile, deepcopy(active_profiles[full_profile]))
 
 
+def effective_rules(storage, rule_type):
+    """return the rules of the given type, including the ones inside rule blocks"""
+
+    if isinstance(storage, ProfileStorage):
+        return storage.get_effective_rules(rule_type)
+
+    return storage[rule_type]  # the preamble is a plain dict and has no blocks
+
+
 def include_list_recursive(profile, in_preamble=False):
     """get a list of all includes in a profile and its included files"""
 
-    includelist = profile['inc_ie'].get_all_full_paths(profile_dir)
+    includelist = effective_rules(profile, 'inc_ie').get_all_full_paths(profile_dir)
     full_list = []
 
     while includelist:
@@ -2321,7 +2330,7 @@ def include_list_recursive(profile, in_preamble=False):
         else:
             look_at = include[incname][incname]
 
-        for childinc in look_at['inc_ie'].rules:
+        for childinc in effective_rules(look_at, 'inc_ie').rules:
             for childinc_file in childinc.get_full_paths(profile_dir):
                 if childinc_file not in full_list:
                     includelist.append(childinc_file)
@@ -2330,13 +2339,13 @@ def include_list_recursive(profile, in_preamble=False):
 
 
 def is_known_rule(profile, rule_type, rule_obj):
-    if profile[rule_type].is_covered(rule_obj, False):
+    if profile.get_effective_rules(rule_type).is_covered(rule_obj, False):
         return True
 
     includelist = include_list_recursive(profile)
 
     for incname in includelist:
-        if include[incname][incname][rule_type].is_covered(rule_obj, False):
+        if include[incname][incname].get_effective_rules(rule_type).is_covered(rule_obj, False):
             return True
 
     return False
@@ -2345,12 +2354,12 @@ def is_known_rule(profile, rule_type, rule_obj):
 def get_file_perms(profile, path, audit, deny):
     """get the current permissions for the given path"""
 
-    perms = profile['file'].get_perms_for_path(path, audit, deny)
+    perms = profile.get_effective_rules('file').get_perms_for_path(path, audit, deny)
 
     includelist = include_list_recursive(profile)
 
     for incname in includelist:
-        incperms = include[incname][incname]['file'].get_perms_for_path(path, audit, deny)
+        incperms = include[incname][incname].get_effective_rules('file').get_perms_for_path(path, audit, deny)
 
         for allow_or_deny in ('allow', 'deny'):
             for owner_or_all in ('all', 'owner'):

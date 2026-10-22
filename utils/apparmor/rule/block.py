@@ -13,6 +13,8 @@
 #
 # ----------------------------------------------------------------------
 
+from copy import deepcopy
+
 from apparmor.common import AppArmorException
 from apparmor.regex import RE_PROFILE_BLOCK_OPEN
 from apparmor.rule import BaseRule, BaseRuleset, parse_modifiers
@@ -25,13 +27,10 @@ _ = init_translation()
 class BlockRule(BaseRule):
     """Class to handle and store a single rule block
 
-       A rule block is a set of rules in braces, optionally preceded by
-       qualifiers. The qualifiers apply to every rule the block contains,
-       including the rules of the blocks nested inside it.
-
-       They are kept on the block instead of being written onto the rules it
-       contains, so that a block survives a read/write cycle instead of being
-       flattened into single rules.
+       The qualifiers apply to every rule the block contains, and are kept on
+       the block instead of being written onto those rules, so that a block
+       survives a read/write cycle. Use iter_effective_rules() to get the
+       contained rules with the qualifiers applied.
     """
 
     rule_name = 'block'
@@ -144,6 +143,52 @@ class BlockRule(BaseRule):
 
                     if isinstance(rule_obj, BlockRule):
                         yield from rule_obj.iter_rules()
+
+    def iter_effective_rules(self, wanted_ruletype):
+        """yield (ruletype, rule) for the rules of wanted_ruletype inside this
+           block, as copies carrying the qualifiers of the enclosing blocks"""
+
+        # rules whose copy can't carry the qualifiers (prompt, other, or owner on anything
+        # but a file rule) are left out, so that they never count as known
+        if self.prompt or self.other:
+            return
+
+        for prof_storage in self.profile_data.values():
+            for ruletype, ruleset in prof_storage.data.items():
+                if not isinstance(ruleset, BaseRuleset):
+                    continue
+
+                if ruletype not in (wanted_ruletype, 'block'):
+                    continue  # don't copy rules nobody asked for
+
+                # a conditional is filtered out by its rule type ('cond_block')
+                for rule_obj in ruleset.rules:
+                    if isinstance(rule_obj, BlockRule):
+                        for inner_type, inner_rule in rule_obj.iter_effective_rules(wanted_ruletype):
+                            if not self.owner or hasattr(inner_rule, 'owner'):
+                                yield inner_type, self.apply_qualifiers(inner_rule)
+                    elif not self.owner or hasattr(rule_obj, 'owner'):
+                        yield ruletype, self.apply_qualifiers(rule_obj)
+
+    def apply_qualifiers(self, rule_obj):
+        """return a copy of rule_obj with the qualifiers of this block applied"""
+
+        rule_obj = deepcopy(rule_obj)
+
+        if self.audit:
+            rule_obj.audit = True
+
+        if self.deny:
+            rule_obj.deny = True
+        elif self.allow_keyword:
+            rule_obj.allow_keyword = True
+
+        if self.owner:
+            rule_obj.owner = True
+
+        rule_obj.raw_rule = None  # the raw rule doesn't include the qualifiers
+
+        return rule_obj
 
     def validate_body(self):
         """raise AppArmorException if the qualifiers don't fit the rules inside the block"""
