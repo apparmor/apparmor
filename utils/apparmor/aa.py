@@ -593,6 +593,9 @@ def change_profile_flags(prof_filename, program, flag, set_flag):
                 elif RE_PROFILE_BLOCK_START.search(line) or RE_PROFILE_CONDITIONAL_START.search(line):
                     # count rule block and 'if' openers so that their '}' isn't taken for the end of a profile or hat
                     depth += 1
+                elif RE_PROFILE_CONDITIONAL_ELSE.search(line):
+                    if not RE_PROFILE_CONDITIONAL_ELSE.search(line).group('close'):
+                        depth += 1
                 elif RE_PROFILE_END.search(line):
                     depth -= 1
                     # TODO: restore 'profile' and 'hat' to previous values (not really needed/used for aa-complain etc., but can't hurt)
