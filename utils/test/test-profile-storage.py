@@ -13,7 +13,9 @@ import unittest
 
 from apparmor.common import AppArmorBug, AppArmorException
 from apparmor.profile_storage import ProfileStorage, add_or_remove_flag, split_flags, var_transform
+from apparmor.rule.all import AllRule
 from apparmor.rule.capability import CapabilityRule
+from apparmor.rule.file import FileRule
 from apparmor.rule.include import IncludeRule
 from common_test import AATest, setup_all_loops
 
@@ -37,6 +39,17 @@ class TestUnknownKey(AATest):
     def test_set(self):
         with self.assertRaises(AppArmorBug):
             self.storage['foo'] = 'bar'
+
+
+class AaTest_get_rules_clean(AATest):
+    def test_all_rule_is_written(self):
+        # 'all' was missing from the write order, which made every tool that
+        # rewrites a profile drop the rule
+        prof_storage = ProfileStorage('/foo', '', 'test')
+        prof_storage['all'].add(AllRule())
+        prof_storage['file'].add(FileRule.create_instance('/bar r,'))
+
+        self.assertEqual(prof_storage.get_rules_clean(1), ['  all,', '', '  /bar r,', ''])
 
 
 class AaTest_get_header(AATest):

@@ -179,6 +179,7 @@ class ProfileStorage:
         write_order = [
             'abi',
             'inc_ie',
+            'all',
             'rlimit',
             'capability',
             'cond_block',
