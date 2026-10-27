@@ -367,12 +367,17 @@ static int self_syscall_enabled = 0;
 static int lsm_get_self_attr(unsigned int attr, struct lsm_ctx *ctx,
 			    __u32 *size, __u32 flags);
 
+/* trailing space for the context returned when probing the syscall */
+#define SELF_ATTR_PROBE_EXTRA 8
+
 static void self_syscall_enabled_init_once(void)
 {
-	__u32 total_size = sizeof(struct lsm_ctx) + 8;
+	__u32 total_size = sizeof(struct lsm_ctx) + SELF_ATTR_PROBE_EXTRA;
 	union {
 		struct lsm_ctx ctx_buff;
-		char buff[total_size]; /* force allocate trailing space */
+		/* must be a constant expression, a VLA in a union is a
+		 * GNU extension not supported by clang */
+		char buff[sizeof(struct lsm_ctx) + SELF_ATTR_PROBE_EXTRA]; /* force allocate trailing space */
 	} buff;
 	struct lsm_ctx *ctx = &buff.ctx_buff;
 
