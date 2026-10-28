@@ -15,7 +15,7 @@ requires_any_of_kernel_features network/af_mask network_v8/af_mask network_v9
 
 result=fail
 if ! any_of_kernel_features network/sctp network_v8/sctp network_v9/sctp ; then
-    result=xfail
+	result=xfail_errno
 fi
 
 # Probe the same ABI that genprofile selects with "abi <kernel>".
@@ -29,7 +29,18 @@ run_modes()
 {
 	local description=$1 expected=$2 error=$3 mode
 
-	for mode in connect sendto sendmsg connectx_old connectx connectx3; do
+	for mode in sendto sendmsg connectx_old connectx connectx3; do
+		runchecktest_errno "$error" "SCTP $family $mode ($description)" \
+			"$expected" "$family" "$mode"
+	done
+}
+
+# we need different results for connect so run separate from other modes
+run_connect()
+{
+	local description=$1 expected=$2 error=$3 mode
+
+	for mode in connect ; do
 		runchecktest_errno "$error" "SCTP $family $mode ($description)" \
 			"$expected" "$family" "$mode"
 	done
@@ -45,17 +56,21 @@ for family in inet inet6; do
 	fi
 	[ "$probe_rc" -eq 0 ] || fatalerror "SCTP $family probe failed"
 
+	run_connect unconfined pass 0
 	run_modes unconfined pass 0
 
 	genprofile "network;$family;seqpacket"
+	run_connect "connect allowed" pass 0
 	run_modes "connect allowed" pass 0
 
 	# Grant all the other permissions used by the client and listener.
 	genprofile "network;(create,bind,listen,send,receive,setopt,getopt,getattr);$family;seqpacket"
+	run_connect "connect omitted" fail EACCES
 	run_modes "connect omitted" $result EACCES
 
 	genprofile "network;$family;seqpacket" \
 		"qual=deny:network;connect;$family;seqpacket"
+	run_connect "connect denied" fail EACCES
 	run_modes "connect denied" $result EACCES
 
 	removeprofile

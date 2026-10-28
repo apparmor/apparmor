@@ -420,7 +420,9 @@ runchecktest()
 
 runchecktest_errno()
 {
+	# global _pfmode _known
 	local errno=$(perl -MPOSIX -e 'printf "%d\n", '$1';')
+	local rc
 	shift 1
 
 	if [ -z "${__NO_TRAP_ERR}" ]
@@ -430,10 +432,17 @@ runchecktest_errno()
 
 	runtestfg "$@"
 	if [ "$test_rc" == "$errno" ] ; then
+		_pfmode=${_pfmode%_errno}
 		checktestfg
 	else
-		echo "Error: ${testname} failed. Test '${_testdesc}' was expected to '${_pfmode}'${_known}. Reason for failure expect errno ${errno} != ${test_rc}"
-		testfailed
+		# we need to handle xfail, checktestfg mangles $_pfmode
+		if [ "$_pfmode" = "fail_errno" ] && [ "$_known" = " (known problem)" ] ; then
+			_pfmode=${_pfmode%_errno}
+			checktestfg
+		else
+			echo "Error$_known: ${testname} failed. Test '${_testdesc}' was expected to '${_pfmode}'${_known}. Reason for failure expect errno ${errno} != ${test_rc}" 1>&2
+			testfailed
+		fi
 	fi
 }
 
