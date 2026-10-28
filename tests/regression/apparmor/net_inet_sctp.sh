@@ -11,7 +11,13 @@
 bin=$(cd "$(dirname "$0")" && pwd)
 . "$bin/prologue.inc"
 
-requires_any_of_kernel_features network/af_mask network_v8/af_mask network_v9/af_mask
+requires_any_of_kernel_features network/af_mask network_v8/af_mask network_v9
+
+result=fail
+if ! any_of_kernel_features network/sctp network_v8/sctp network_v9/sctp ; then
+    result=xfail
+fi
+
 # Probe the same ABI that genprofile selects with "abi <kernel>".
 requires_parser_support --policy-features=/sys/kernel/security/apparmor/features \
 	--warn=rule-downgraded --Werror=rule-downgraded \
@@ -46,11 +52,11 @@ for family in inet inet6; do
 
 	# Grant all the other permissions used by the client and listener.
 	genprofile "network;(create,bind,listen,send,receive,setopt,getopt,getattr);$family;seqpacket"
-	run_modes "connect omitted" fail EACCES
+	run_modes "connect omitted" $result EACCES
 
 	genprofile "network;$family;seqpacket" \
 		"qual=deny:network;connect;$family;seqpacket"
-	run_modes "connect denied" fail EACCES
+	run_modes "connect denied" $result EACCES
 
 	removeprofile
 done

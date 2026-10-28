@@ -97,7 +97,7 @@ requires_kernel_features()
 	fi
 }
 
-requires_any_of_kernel_features()
+any_of_kernel_features()
 {
 	local features
 	while [ $# -gt 0 ]; do
@@ -108,6 +108,14 @@ requires_any_of_kernel_features()
 		features="$features $1"
 		shift
 	done
+	return 1
+}
+
+requires_any_of_kernel_features()
+{
+	if any_of_kernel_features "$@" ; then
+		return 0;
+	fi
 	echo "    Required feature(s): $features not available. Skipping tests ..."
 	exit 0
 }
