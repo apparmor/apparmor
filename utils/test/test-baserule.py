@@ -15,6 +15,11 @@ import unittest
 import apparmor.severity as severity
 from apparmor.common import AppArmorBug, hasher
 from apparmor.rule import BaseRule, parse_modifiers
+from apparmor.rule.capability import CapabilityRule
+from apparmor.rule.change_profile import ChangeProfileRule
+from apparmor.rule.file import FileRule
+from apparmor.rule.include import IncludeRule
+from apparmor.rule.rlimit import RlimitRule
 from common_test import AATest, setup_all_loops
 
 
@@ -106,6 +111,20 @@ class TestBaserule(AATest):
     def test_hashlog_from_event(self):
         with self.assertRaises(NotImplementedError):
             BaseRule.hashlog_from_event(None, None)
+
+    def test_qualifier_support(self):
+        # which qualifiers a rule type accepts when a block distributes them
+        self.assertTrue(BaseRule.supports_owner)
+        self.assertTrue(BaseRule.supports_qualifiers)
+
+        self.assertTrue(FileRule.supports_owner)
+        self.assertTrue(FileRule.supports_qualifiers)
+
+        self.assertTrue(ChangeProfileRule.supports_owner)
+        self.assertTrue(IncludeRule.supports_owner)  # the qualifier lands on the included rules
+
+        self.assertFalse(CapabilityRule.supports_owner)  # a capability has no owner
+        self.assertFalse(RlimitRule.supports_qualifiers)  # not even via a block
 
 
 setup_all_loops(__name__)

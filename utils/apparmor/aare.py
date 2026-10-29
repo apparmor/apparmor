@@ -61,13 +61,6 @@ class AARE:
 
         return False
 
-    def __deepcopy__(self, memo):
-        # thanks to http://bugs.python.org/issue10076, we need to implement this ourself
-        if self.orig_regex:
-            return type(self)(self.orig_regex, is_path=False, log_event=True)
-        else:
-            return type(self)(self.regex, is_path=False)
-
     # check if a regex is a plain path (not containing variables, alternations or wildcards)
     # some special characters are probably not covered by the plain_path regex (if in doubt, better error out on the safe side)
     plain_path = re.compile('^[0-9a-zA-Z/._-]+$')

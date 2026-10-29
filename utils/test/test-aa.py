@@ -302,6 +302,12 @@ class AaTest_change_profile_flags(AaTestWithTempdir):
             more_rules='  if $foo {\n    /if r,\n  } else {\n    /else r,\n  }\n  ^hat {\n  }',
             expected_more_rules='  if $foo {\n    /if r,\n  } else {\n    /else r,\n  }\n  ^hat flags=(complain) {\n  }')
 
+    def test_change_profile_flags_blocks_06(self):
+        self._test_change_profile_flags(
+            '/foo', 'flags=(complain)', 'complain', True, 'complain',
+            more_rules='  if $foo {\n    /if r,\n  }\n  else {\n    /else r,\n  }\n  ^hat {\n  }',
+            expected_more_rules='  if $foo {\n    /if r,\n  }\n  else {\n    /else r,\n  }\n  ^hat flags=(complain) {\n  }')
+
     # tests that change the flags
     def test_change_profile_flags_01(self):
         self._test_change_profile_flags('/foo', '', 'audit', True, 'audit')

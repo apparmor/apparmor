@@ -1,0 +1,14 @@
+
+/usr/bin/conditional/test/profile {
+  # Conditional block checks
+  if defined $foo {
+    /bin/true r,
+  } else {
+    /bin/false r,
+  }
+
+  # This hat should be indented
+  ^hat {
+    /bin/hat r,
+  }
+}

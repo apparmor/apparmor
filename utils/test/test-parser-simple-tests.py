@@ -276,11 +276,6 @@ unknown_line = (
     'file/priority/front_perms_ok_3.sd',
     'file/priority/front_perms_ok_4.sd',
 
-    # owner / audit {...} blocks
-    'file/file/owner/ok_1.sd',
-    'file/owner/ok_1.sd',
-    'profile/entry_mods_audit_ok1.sd',
-
     # namespace
     'profile/profile_ns_named_ok1.sd',  # profile keyword?
     'profile/profile_ns_named_ok2.sd',  # profile keyword?
@@ -469,9 +464,6 @@ syntax_failure = (
     'mount/regression2.sd',
     'mount/regression3.sd',
 
-    # block prefixes
-    'capability/ok_block1.sd',
-    'rlimits/ok_rlimit_19.sd',
 )
 
 

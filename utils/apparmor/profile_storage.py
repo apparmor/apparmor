@@ -36,6 +36,7 @@ from apparmor.rule.mount import MountRule, MountRuleset
 from apparmor.rule.pivot_root import PivotRootRule, PivotRootRuleset
 from apparmor.rule.unix import UnixRule, UnixRuleset
 from apparmor.rule.conditional import ConditionalBlock, ConditionalBlockset
+from apparmor.rule.block import BlockRule, BlockRuleset
 
 from apparmor.translations import init_translation
 
@@ -60,6 +61,7 @@ ruletypes = {
     'pivot_root':     {'rule': PivotRootRule,     'ruleset': PivotRootRuleset},
     'unix':           {'rule': UnixRule,          'ruleset': UnixRuleset},
     'cond_block':     {'rule': ConditionalBlock,  'ruleset': ConditionalBlockset},
+    'block':          {'rule': BlockRule,         'ruleset': BlockRuleset},
 }
 
 
@@ -170,6 +172,23 @@ class ProfileStorage:
 
         return data
 
+    def get_effective_rules(self, ruletype):
+        """return the rules of the given type, including the ones inside rule blocks (read-only)"""
+
+        if not self.data['block'].rules:
+            return self.data[ruletype]
+
+        effective = ruletypes[ruletype]['ruleset']()
+
+        for rule_obj in self.data[ruletype].rules:
+            effective.add(rule_obj)
+
+        for block in self.data['block'].rules:
+            for _block_ruletype, rule_obj in block.iter_effective_rules(ruletype):
+                effective.add(rule_obj)
+
+        return effective
+
     def get_rules_clean(self, depth):
         """return all clean rules of a profile (with default formatting, and leading whitespace as specified in the depth parameter)
 
@@ -183,6 +202,7 @@ class ProfileStorage:
             'rlimit',
             'capability',
             'cond_block',
+            'block',
             'network',
             'dbus',
             'mount',

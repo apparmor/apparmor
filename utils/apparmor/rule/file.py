@@ -44,6 +44,7 @@ class FileRule(BaseRule):
     ANY_EXEC = __FileAnyExec
 
     rule_name = 'file'
+    supports_owner = True
     _match_re = RE_PROFILE_FILE_ENTRY
 
     def __init__(self, path, perms, exec_perms, target, owner, file_keyword=False, leading_perms=False,

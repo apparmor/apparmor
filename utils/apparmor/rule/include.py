@@ -25,6 +25,9 @@ class IncludeRule(BaseRule):
     """Class to handle and store a single include rule"""
 
     rule_name = 'include'
+
+    # the parser splices the included rules into the block, so the qualifier lands on them
+    supports_owner = True
     _match_re = RE_INCLUDE
 
     def __init__(self, path, ifexists, ismagic, audit=False, deny=False, allow_keyword=False,

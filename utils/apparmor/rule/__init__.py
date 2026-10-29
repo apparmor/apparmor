@@ -36,6 +36,12 @@ class BaseRule(metaclass=ABCMeta):
     # defines if the '(O)wner permissions on/off' option is displayed
     can_owner = False
 
+    # does this rule type accept the 'owner' qualifier?
+    supports_owner = True
+
+    # does this rule type accept a qualifier prefix at all? rlimit rules don't
+    supports_qualifiers = True
+
     rule_name = 'base'
 
     _match_re = None

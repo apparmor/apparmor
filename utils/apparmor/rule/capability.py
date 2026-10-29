@@ -43,6 +43,9 @@ class CapabilityRule(BaseRule):
     ALL = __CapabilityAll
 
     rule_name = 'capability'
+
+    # a capability is a right of the subject, not an object that could have an owner
+    supports_owner = False
     _match_re = RE_PROFILE_CAP
 
     def __init__(self, cap_list, audit=False, deny=False, allow_keyword=False,

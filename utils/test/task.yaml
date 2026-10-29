@@ -15,6 +15,7 @@ environment:
     TEST/alias: alias
     TEST/all: all
     TEST/baserule: baserule
+    TEST/block: block
     TEST/boolean: boolean
     TEST/capability: capability
     TEST/change_profile: change_profile

@@ -78,6 +78,28 @@ $bar = true
   allow /home/foo/bar r,
 
 }
+/what/ever/block {
+  audit {
+    deny {
+      /what/never w,
+
+    }
+
+    /what/ever r,
+
+  }
+  audit {
+  }
+  owner {
+    /what/owned rw,
+
+  }
+  {
+    set rlimit cpu <= 10,
+
+  }
+
+}
 /what/ever/xattr xattrs=(foo=bar) flags=(  complain ) {
   /what/ever r,
 

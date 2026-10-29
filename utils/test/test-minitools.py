@@ -254,6 +254,22 @@ class MinitoolsTest(AATest):
 
         self._test_with_cleanprof_profile(command, command_arg, output_file, errormsg, True)
 
+    def test_complain_conditional(self):
+        """test if a profile with a conditional block keeps its indentation when switching to complain mode"""
+
+        input_file = 'conditional_indent_test.in'
+        profile = '/usr/bin/conditional/test/profile'
+        shutil.copy(os.path.join('.', input_file), self.profile_dir)
+
+        subprocess.check_output(
+            [python_interpreter, './../aa-complain', '--no-reload',
+             '-d', self.profile_dir, profile, '--configdir', './'])
+
+        exp_content = read_file(os.path.join('.', 'conditional_indent_test.out'))
+        real_content = read_file(os.path.join(self.profile_dir, input_file))
+        self.maxDiff = None
+        self.assertEqual(exp_content, real_content, 'Failed to switch a profile with conditionals to complain mode')
+
     def test_complain_cleanprof(self):
         ''' test if all child profiles in cleanprof_test.in get the complain flag added when switching the profile to complain mode '''
         # TODO: works for hats, but not for child profiles
