@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION no whitespace between the attachment and +identities=
+#=EXRESULT FAIL
+#
+profile p /usr/bin/p+identities=(foo) {
+  file,
+}

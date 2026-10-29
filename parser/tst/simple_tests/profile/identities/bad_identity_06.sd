@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION no whitespace between the profile name and +identities=
+#=EXRESULT FAIL
+#
+profile p+identities=(foo) {
+  file,
+}

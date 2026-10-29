@@ -1,0 +1,6 @@
+#
+# no profile name before +identities=
+#
+profile +identities=(bar) {
+  /tmp/foo r,
+}

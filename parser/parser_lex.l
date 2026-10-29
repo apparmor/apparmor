@@ -242,6 +242,27 @@ static int rsntrim(const char *s, int l)
 	return l;
 }
 
+ /* Ensures there is at least a space before a delegation construct */
+static void check_delegation_start(const char *s)
+{
+	static const char *keywords[] = { "identities", "objects", NULL };
+	const char **k;
+	const char *p;
+
+	if (*s == '"')
+		return;
+	for (p = strchr(s, '+'); p; p = strchr(p + 1, '+')) {
+		for (k = keywords; *k; k++) {
+			size_t len = strlen(*k);
+
+			if (strncmp(p + 1, *k, len) != 0 || p[len + 1] != '=')
+				continue;
+			if (p == s)
+				yyerror(_("Missing name before '+%s='"), *k);
+			yyerror(_("Missing whitespace before '+%s=' in '%s'"), *k, s);
+		}
+	}
+}
 
 %}
 
@@ -456,6 +477,7 @@ IN_OP		in
 <SUB_ID,SUB_ID_WS>{
 	({IDS}|{QUOTED_ID}) {
 		/* Go into separate state to match generic ID strings */
+		check_delegation_start(yytext);
 		yylval.id =  processid(yytext, yyleng);
 		POP_AND_RETURN(TOK_ID);
 	}
@@ -836,6 +858,7 @@ all/({WS}|[^[:alnum:]_]) {
 {CLOSE_BRACE}	{ RETURN_TOKEN(TOK_CLOSE); }
 
 ({LABEL}|{QUOTED_LABEL}) {
+	check_delegation_start(yytext);
 	yylval.id = processid(yytext, yyleng);
 	RETURN_TOKEN(TOK_ID);
 }

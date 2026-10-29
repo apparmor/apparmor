@@ -1,0 +1,6 @@
+#
+# no whitespace between the profile name and +identities=
+#
+profile foo+identities=(bar) {
+  /tmp/foo r,
+}

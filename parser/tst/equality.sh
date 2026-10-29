@@ -1970,6 +1970,11 @@ run_tests()
 				 @{ROOT}=/
 					/t @{ROOT}@{BAR}/@{FOO} { }"
 
+	verify_binary_inequality "identities in a quoted profile name" \
+				'profile t + identities=(foo) { }' \
+				'profile "t+identities=(foo)" { }' \
+				'profile "t + identities=(foo)" { }'
+
 	test_parser_variables
 	test_profile_flag_ordering
 

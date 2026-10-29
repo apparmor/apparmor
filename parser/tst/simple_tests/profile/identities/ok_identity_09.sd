@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION + in a profile name
+#=EXRESULT PASS
+#
+profile g++ + identities=(foo) {
+  file,
+}
