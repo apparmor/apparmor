@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION no whitespace after the +
+#=EXRESULT PASS
+#
+profile p +identities=(foo) {
+  file,
+}
