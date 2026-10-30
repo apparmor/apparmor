@@ -499,7 +499,7 @@ The AppArmor userspace utilities are written with some assumptions about
 installed and available versions of other tools. This is a (possibly
 incomplete) list of known version dependencies:
 
-The Python utilities require a minimum of Python 3.3.
+The Python utilities require a minimum of Python 3.7.
 
 The aa-notify tool's Python dependencies can be satisfied by installing the
 following packages (Debian package names, other distros may vary):
