@@ -37,6 +37,7 @@ RE_PROFILE_PATH = '(?P<%s>(' + RE_PATH + '))'  # quoted or unquoted filename. %s
 RE_PROFILE_PATH_OR_VAR = '(?P<%s>(' + RE_PATH + '|' + RE_VAR + r'\S*|"' + RE_VAR + '[^"]*"))'  # quoted or unquoted filename or variable. %s is the match group name
 RE_SAFE_OR_UNSAFE = '(?P<execmode>(safe|unsafe))'
 RE_XATTRS = r'(\s+xattrs\s*=\s*\((?P<xattrs>([^)=]+(=[^)=]+)?\s?)*)\)\s*)?'
+RE_DELEGATION_START = r'\+(?P<keyword>identities|objects)='  # '+identities=' or '+objects=' without whitespace, see check_delegation_start()
 RE_FLAGS = r'(\s+(flags\s*=\s*)?\((?P<flags>[^)]+)\))?'
 
 RE_VARIABLE = re.compile(RE_VAR)
@@ -160,6 +161,37 @@ def re_cond_set(x, y=None):
 
 def re_cond(x, y=None):
     return r'\s*(' + x + r'\s*=\s*(?P<' + (y or x) + '_cond>' + aare + r'))[,\s]*'
+
+
+def check_delegation_start(name):
+    """like the parser, refuse an unquoted name that runs into '+identities=' or '+objects='"""
+
+    if re.fullmatch(r'"[^"]*"', name):  # quoted, so it's part of the name
+        return
+
+    match = re.search(RE_DELEGATION_START, name)
+    if not match:
+        return
+
+    if match.start() == 0:
+        raise AppArmorException(
+            _("Syntax error: Missing name before '+%(keyword)s=' in '%(text)s'")
+            % {'keyword': match.group('keyword'), 'text': name})
+
+    raise AppArmorException(
+        _("Syntax error: Missing whitespace before '+%(keyword)s=' in '%(text)s'")
+        % {'keyword': match.group('keyword'), 'text': name})
+
+
+def check_space_before_delegation(text, plus, keyword):
+    """like the parser, require whitespace (or the ')' ending a list) before the '+' at index plus of text, which starts '+<keyword>='"""
+
+    if plus == 0 or re.match(r'[\s)]', text[plus - 1]):
+        return
+
+    raise AppArmorException(
+        _("Syntax error: Missing whitespace before '+%(keyword)s=' in '%(text)s'")
+        % {'keyword': keyword, 'text': text.strip()})
 
 
 def parse_profile_start_line(line, filename):

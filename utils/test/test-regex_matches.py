@@ -16,7 +16,7 @@ from apparmor.common import AppArmorBug, AppArmorException
 from apparmor.regex import (
     RE_PROFILE_BLOCK_OPEN, RE_PROFILE_CAP, RE_PROFILE_DBUS, RE_PROFILE_MOUNT, RE_PROFILE_PTRACE, RE_PROFILE_SIGNAL,
     RE_PROFILE_START, parse_profile_start_line, re_match_include, RE_PROFILE_UNIX,
-    RE_PROFILE_PIVOT_ROOT,
+    RE_PROFILE_PIVOT_ROOT, check_delegation_start, check_space_before_delegation,
     re_match_include_parse, strip_parenthesis, strip_quotes, resolve_variables, expand_path_braces,
     expand_var, expand_string, re_print_dict, re_parse_dict)
 from common_test import AATest, setup_aa, setup_all_loops
@@ -544,6 +544,50 @@ class TestInvalid_parse_profile_start_line(AATest):
     def _run_test(self, line, expected):
         with self.assertRaises(AppArmorBug):
             parse_profile_start_line(line, 'somefile')
+
+
+class Test_check_delegation_start(AATest):
+    tests = (
+        ('foo',                     None),
+        ('g++',                     None),  # '+' in a name
+        ('foo+identities',          None),  # no '='
+        ('foo+Identities=(bar)',    None),  # not a keyword
+        ('"foo+identities=(bar)"',  None),  # quoted, so part of the name
+        ('foo+identities=(bar)',    AppArmorException),
+        ('/foo+objects={}',         AppArmorException),
+        ('g+++identities=(bar)',    AppArmorException),
+        ('"foo"+identities=(bar)',  AppArmorException),  # only a fully quoted name is safe
+        ('+identities=(bar)',       AppArmorException),  # no name
+    )
+
+    def _run_test(self, name, expected):
+        if expected:
+            with self.assertRaises(expected):
+                check_delegation_start(name)
+        else:
+            check_delegation_start(name)
+
+
+class Test_check_space_before_delegation(AATest):
+    tests = (
+        # text, its last '+' starting the delegation              keyword
+        (('profile foo + identities=(bar) {',                     'identities'),  None),
+        (('profile foo\t+identities=(bar) {',                     'identities'),  None),
+        (('profile foo xattrs=(a=b)+identities=(bar) {',          'identities'),  None),  # after a ')'
+        (('delegation -> (bar baz)+objects={',                    'objects'),     None),
+        (('^hat+identities=(bar) {',                              'identities'),  AppArmorException),
+        (('delegation -> bar+objects={',                          'objects'),     AppArmorException),
+        (('delegation -> "bar"+objects={',                        'objects'),     AppArmorException),  # a quote isn't enough
+    )
+
+    def _run_test(self, params, expected):
+        text, keyword = params
+
+        if expected:
+            with self.assertRaises(expected):
+                check_space_before_delegation(text, text.rindex('+'), keyword)
+        else:
+            check_space_before_delegation(text, text.rindex('+'), keyword)
 
 
 class Test_re_match_include(AATest):
