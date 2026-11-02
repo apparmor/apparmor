@@ -16,7 +16,7 @@ from apparmor.common import AppArmorBug, AppArmorException
 from apparmor.regex import (
     RE_PROFILE_BLOCK_OPEN, RE_PROFILE_CAP, RE_PROFILE_DBUS, RE_PROFILE_MOUNT, RE_PROFILE_PTRACE, RE_PROFILE_SIGNAL,
     RE_PROFILE_START, parse_profile_start_line, re_match_include, RE_PROFILE_UNIX,
-    RE_PROFILE_PIVOT_ROOT,
+    RE_PROFILE_PIVOT_ROOT, check_delegation_start, check_space_before_delegation,
     re_match_include_parse, strip_parenthesis, strip_quotes, resolve_variables, expand_path_braces,
     expand_var, expand_string, re_print_dict, re_parse_dict)
 from common_test import AATest, setup_aa, setup_all_loops
@@ -520,6 +520,29 @@ class Test_parse_profile_start_line(AATest):
         ('  profile @{foo} /bar {',       {'profile': '@{foo}',                            'plainprofile': None,     'namedprofile': '@{foo}',  'attachment': '/bar',   'flags': None,         'comment': None}),
         ('  profile foo @{bar} {',        {'profile': 'foo',                               'plainprofile': None,     'namedprofile': 'foo',     'attachment': '@{bar}', 'flags': None,         'comment': None}),
         ('  profile @{foo} @{bar} {',     {'profile': '@{foo}',                            'plainprofile': None,     'namedprofile': '@{foo}',  'attachment': '@{bar}', 'flags': None,         'comment': None}),
+
+        ('   /foo {',                                                      {'profile': '/foo', 'identities': []}),
+        ('   /foo + identities=(bar) {',                                   {'profile': '/foo', 'identities': ['bar']}),
+        ('   profile foo + identities=(bar) {',                            {'profile': 'foo',  'identities': ['bar']}),
+        ('   profile foo + identities=(bar, baz) {',                       {'profile': 'foo',  'identities': ['bar', 'baz']}),
+        ('   profile foo + identities=(bar baz) {',                        {'profile': 'foo',  'identities': ['bar', 'baz']}),  # space separated
+        ('   profile foo + identities=(  bar , baz  ) {',                   {'profile': 'foo',  'identities': ['bar', 'baz']}),
+        ('   profile foo + identities=(bar)+ identities=("/baz") {',       {'profile': 'foo',  'identities': ['bar', '/baz']}),  # multiple groups
+        ('   profile foo + identities=(bar) + identities=("/b z" qux) {',  {'profile': 'foo',  'identities': ['bar', '/b z', 'qux']}),  # quoted path with spaces
+        ('   profile foo + identities=(bar, bar) {',                       {'profile': 'foo',  'identities': ['bar']}),  # duplicates
+        ('   profile foo + identities=("/a b") {',                         {'profile': 'foo',  'identities': ['/a b']}),  # path with space
+        ('   profile foo /attach + identities=(bar) flags=(complain) {',   {'profile': 'foo',  'identities': ['bar'], 'attachment': '/attach', 'flags': 'complain'}),
+        ('   profile foo "/at tach" + identities=("/a b") {',              {'profile': 'foo',  'identities': ['/a b'], 'attachment': '/at tach'}),
+        ('   profile foo xattrs=(user.x=y) + identities=(bar) {',          {'profile': 'foo',  'identities': ['bar'], 'xattrs': {'user.x': 'y'}}),
+        ('   ^hat + identities=(bar) {',                                   {'profile': 'hat',  'identities': ['bar']}),
+        ('   hat foo + identities=(bar) flags=(complain) {',               {'profile': 'foo',  'identities': ['bar'], 'flags': 'complain'}),
+        ('   profile foo +identities=(bar) {',                             {'profile': 'foo',  'identities': ['bar']}),  # no space after '+'
+        ('   profile foo + identities = ( bar ) {',                        {'profile': 'foo',  'identities': ['bar']}),  # spaces around '='
+        ('   profile foo +identities=(bar)+identities=(baz) {',            {'profile': 'foo',  'identities': ['bar', 'baz']}),  # no space between groups
+        ('   profile foo xattrs=(user.x=y)+identities=(bar) {',           {'profile': 'foo',  'identities': ['bar'], 'xattrs': {'user.x': 'y'}}),  # or after xattrs
+        ('   profile g++ + identities=(bar) {',                            {'profile': 'g++',  'identities': ['bar']}),  # '+' in a name
+        ('   profile foo+identities {',                                    {'profile': 'foo+identities', 'identities': []}),  # no '=', so part of the name
+        ('   profile "foo+identities=(bar)" {',                            {'profile': 'foo+identities=(bar)', 'identities': []}),  # quoted, so part of the name
     )
 
     def _run_test(self, line, expected):
@@ -543,6 +566,82 @@ class TestInvalid_parse_profile_start_line(AATest):
 
     def _run_test(self, line, expected):
         with self.assertRaises(AppArmorBug):
+            parse_profile_start_line(line, 'somefile')
+
+
+class Test_check_delegation_start(AATest):
+    tests = (
+        ('foo',                     None),
+        ('g++',                     None),  # '+' in a name
+        ('foo+identities',          None),  # no '='
+        ('foo+Identities=(bar)',    None),  # not a keyword
+        ('"foo+identities=(bar)"',  None),  # quoted, so part of the name
+        ('foo+identities=(bar)',    AppArmorException),
+        ('/foo+objects={}',         AppArmorException),
+        ('g+++identities=(bar)',    AppArmorException),
+        ('"foo"+identities=(bar)',  AppArmorException),  # only a fully quoted name is safe
+        ('+identities=(bar)',       AppArmorException),  # no name
+    )
+
+    def _run_test(self, name, expected):
+        if expected:
+            with self.assertRaises(expected):
+                check_delegation_start(name)
+        else:
+            check_delegation_start(name)
+
+
+class Test_check_space_before_delegation(AATest):
+    tests = (
+        # text, its last '+' starting the delegation              keyword
+        (('profile foo + identities=(bar) {',                     'identities'),  None),
+        (('profile foo\t+identities=(bar) {',                     'identities'),  None),
+        (('profile foo xattrs=(a=b)+identities=(bar) {',          'identities'),  None),  # after a ')'
+        (('delegation -> (bar baz)+objects={',                    'objects'),     None),
+        (('^hat+identities=(bar) {',                              'identities'),  AppArmorException),
+        (('delegation -> bar+objects={',                          'objects'),     AppArmorException),
+        (('delegation -> "bar"+objects={',                        'objects'),     AppArmorException),  # a quote isn't enough
+    )
+
+    def _run_test(self, params, expected):
+        text, keyword = params
+
+        if expected:
+            with self.assertRaises(expected):
+                check_space_before_delegation(text, text.rindex('+'), keyword)
+        else:
+            check_space_before_delegation(text, text.rindex('+'), keyword)
+
+
+class TestInvalid_identities(AATest):
+    tests = (
+        ('profile foo + identities=() {',           AppArmorException),  # empty set of identities
+        ('profile foo + identities=(bar) + identities=() {', AppArmorException),
+        ('profile foo + identities=(\\invalid\\) {',   AppArmorException),  # backslash isn't an identity character
+        ('profile foo + identities=("a,b") {',      AppArmorException),  # neither are '"', '!', ',', '(', ')', '{', '}' and '=', even quoted
+        ('profile foo + identities=("a!b") {',      AppArmorException),
+        ('profile foo + identities=("/a(b") {',     AppArmorException),
+        ('profile foo + identities=(a{b}) {',       AppArmorException),
+        ('profile foo + identities=(a=b) {',        AppArmorException),
+        ('profile foo + identities=(a"b) {',        AppArmorException),
+        ('profile foo + identities=("a a") {',      AppArmorException),  # space is only allowed in a path identity
+        ('profile foo + identities=("a a", b) {',   AppArmorException),
+        ('profile foo identities=(bar) {',          AppArmorBug),  # the '+' is mandatory
+        ('profile foo + {',                         AppArmorBug),  # '+' without identities
+        ('profile foo+identities=(bar) {',          AppArmorException),  # no whitespace before '+identities='
+        ('profile foo+ identities=(bar) {',         AppArmorException),
+        ('profile foo+identities=(bar baz) {',      AppArmorException),
+        ('profile foo /attach+identities=(bar) {',  AppArmorException),
+        ('/foo+identities=(bar) {',                 AppArmorException),
+        ('profile "foo"+identities=(bar) {',        AppArmorException),
+        ('^hat+identities=(bar) {',                 AppArmorException),
+        ('hat foo+identities=(bar) {',              AppArmorException),
+        ('profile foo+objects={} {',                AppArmorException),  # same for '+objects='
+        ('profile +identities=(bar) {',             AppArmorException),  # no profile name
+    )
+
+    def _run_test(self, line, expected):
+        with self.assertRaises(expected):
             parse_profile_start_line(line, 'somefile')
 
 

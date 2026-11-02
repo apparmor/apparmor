@@ -37,6 +37,10 @@ RE_PROFILE_PATH = '(?P<%s>(' + RE_PATH + '))'  # quoted or unquoted filename. %s
 RE_PROFILE_PATH_OR_VAR = '(?P<%s>(' + RE_PATH + '|' + RE_VAR + r'\S*|"' + RE_VAR + '[^"]*"))'  # quoted or unquoted filename or variable. %s is the match group name
 RE_SAFE_OR_UNSAFE = '(?P<execmode>(safe|unsafe))'
 RE_XATTRS = r'(\s+xattrs\s*=\s*\((?P<xattrs>([^)=]+(=[^)=]+)?\s?)*)\)\s*)?'
+RE_IDENTITY = r'"[^"]*"|[^,\s]+'  # quoted or unquoted identity
+RE_IDENTITIES_GROUP = r'\+\s*identities\s*=\s*\((?P<identity_group>[^)]*)\)'  # one +identities=(...). Deliberately loose so an incorrect identity fails as a bad identity rather than an unknown error.
+RE_IDENTITIES = r'(?P<identities>(\s*' + RE_IDENTITIES_GROUP + r')+)?'  # one or more +identities=(...). parse_profile_start_line() refuses a missing whitespace before the first one
+RE_DELEGATION_START = r'\+(?P<keyword>identities|objects)='  # '+identities=' or '+objects=' without whitespace, see check_delegation_start()
 RE_FLAGS = r'(\s+(flags\s*=\s*)?\((?P<flags>[^)]+)\))?'
 
 RE_VARIABLE = re.compile(RE_VAR)
@@ -75,7 +79,7 @@ RE_PROFILE_CONDITIONAL_START = re.compile(r'^' + RE_PROFILE_CONDITIONAL + RE_EOL
 RE_PROFILE_CONDITIONAL_ELSE = re.compile(r'^\s*(?P<close>\})?\s*else((?P<if>\s+' + RE_PROFILE_CONDITIONAL + r')|(\s*\{))' + RE_EOL)
 RE_PROFILE_NETWORK = re.compile(RE_PRIORITY_AUDIT_DENY + r'network(?P<details>\s+.*)?' + RE_COMMA_EOL)
 RE_PROFILE_CHANGE_HAT = re.compile(r'^\s*\^("??.+?"??)' + RE_COMMA_EOL)
-RE_PROFILE_HAT_DEF = re.compile(r'^(?P<leadingspace>\s*)(?P<hat_keyword>\^|hat\s+)(?P<hat>"??[^)]+?"??)' + RE_FLAGS + r'\s*\{' + RE_EOL)
+RE_PROFILE_HAT_DEF = re.compile(r'^(?P<leadingspace>\s*)(?P<hat_keyword>\^|hat\s+)(?P<hat>"??[^)]+?"??)' + RE_IDENTITIES + RE_FLAGS + r'\s*\{' + RE_EOL)
 RE_PROFILE_DBUS = re.compile(RE_PRIORITY_AUDIT_DENY + r'(dbus\s*,|dbus(?P<details>\s+[^#]*)\s*,)' + RE_EOL)
 RE_PROFILE_MOUNT = re.compile(RE_PRIORITY_AUDIT_DENY + r'((?P<operation>mount|remount|umount|unmount)(?P<details>\s+[^#]*)?\s*,)' + RE_EOL)
 RE_PROFILE_SIGNAL = re.compile(RE_PRIORITY_AUDIT_DENY + r'(signal\s*,|signal(?P<details>\s+[^#]*)\s*,)' + RE_EOL)
@@ -107,6 +111,7 @@ RE_PROFILE_START = re.compile(
         + '(' + 'profile' + r'\s+' + RE_PROFILE_NAME % 'namedprofile' + r'(\s+' + RE_PROFILE_PATH_OR_VAR % 'attachment' + ')?' + ')'  # 'profile', profile name, optionally attachment
     + ')'
     + RE_XATTRS
+    + RE_IDENTITIES
     + RE_FLAGS
     + r'\s*\{'
     + RE_EOL)
@@ -162,14 +167,77 @@ def re_cond(x, y=None):
     return r'\s*(' + x + r'\s*=\s*(?P<' + (y or x) + '_cond>' + aare + r'))[,\s]*'
 
 
+def check_delegation_start(name):
+    """like the parser, refuse an unquoted name that runs into '+identities=' or '+objects='"""
+
+    if re.fullmatch(r'"[^"]*"', name):  # quoted, so it's part of the name
+        return
+
+    match = re.search(RE_DELEGATION_START, name)
+    if not match:
+        return
+
+    if match.start() == 0:
+        raise AppArmorException(
+            _("Syntax error: Missing name before '+%(keyword)s=' in '%(text)s'")
+            % {'keyword': match.group('keyword'), 'text': name})
+
+    raise AppArmorException(
+        _("Syntax error: Missing whitespace before '+%(keyword)s=' in '%(text)s'")
+        % {'keyword': match.group('keyword'), 'text': name})
+
+
+def check_space_before_delegation(text, plus, keyword):
+    """like the parser, require whitespace (or the ')' ending a list) before the '+' at index plus of text, which starts '+<keyword>='"""
+
+    if plus == 0 or re.match(r'[\s)]', text[plus - 1]):
+        return
+
+    raise AppArmorException(
+        _("Syntax error: Missing whitespace before '+%(keyword)s=' in '%(text)s'")
+        % {'keyword': keyword, 'text': text.strip()})
+
+
+def re_parse_identities(identities, filename, line):
+    """parse the 'identities=(...)' groups of a profile header into a list of identities"""
+
+    result = []
+
+    for group in re.findall(RE_IDENTITIES_GROUP, identities):
+        values = re.findall(RE_IDENTITY, group)
+
+        if not values:
+            raise AppArmorException(
+                _('Invalid syntax in %(filename)s: Empty set of identities in line %(line)s.')
+                % {'filename': filename, 'line': line})
+
+        for value in values:
+            identity = strip_quotes(value)
+
+            if re.search(r'["!,(){}=\\]', identity):  # not allowed in identities, even when quoted (see apparmor.d(5))
+                raise AppArmorException(
+                    _('Invalid identity %(identity)s in %(filename)s line %(line)s.')
+                    % {'identity': value, 'filename': filename, 'line': line})
+
+            if ' ' in identity and not identity.startswith('/'):
+                raise AppArmorException(
+                    _('Space character not allowed in identities: %(identity)s in %(filename)s line %(line)s.')
+                    % {'identity': value, 'filename': filename, 'line': line})
+
+            if identity not in result:  # the parser accepts duplicates, keep the first one only
+                result.append(identity)
+
+    return result
+
+
 def parse_profile_start_line(line, filename):
     common_sections = ['leadingspace', 'flags', 'comment']
 
-    sections = ['plainprofile', 'namedprofile', 'attachment', 'xattrs'] + common_sections
+    sections = ['plainprofile', 'namedprofile', 'attachment', 'xattrs', 'identities'] + common_sections
     matches = RE_PROFILE_START.search(line)
 
     if not matches:
-        sections = ['hat_keyword', 'hat'] + common_sections
+        sections = ['hat_keyword', 'hat', 'identities'] + common_sections
         matches = RE_PROFILE_HAT_DEF.search(line)
 
     if not matches:
@@ -184,6 +252,7 @@ def parse_profile_start_line(line, filename):
 
             # sections with optional quotes
             if section in ('plainprofile', 'namedprofile', 'attachment', 'hat'):
+                check_delegation_start(result[section])
                 result[section] = strip_quotes(result[section])
         else:
             result[section] = None
@@ -212,6 +281,13 @@ def parse_profile_start_line(line, filename):
         result['xattrs'] = re_parse_dict(result['xattrs'])
     else:
         result['xattrs'] = {}
+
+    if result['identities']:
+        # e.g. '^hat+identities=(foo) {', as the hat name stops before the '+'
+        check_space_before_delegation(line, line.index('+', matches.start('identities')), 'identities')
+        result['identities'] = re_parse_identities(result['identities'], filename, line)
+    else:
+        result['identities'] = []
 
     return result
 

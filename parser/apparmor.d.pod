@@ -128,7 +128,7 @@ B<COMMENT> = '#' I<TEXT> [ '\r' ] '\n'
 
 B<TEXT> = any characters
 
-B<PROFILE> = ( I<PROFILE HEAD> ) [ I<ATTACHMENT SPECIFICATION> ] [ I<PROFILE FLAG CONDS> ] '{' ( I<RULES> )* '}'
+B<PROFILE> = ( I<PROFILE HEAD> ) [ I<ATTACHMENT SPECIFICATION> ] [ I<PROFILE IDENTITIES> ] [ I<PROFILE FLAG CONDS> ] '{' ( I<RULES> )* '}'
 
 B<PROFILE HEAD> = [ 'profile' ] I<FILEGLOB> | 'profile' I<PROFILE NAME>
 
@@ -147,6 +147,12 @@ B<PROFILE XATTR CONDS> =  [ 'xattrs=' ] '(' comma or white space separated list 
 B<PROFILE XATTR> = extended attribute name '=' I<XATTR VALUE FILEGLOB>
 
 B<XATTR VALUE FILEGLOB> = I<FILEGLOB>
+
+B<PROFILE IDENTITIES> = ( '+' 'identities=' '(' comma or white space separated list of I<PROFILE IDENTITY> ')' )+
+
+B<PROFILE IDENTITY> = ( I<UNQUOTED PROFILE IDENTITY> | '"' I<UNQUOTED PROFILE IDENTITY> '"' )
+
+B<UNQUOTED PROFILE IDENTITY> = (must not contain '"', '!', ',', '(', ')', '{', '}', '=', or a backslash. May only contain white space if it starts with '/', in which case it must be quoted.)
 
 B<PROFILE FLAG CONDS> =  [ 'flags=' ] '(' comma or white space separated list of I<PROFILE FLAGS> ')'
 
@@ -509,6 +515,50 @@ files in /usr/bin with the attribute "security.apparmor" and value "trusted":
   }
 
 See apparmor_xattrs(7) for further details.
+
+
+=head3 Identities
+
+A profile can declare additional names, called identities, that it also
+answers to when another profile refers to it as a peer. Identities are
+declared after the profile name and any attachment specification, and
+before the profile flags, as one or more I<'+' 'identities=('...')'>
+groups. The leading '+' is required, and the first group has to be
+separated from the profile name or attachment specification by white
+space.
+
+  profile deputy /usr/bin/deputy + identities=(trusted) {
+    # ...
+  }
+
+Another profile can then reach the profile above through any of its
+identities as well as through its name:
+
+  profile example /usr/bin/example {
+    signal send peer=trusted,
+  }
+
+Identities within a group are separated by commas or white space, and
+several groups accumulate, so
+
+  profile p + identities=(foo) + identities=("/bar baz") {
+
+declares the two identities I<foo> and I</bar baz>. An identity that
+contains white space has to be quoted and has to start with '/'.
+
+Identities can be declared on child profiles and hats as well as on
+top level profiles.
+
+This is primarily useful for two things. It allows a profile to be given
+a role that peers can refer to instead of naming the profile directly,
+and it eases the transition of an application from unconfined to
+confined: a new profile declaring I<identities=(unconfined)> keeps
+working with peers that refer to it as I<peer=unconfined>.
+
+Identities require kernel support for the I<domain/identity> feature. If
+the kernel does not support it the identities are not passed to the
+kernel and a peer that refers to the profile by an identity will not
+match it, so policy must not rely on identities for confinement.
 
 
 =head3 Flags

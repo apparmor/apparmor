@@ -85,6 +85,7 @@ class ProfileStorage:
         data['name'] = ''
         data['attachment'] = ''
         data['xattrs'] = {}
+        data['identities'] = []
         data['flags'] = ''
         data['external'] = False
         data['header_comment'] = ''  # comment in the profile/hat start line
@@ -106,7 +107,7 @@ class ProfileStorage:
         if key not in self.data:
             raise AppArmorBug('attempt to set unknown key %s' % key)
 
-        allowed_types = {bool, str, dict, None, NoneType}
+        allowed_types = {bool, str, dict, list, None, NoneType}
         old_type = type(self.data[key])
         if old_type in allowed_types:
             if key in {'flags', 'filename'} and type(value) in {str, NoneType}:
@@ -164,11 +165,15 @@ class ProfileStorage:
         if self.data['xattrs']:
             xattrs = ' xattrs=(%s)' % re_print_dict(self.data['xattrs'])
 
+        identities = ''
+        if self.data['identities']:
+            identities = ' + identities=(%s)' % ', '.join(quote_if_needed(identity) for identity in self.data['identities'])
+
         flags = ''
         if self.data['flags']:
             flags = ' flags=(%s)' % self.data['flags']
 
-        data.append('%s%s%s%s {%s' % (pre, name, xattrs, flags, comment))
+        data.append('%s%s%s%s%s {%s' % (pre, name, xattrs, identities, flags, comment))
 
         return data
 
@@ -286,6 +291,7 @@ class ProfileStorage:
         prof_storage['flags'] = matches['flags']
         prof_storage['header_comment'] = matches['comment'] or ''
         prof_storage['is_hat'] = matches['is_hat']
+        prof_storage['identities'] = matches['identities']
 
         if matches['is_hat']:
             prof_storage['hat_keyword'] = matches['hat_keyword']
