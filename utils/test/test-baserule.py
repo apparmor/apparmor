@@ -14,7 +14,7 @@ import unittest
 
 import apparmor.severity as severity
 from apparmor.common import AppArmorBug, hasher
-from apparmor.rule import BaseRule, parse_modifiers
+from apparmor.rule import BaseRule, parse_modifiers, quote_if_needed
 from apparmor.rule.capability import CapabilityRule
 from apparmor.rule.change_profile import ChangeProfileRule
 from apparmor.rule.file import FileRule
@@ -125,6 +125,23 @@ class TestBaserule(AATest):
 
         self.assertFalse(CapabilityRule.supports_owner)  # a capability has no owner
         self.assertFalse(RlimitRule.supports_qualifiers)  # not even via a block
+
+
+class TestQuoteIfNeeded(AATest):
+    tests = (
+        (('foo', False),                 'foo'),
+        (('foo bar', False),             '"foo bar"'),
+        (('g++', False),                 'g++'),
+        (('p+identities=(foo)', False),  '"p+identities=(foo)"'),  # refused unquoted
+        (('foo+objects=bar', False),     '"foo+objects=bar"'),
+        (('foo+Objects=bar', False),     'foo+Objects=bar'),  # not a keyword
+        (('foo', True),                  'foo'),
+        (('a(b', True),                  '"a(b"'),
+        (('foo+objects=bar', True),      '"foo+objects=bar"'),
+    )
+
+    def _run_test(self, params, expected):
+        self.assertEqual(quote_if_needed(*params), expected)
 
 
 setup_all_loops(__name__)

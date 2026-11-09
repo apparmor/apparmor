@@ -13,11 +13,12 @@
 #
 # ----------------------------------------------------------------------
 
+import re
 from abc import ABCMeta, abstractmethod
 
 from apparmor.aare import AARE
 from apparmor.common import AppArmorBug, AppArmorException, hasher
-from apparmor.regex import strip_quotes
+from apparmor.regex import RE_DELEGATION_START, strip_quotes
 from apparmor.translations import init_translation
 
 _ = init_translation()
@@ -644,11 +645,11 @@ def parse_modifiers(matches):
 
 
 def quote_if_needed(data, inside_parenthesis=False):
-    """quote data if it contains whitespace or (if inside parenthesis) more special characters"""
+    """quote data if it contains whitespace, '+identities=' or '+objects=', or (if inside parenthesis) more special characters"""
     if inside_parenthesis:
         return quote_for_parenthesis(data)
 
-    if ' ' in data:
+    if ' ' in data or re.search(RE_DELEGATION_START, data):  # the latter is refused unquoted, see check_delegation_start()
         data = '"' + data + '"'
     return data
 
@@ -658,6 +659,9 @@ def quote_for_parenthesis(data):
     for char in [' ', '{', '}', '(', ')']:
         if char in data:
             return '"' + data + '"'
+
+    if re.search(RE_DELEGATION_START, data):
+        return '"' + data + '"'
 
     return data
 

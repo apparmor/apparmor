@@ -194,6 +194,10 @@ class AaTest_get_header_after_parse(AATest):
         (('profile foo + identities=(bar) {',                  '/bar',  None, False,       1),   ('  profile foo + identities=(bar) {')),  # child profile
         (('^hat + identities=(bar) {',                         None,    None, True,        1),   ('  ^hat + identities=(bar) {')),
         (('hat foo + identities=(bar) flags=(complain) {',     None,    None, True,        0),   ('hat foo + identities=(bar) flags=(complain) {')),
+
+        (('profile "foo+identities=(bar)" {',                  None,    None, False,       0),   ('profile "foo+identities=(bar)" {')),  # stays quoted
+        (('profile foo "/attach+objects=x" {',                 None,    None, False,       0),   ('profile foo "/attach+objects=x" {')),
+        (('^"hat+objects=x" {',                                None,    None, True,        1),   ('  ^"hat+objects=x" {')),
     )
 
     def _run_test(self, params, expected):
