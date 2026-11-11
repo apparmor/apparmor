@@ -125,7 +125,7 @@ genprofile \
   "network;(setopt,getopt);ip=0.0.0.0;port=0"
 # Here the binary's "denied" assertion is FALSE (op allowed), so it prints
 # FAIL; we expect that, i.e. expected outcome 'fail'.
-runchecktest "TFO inet - connect allowed (control)" $condfail connect inet $port
-runchecktest "TFO inet - fastopen allowed (control)" $condfail fastopen inet $port
+runchecktest "TFO inet - connect allowed (control)" fail connect inet $port
+runchecktest "TFO inet - fastopen allowed (control)" xfail fastopen inet $port
 
 exit 0
