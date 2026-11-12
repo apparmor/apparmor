@@ -26,7 +26,7 @@ bin=$pwd
 # Need fine-grained inet mediation (connect/send are separable only there).
 # downgrades do not seen to work correctly here so af_mask + parser
 # supporting fine grained permissions is not enough
-requires_any_of_kernel_features network_v8/af_inet network_v9/af_inet
+requires_any_of_kernel_features net network_v8 network_v9
 requires_parser_support "network (send) ip=::1,"
 
 settest net_inet_tcp_fastopen
@@ -125,7 +125,7 @@ genprofile \
   "network;(setopt,getopt);ip=0.0.0.0;port=0"
 # Here the binary's "denied" assertion is FALSE (op allowed), so it prints
 # FAIL; we expect that, i.e. expected outcome 'fail'.
-runchecktest "TFO inet - connect allowed (control)" $condfail connect inet $port
-runchecktest "TFO inet - fastopen allowed (control)" $condfail fastopen inet $port
+runchecktest "TFO inet - connect allowed (control)" fail connect inet $port
+runchecktest "TFO inet - fastopen allowed (control)" xfail fastopen inet $port
 
 exit 0

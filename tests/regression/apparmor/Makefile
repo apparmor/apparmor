@@ -150,6 +150,7 @@ SRC=access.c \
     mount.c \
     named_pipe.c \
     net_inet_rcv.c \
+    net_inet_sctp.c \
     net_inet_snd.c \
     net_inet_tcp_fastopen.c \
     net_raw.c \
@@ -327,6 +328,7 @@ TESTS=aa_exec \
       namespaces \
       net_iface \
       net_inet \
+      net_inet_sctp \
       net_inet_tcp_fastopen \
       net_raw \
       overlayfs_kernel \
