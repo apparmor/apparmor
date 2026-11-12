@@ -103,6 +103,17 @@ class AAErrorTests(testlib.AATestTemplate):
             is_error=False
         )
 
+    # Relies on -D rule-merge formating and will have to be updated if its output changes
+    def test_rule_merge_subblock(self):
+        '''merging rules in a block must not stop subblocks being merged'''
+        self.cmd_prefix.extend(['-D', 'rule-merge'])
+        self._run_test(
+            'errors/rule_merge_subblock.sd',
+            "RULE MERGE: deleted 1 file rules, 0 rules\n"
+            "RULE MERGE: deleted 1 file rules, 0 rules\n",
+            is_error=False
+        )
+
     def test_non_existant_profile(self):
         test_profile = os.path.join(self.profile_dir, "does-not-exist.sd")
         self._run_test(
