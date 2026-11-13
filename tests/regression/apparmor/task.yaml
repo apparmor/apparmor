@@ -111,8 +111,6 @@ environment:
     # Error: unix_socket passed. Test 'AF_UNIX pathname socket (seqpacket); confined server w/ a missing af_unix access (create)' was expected to 'fail'
     # Error: unix_socket failed. Test 'AF_UNIX pathname socket (seqpacket); confined client w/ access (rw)' was expected to 'pass'. Reason for failure 'FAIL - setsockopt (SO_RCVTIMEO): Permission denied'
     XFAIL/unix_socket_pathname: opensuse-cloud-tumbleweed debian-cloud-12 debian-cloud-13
-    XFAIL/net_inet_sctp: opensuse-cloud-tumbleweed debian-cloud-12 debian-cloud-13 ubuntu-cloud-22.04 ubuntu-cloud-24.04 ubuntu-cloud-24.10
-    XFAIL/net_inet_tcp_fastopen: opensuse-cloud-tumbleweed debian-cloud-12 debian-cloud-13 ubuntu-cloud-22.04 ubuntu-cloud-24.04 ubuntu-cloud-24.10
 artifacts:
     - bash.log
     - bash.err
