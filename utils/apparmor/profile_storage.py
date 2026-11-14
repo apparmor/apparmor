@@ -42,26 +42,28 @@ from apparmor.translations import init_translation
 
 _ = init_translation()
 
+# Starting with AppArmor 6.0, `ruletypes` also determinates the order of the rules when writing a profile.
+# If you backport changes to `ruletypes` to older versions, make sure to also update `write_order` in `get_rules_clean`.
 ruletypes = {
     'abi':            {'rule': AbiRule,           'ruleset': AbiRuleset},
     'inc_ie':         {'rule': IncludeRule,       'ruleset': IncludeRuleset},
     'all':            {'rule': AllRule,           'ruleset': AllRuleset},
-    'capability':     {'rule': CapabilityRule,    'ruleset': CapabilityRuleset},
-    'change_profile': {'rule': ChangeProfileRule, 'ruleset': ChangeProfileRuleset},
-    'dbus':           {'rule': DbusRule,          'ruleset': DbusRuleset},
-    'file':           {'rule': FileRule,          'ruleset': FileRuleset},
-    'network':        {'rule': NetworkRule,       'ruleset': NetworkRuleset},
-    'ptrace':         {'rule': PtraceRule,        'ruleset': PtraceRuleset},
     'rlimit':         {'rule': RlimitRule,        'ruleset': RlimitRuleset},
-    'signal':         {'rule': SignalRule,        'ruleset': SignalRuleset},
-    'userns':         {'rule': UserNamespaceRule, 'ruleset': UserNamespaceRuleset},
-    'mqueue':         {'rule': MessageQueueRule,  'ruleset': MessageQueueRuleset},
-    'io_uring':       {'rule': IOUringRule,       'ruleset': IOUringRuleset},
-    'mount':          {'rule': MountRule,         'ruleset': MountRuleset},
-    'pivot_root':     {'rule': PivotRootRule,     'ruleset': PivotRootRuleset},
-    'unix':           {'rule': UnixRule,          'ruleset': UnixRuleset},
+    'capability':     {'rule': CapabilityRule,    'ruleset': CapabilityRuleset},
     'cond_block':     {'rule': ConditionalBlock,  'ruleset': ConditionalBlockset},
     'block':          {'rule': BlockRule,         'ruleset': BlockRuleset},
+    'network':        {'rule': NetworkRule,       'ruleset': NetworkRuleset},
+    'dbus':           {'rule': DbusRule,          'ruleset': DbusRuleset},
+    'mount':          {'rule': MountRule,         'ruleset': MountRuleset},
+    'mqueue':         {'rule': MessageQueueRule,  'ruleset': MessageQueueRuleset},
+    'signal':         {'rule': SignalRule,        'ruleset': SignalRuleset},
+    'ptrace':         {'rule': PtraceRule,        'ruleset': PtraceRuleset},
+    'pivot_root':     {'rule': PivotRootRule,     'ruleset': PivotRootRuleset},
+    'unix':           {'rule': UnixRule,          'ruleset': UnixRuleset},
+    'file':           {'rule': FileRule,          'ruleset': FileRuleset},
+    'change_profile': {'rule': ChangeProfileRule, 'ruleset': ChangeProfileRuleset},
+    'userns':         {'rule': UserNamespaceRule, 'ruleset': UserNamespaceRuleset},
+    'io_uring':       {'rule': IOUringRule,       'ruleset': IOUringRuleset},
 }
 
 
@@ -200,31 +202,9 @@ class ProfileStorage:
            Note that the profile header and the closing "}" are _not_ included.
         """
 
-        write_order = [
-            'abi',
-            'inc_ie',
-            'all',
-            'rlimit',
-            'capability',
-            'cond_block',
-            'block',
-            'network',
-            'dbus',
-            'mount',
-            'mqueue',
-            'signal',
-            'ptrace',
-            'pivot_root',
-            'unix',
-            'file',
-            'change_profile',
-            'userns',
-            'io_uring',
-        ]
-
         data = []
 
-        for ruletype in write_order:
+        for ruletype in ruletypes.keys():
             data.extend(self.data[ruletype].get_clean(depth))
 
         return data
