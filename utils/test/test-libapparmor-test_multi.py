@@ -26,7 +26,9 @@ class TestLibapparmorTestMulti(AATest):
 
     def _run_test(self, params, expected):
         # tests[][expected] is a dummy, replace it with the real values
-        if params.split('/')[-1] in log_to_skip:
+        testname = params.split('/')[-1]
+
+        if testname in log_to_skip:
             return
 
         expected = self._parse_libapparmor_test_multi(params)
@@ -72,9 +74,9 @@ class TestLibapparmorTestMulti(AATest):
                     pass  # XXX 'exec' + network? really?
                 elif parsed_items['operation'] == 'ptrace' and label == 'name2' and params.endswith('/ptrace_garbage_lp1689667_1'):
                     pass  # libapparmor would better qualify this case as invalid event
-                elif not parsed_items.get(label, None):
+                elif not parsed_items.get(label, None) and not (testname in log_with_empty_fields and parsed_items[label] == ''):
                     raise Exception('parsed_items[{}] not set'.format(label))
-                elif not expected.get(label, None):
+                elif not expected.get(label, None) and not (testname in log_with_empty_fields and expected[label] == ''):
                     raise Exception('expected[{}] not set'.format(label))
                 else:
                     self.assertEqual(str(parsed_items[label]), expected[label], label + ' differs')
@@ -166,11 +168,17 @@ log_to_profile_skip = [
 
 # tests that cause an empty log
 log_to_profile_known_empty_log = [
+    'file_empty_denied_mask-lp1545776',  # file event with empty denied mask
     'file_without_filename',  # file event without filename
     'ptrace_garbage_lp1689667_1',  # no denied= in log
     'ptrace_no_denied_mask',  # no denied= in log
     'unconfined-change_hat',  # unconfined trying to change_hat, which isn't allowed
     'testcase_unix_no_denied_issue541',  # no denied_mask in log
+]
+
+# tests that have empty (but non-None) fields
+log_with_empty_fields = [
+    'file_empty_denied_mask-lp1545776',  # file event with empty denied mask
 ]
 
 

@@ -1,0 +1,2 @@
+/root/tmp/bash {
+}

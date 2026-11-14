@@ -480,6 +480,8 @@ class ReadLog:
                 return 'net'
             elif event['denied_mask'] or event['operation'] == 'file_lock':
                 return 'file'
+            elif event['denied_mask'] == '':  # lp1545776
+                return 'unknown'
             else:
                 raise AppArmorException('unknown file or network event type')
 
