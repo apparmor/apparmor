@@ -1531,9 +1531,9 @@ int aa_query_file_path_len(uint32_t mask, const char *label, size_t label_len,
 {
 	autofree char *query = NULL;
 
-	/* + 1 for null separator */
-	size_t size = AA_QUERY_CMD_LABEL_SIZE + label_len + 1 + path_len;
-	query = malloc(size + 1);
+	/* + 1 for null separator, + 1 for class */
+	size_t size = AA_QUERY_CMD_LABEL_SIZE + label_len + 1 + 1 + path_len;
+	query = malloc(size);
 	if (!query)
 		return -1;
 	memcpy(query + AA_QUERY_CMD_LABEL_SIZE, label, label_len);
@@ -1587,8 +1587,8 @@ int aa_query_link_path_len(const char *label, size_t label_len,
 {
 	autofree char *query = NULL;
 
-	/* + 1 for null separators */
-	size_t size = AA_QUERY_CMD_LABEL_SIZE + label_len + 1 + target_len +
+	/* + 1 for null separators, + 1 for class */
+	size_t size = AA_QUERY_CMD_LABEL_SIZE + label_len + 1 + 1 + target_len +
 		1 + link_len;
 	size_t pos = AA_QUERY_CMD_LABEL_SIZE;
 
