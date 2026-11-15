@@ -35,6 +35,7 @@
 #include <sys/apparmor_private.h>
 
 #include <algorithm>
+#include <deque>
 #include <unordered_map>
 
 #include "capability.h"
@@ -232,7 +233,9 @@ static struct capability_table base_capability_table[] = {
 static const size_t BASE_CAP_TABLE_SIZE = sizeof(base_capability_table)/sizeof(struct capability_table);
 
 class capability_lookup {
-	vector<capability_table> cap_table;
+	/* deque, not vector: the maps below hold references to the
+	 * elements, and push_back on a deque does not move them */
+	deque<capability_table> cap_table;
 	// Use unordered_map to avoid pulling in two map implementations
 	// We may want to switch to boost::multiindex to avoid duplication
 	unordered_map<string, capability_table&> name_cap_map;
@@ -247,10 +250,9 @@ class capability_lookup {
 	}
 	public:
 	capability_lookup() :
-			cap_table(vector<capability_table>()),
+			cap_table(deque<capability_table>()),
 			name_cap_map(unordered_map<string, capability_table&>(BASE_CAP_TABLE_SIZE)),
 			int_cap_map(unordered_map<unsigned int, capability_table&>(BASE_CAP_TABLE_SIZE)) {
-		cap_table.reserve(BASE_CAP_TABLE_SIZE);
 		for (size_t i=0; i<BASE_CAP_TABLE_SIZE; i++) {
 			add_capability_table_entry_raw(base_capability_table[i]);
 		}
