@@ -772,6 +772,8 @@ rules: rules opt_prefix network_rule
 								rule_mode_t::UNSPECIFIED);
 				if (!rule)
 					yyerror(_("Memory allocation error."));
+				/* only what the network rule allows */
+				rule->perms = $3->perms;
 				if (!rule->add_prefix($2, error))
 					yyerror("%s", error);
 				$1->add_rule(rule);
