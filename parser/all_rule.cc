@@ -95,10 +95,8 @@ void all_rule::add_implied_rules(Profile &prof)
 			yyerror(_("Memory allocation error."));
 		}
 		int perms = (AA_BASE_PERMS & ~(AA_EXEC_TYPE | AA_MAY_EXEC));
-		if (rule_mode != rule_mode_t::DENY) {
-			/* duplicate to other permission set */
-			perms |= perms << AA_OTHER_SHIFT;
-		}
+		/* duplicate to other permission set */
+		perms |= perms << AA_OTHER_SHIFT;
 		entry = new_entry(path, perms, NULL);
 		if (!entry) {
 			yyerror(_("Memory allocation error."));
