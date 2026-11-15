@@ -1909,6 +1909,48 @@ run_tests()
 	    features_file=$default_features_file
 	fi
 
+	# without fine-grained unix mediation unix rules are downgraded to
+	# network unix rules; a deny rule without conditionals must not
+	# be dropped
+	features_file="features.no-af_unix"
+	verify_binary_inequality "deny unix is kept without af_unix" \
+			     "/t { network, deny unix, }" \
+			     "/t { network, }"
+
+	verify_binary_equality "deny unix is deny network unix without af_unix" \
+			   "/t { network, deny unix, }" \
+			   "/t { network, deny unix, deny network unix, }"
+
+	verify_binary_inequality "deny unix type is kept without af_unix" \
+			     "/t { network, deny unix type=stream, }" \
+			     "/t { network, }"
+
+	verify_binary_equality "deny unix type is deny network unix type without af_unix" \
+			   "/t { network, deny unix type=stream, }" \
+			   "/t { network, deny unix type=stream, deny network unix stream, }"
+
+	verify_binary_inequality "audit deny unix with permissions is kept without af_unix" \
+			     "/t { network, audit deny unix (send) type=dgram, }" \
+			     "/t { network, }"
+
+	verify_binary_inequality "deny unix with permissions keeps its permissions without af_unix" \
+			     "/t { network, deny unix (send) type=dgram, }" \
+			     "/t { network, deny unix type=dgram, }"
+
+	verify_binary_equality "audit deny unix is audit deny network unix without af_unix" \
+			   "/t { network, audit deny unix, }" \
+			   "/t { network, audit deny unix, audit deny network unix, }"
+
+	verify_binary_equality "audit deny unix type is audit deny network unix type without af_unix" \
+			   "/t { network, audit deny unix type=stream, }" \
+			   "/t { network, audit deny unix type=stream, audit deny network unix stream, }"
+
+	verify_binary_inequality "audit deny unix with permissions keeps its audit without af_unix" \
+			     "/t { network, audit deny unix (send) type=dgram, }" \
+			     "/t { network, deny unix (send) type=dgram, }"
+	# return to default
+	features_file=$default_features_file
+
 	# Equality tests that set explicit priority level
 	# TODO: priority handling for file paths is currently broken
 
