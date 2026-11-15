@@ -1823,6 +1823,29 @@ run_tests()
                        "/t { set rlimit memlock <= $((2 * 1024 * 1024)) KB, }" \
                        "/t { set rlimit memlock <= $((2 * 1024 * 1024 * 1024)) , }"
 
+	# glob characters and escaped ^ or $ are literal in a character class
+	verify_binary_equality "? in a character class is literal" \
+			'/t { /a[?]b r, }' \
+			'/t { /a\?b r, }'
+
+	verify_binary_equality "* in a character class is literal" \
+			'/t { /c[x*]d r, }' \
+			'/t { /c[x\*]d r, }' \
+			'/t { /c{x,\*}d r, }'
+
+	verify_binary_equality "escaped ^ in a character class is literal" \
+			'/t { /k[\^a] r, }' \
+			'/t { /k[a^] r, }' \
+			'/t { /k{a,^} r, }'
+
+	verify_binary_inequality "escaped ^ in a character class does not negate it" \
+			'/t { /k[\^a] r, }' \
+			'/t { /k[^a] r, }'
+
+	verify_binary_equality "escaped \$ in a character class is literal" \
+			'/t { /k[\$a] r, }' \
+			'/t { /k[a$] r, }'
+
 	run_port_range=$(kernel_features network_v8/af_inet)
 	if [ "$run_port_range" != "true" ]; then
 	    echo -e "\nSkipping network af_inet tests. $run_port_range\n"
