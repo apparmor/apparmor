@@ -1854,6 +1854,29 @@ run_tests()
 			'/t { /k[\$a] r, }' \
 			'/t { /k[a$] r, }'
 
+	# the unix rules generated for a network rule that covers
+	# AF_UNIX carry the network rule's permissions
+	verify_binary_equality "network unix rule without permissions implies all unix permissions" \
+			"/t { network unix stream, }" \
+			"/t { network unix stream, unix type=stream, }"
+
+	verify_binary_equality "network unix rule implies unix rule with the same permissions" \
+			"/t { network (create) unix stream, }" \
+			"/t { unix (create) type=stream, }" \
+			"/t { network (create) unix stream, unix (create) type=stream, }"
+
+	verify_binary_inequality "network unix rule does not imply other unix permissions" \
+			"/t { network (create) unix stream, }" \
+			"/t { network (create) unix stream, unix type=stream, }"
+
+	verify_binary_equality "deny network unix rule implies deny unix rule with the same permissions" \
+			"/t { unix, deny network (bind) unix stream, }" \
+			"/t { unix, deny network (bind) unix stream, deny unix (bind) type=stream, }"
+
+	verify_binary_inequality "deny network unix rule does not deny other unix permissions" \
+			"/t { unix, deny network (bind) unix stream, }" \
+			"/t { unix, deny network (bind) unix stream, deny unix type=stream, }"
+
 	run_port_range=$(kernel_features network_v8/af_inet)
 	if [ "$run_port_range" != "true" ]; then
 	    echo -e "\nSkipping network af_inet tests. $run_port_range\n"

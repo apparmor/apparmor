@@ -102,7 +102,8 @@ void unix_rule::move_peer_conditionals(struct cond_entry *conds)
 	}
 }
 
-unix_rule::unix_rule(unsigned int type_p, audit_t audit_p, rule_mode_t rule_mode_p):
+unix_rule::unix_rule(unsigned int type_p, perm32_t perms_p, audit_t audit_p,
+		     rule_mode_t rule_mode_p):
 	af_rule(AF_UNIX), addr(NULL), peer_addr(NULL)
 {
 	if (type_p != 0xffffffff) {
@@ -116,7 +117,7 @@ unix_rule::unix_rule(unsigned int type_p, audit_t audit_p, rule_mode_t rule_mode
 			yyerror(_("Memory allocation error."));
 		}
 	}
-	perms = AA_VALID_NET_PERMS;
+	perms = perms_p;
 	audit = audit_p;
 	rule_mode = rule_mode_p;
 	/* if this constructor is used, then there's already a
