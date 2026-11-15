@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION audit prompt capability rule
+#=EXRESULT FAIL
+#
+/usr/bin/foo {
+  audit prompt capability chown setuid,
+}

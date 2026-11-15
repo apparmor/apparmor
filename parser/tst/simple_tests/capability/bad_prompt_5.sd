@@ -1,0 +1,12 @@
+#
+#=DESCRIPTION capability rule in a block nested in a prompt block
+#=EXRESULT FAIL
+#
+/usr/bin/foo {
+  prompt {
+    {
+      /foo r,
+      capability chown,
+    }
+  }
+}

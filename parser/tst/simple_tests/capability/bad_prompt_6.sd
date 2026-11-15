@@ -1,0 +1,10 @@
+#
+#=DESCRIPTION audit capability rule in a prompt block
+#=EXRESULT FAIL
+#
+/usr/bin/foo {
+  prompt {
+    /foo r,
+    audit capability chown,
+  }
+}

@@ -1,0 +1,9 @@
+#
+#=DESCRIPTION capability rule in a prompt block
+#=EXRESULT FAIL
+#
+/usr/bin/foo {
+  prompt {
+    capability chown,
+  }
+}
