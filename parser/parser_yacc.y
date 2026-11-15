@@ -1705,16 +1705,11 @@ capability:	TOK_CAPABILITY caps TOK_END_OF_RULE
 caps: { /* nothing */ $$ = 0; }
 	| caps TOK_ID
 	{
-		int backmap, cap = name_to_capability($2);
+		int cap = name_to_capability($2);
 		if (cap == -1)
 			yyerror(_("Invalid capability %s."), $2);
 		free($2);
-		backmap = capability_backmap(cap);
-		if (backmap != NO_BACKMAP_CAP && !capability_in_kernel(cap)) {
-			/* TODO: special backmap warning */
-			cap = backmap;
-		}
-		$$ = $1 | CAP_TO_MASK(cap);
+		$$ = $1 | CAP_TO_MASK(capability_for_rule(cap));
 	}
 
 %%

@@ -465,6 +465,22 @@ bool capability_in_kernel(unsigned int cap)
 	return cap_table.capability_in_kernel(cap);
 }
 
+/*
+ * The capability that a rule naming @cap is compiled to: @cap itself,
+ * or the older capability it is back-mapped to when the kernel does
+ * not support @cap and the table has a back-map for it.
+ */
+unsigned int capability_for_rule(unsigned int cap)
+{
+	int backmap = capability_backmap(cap);
+
+	if (backmap != NO_BACKMAP_CAP && !capability_in_kernel(cap)) {
+		/* TODO: special backmap warning */
+		return backmap;
+	}
+	return cap;
+}
+
 void __debug_capabilities(uint64_t capset, const char *name)
 {
 	cap_table.__debug_capabilities(capset, name);
@@ -1635,6 +1651,50 @@ int test_cap_table_growth(void)
 	return rc;
 }
 
+/*
+ * A capability that only the policy feature set lists, and that neither
+ * the parser's table nor the kernel knows, must be compiled as itself
+ * and not back-mapped to another capability.
+ */
+int test_cap_policy_only(void)
+{
+	int rc = 0;
+	unsigned int ncaps = 0;
+	string mask;
+	aa_features *features = NULL;
+	const char *newcap = "tst_policycap";
+
+	/* the mask lists capabilities by number, from 0 */
+	while (strcmp(capability_to_name(ncaps), "invalid-capability") != 0) {
+		mask += " ";
+		mask += capability_to_name(ncaps);
+		ncaps++;
+	}
+	mask += " ";
+	mask += newcap;
+	string feature_str = "caps {mask {" + mask + "\n}\n}\n";
+
+	MY_TEST(aa_features_new_from_string(&features, feature_str.c_str(),
+					    feature_str.size()) == 0,
+		"build features from string");
+	if (!features)
+		return 1;
+	MY_TEST(add_cap_feature_mask(features, capability_flags::POLICY_FEATURE),
+		"add policy caps/mask with an unknown capability");
+	aa_features_unref(features);
+
+	MY_TEST(name_to_capability(newcap) == (int) ncaps,
+		"policy-only capability: name_to_capability");
+	MY_TEST(!capability_in_kernel(ncaps),
+		"policy-only capability: not in kernel");
+	MY_TEST(capability_backmap(ncaps) == NO_BACKMAP_CAP,
+		"policy-only capability: no backmap");
+	MY_TEST(capability_for_rule(ncaps) == ncaps,
+		"policy-only capability: compiled as itself");
+
+	return rc;
+}
+
 int main(void)
 {
 	int rc = 0;
@@ -1657,6 +1717,10 @@ int main(void)
 		rc = retval;
 
 	retval = test_cap_table_growth();
+	if (retval != 0)
+		rc = retval;
+
+	retval = test_cap_policy_only();
 	if (retval != 0)
 		rc = retval;
 

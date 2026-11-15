@@ -89,5 +89,6 @@ bool add_cap_feature_mask(struct aa_features *features, capability_flags flags);
 void clear_cap_flag(capability_flags flags);
 int capability_backmap(unsigned int cap);
 bool capability_in_kernel(unsigned int cap);
+unsigned int capability_for_rule(unsigned int cap);
 
 #endif /* __AA_CAPABILITY_H */
