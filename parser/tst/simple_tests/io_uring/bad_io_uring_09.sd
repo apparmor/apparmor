@@ -1,0 +1,8 @@
+#
+#=Description deny io_uring unknown permission
+#=EXRESULT FAIL
+#
+/usr/bin/io_uring-test {
+  deny io_uring (bogus),
+
+}
