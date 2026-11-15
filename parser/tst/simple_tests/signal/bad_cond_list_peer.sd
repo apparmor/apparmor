@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION signal peer conditional with a list of values
+#=EXRESULT FAIL
+#
+/usr/bin/foo {
+  signal peer=(a b),
+}

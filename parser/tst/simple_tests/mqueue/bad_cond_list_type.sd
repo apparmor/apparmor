@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION mqueue type conditional with a list of values
+#=EXRESULT FAIL
+#
+/usr/bin/foo {
+  mqueue type=(posix sysv) /q,
+}
