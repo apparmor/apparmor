@@ -217,11 +217,29 @@ void unix_rule::downgrade_rule(Profile &prof) {
 		if(!netv8->add_prefix({0, audit, rule_mode, owner}, error))
 			yyerror("%s", error);
 		prof.main_block->add_rule(netv8);
+	} else if (!addr && !peer_addr && !label && !peer_label) {
+		/* a deny rule without conditionals loses nothing in the
+		 * downgrade, so it is kept as the same deny network rule.
+		 * add_prefix() stores a plain deny as audit IMPLIED (quiet)
+		 * and audit deny as audit UNSPECIFIED, so turn that back
+		 * into the prefix the rule was written with
+		 */
+		bool quiet = audit == audit_t::IMPLIED;
+		compat_net->deny[AF_UNIX] |= mask;
+		if (quiet)
+			compat_net->quiet[AF_UNIX] |= mask;
+		const char *error;
+		network_rule *netv8 = new network_rule(perms, AF_UNIX, sock_type_n);
+		prefixes p = {0, audit, rule_mode, owner};
+		p.audit = quiet ? audit_t::UNSPECIFIED : audit_t::FORCE;
+		if(!netv8->add_prefix(p, error))
+			yyerror("%s", error);
+		prof.main_block->add_rule(netv8);
 	} else {
-		/* deny rules have to be dropped because the downgrade makes
-		 * the rule less specific meaning it will make the profile more
-		 * restrictive and may end up denying accesses that might be
-		 * allowed by the profile.
+		/* deny rules with conditionals have to be dropped because
+		 * the downgrade makes the rule less specific meaning it will
+		 * make the profile more restrictive and may end up denying
+		 * accesses that might be allowed by the profile.
 		 */
 		if (parseopts.warn & WARN_RULE_NOT_ENFORCED)
 			rule_t::warn_once(prof.name, "deny unix socket rule not enforced, can't be downgraded to generic network rule\n");
