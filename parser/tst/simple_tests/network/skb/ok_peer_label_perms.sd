@@ -1,0 +1,8 @@
+#
+#=DESCRIPTION network peer label with peer permissions
+#=EXRESULT PASS
+#
+
+profile a_profile {
+  network (connect, send, receive) peer=(label=foo),
+}

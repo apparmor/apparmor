@@ -1905,6 +1905,11 @@ run_tests()
 	    verify_binary_inequality "network peer port range allows more than single port" \
 			     "/t { network peer=(port=3456-3460), }" \
 			     "/t { network peer=(port=3456), }"
+
+	    verify_binary_equality "network peer label applies only to inet and inet6" \
+			   "/t { network peer=(label=foo), }" \
+			   "/t { network inet peer=(label=foo), \
+				 network inet6 peer=(label=foo), }"
 	    # return to default
 	    features_file=$default_features_file
 	fi
