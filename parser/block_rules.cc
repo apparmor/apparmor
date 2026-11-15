@@ -139,6 +139,8 @@ void block_rules::add_capabilities(struct prefixes prefix, uint64_t cap)
 
 	if (prefix.owner != owner_t::UNSPECIFIED)
 		yyerror(_("owner conditional not allowed on capability rules"));
+	if (prefix.rule_mode == rule_mode_t::PROMPT)
+		yyerror(_("prompt prefix not allowed on capability rules"));
 
 	if (prefix.rule_mode == rule_mode_t::DENY && prefix.audit == audit_t::FORCE) {
 		caps.deny |= cap;
