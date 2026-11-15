@@ -1519,6 +1519,14 @@ test_block_configurations()
 			       "/t { if not false { all, } }" \
 			       "/t { unix, dbus, io_uring, mqueue, ptrace, signal, userns, mount, remount, umount, pivot_root, network, /{**,} rwlkm, priority=-1 /{**,} ix, capability, }"
 
+	verify_binary_equality "deny all denies file access by owner and other" \
+			       "/t { deny all, }" \
+			       "/t { deny all, deny /{**,} rwlkm, }"
+
+	verify_binary_equality "audit deny all denies file access by owner and other" \
+			       "/t { audit deny all, }" \
+			       "/t { audit deny all, audit deny /{**,} rwlkm, }"
+
 	######## exec transition table #######
 	verify_binary_equality "exec trans table Px is setup correctly when in subblock" \
 			       "/t { { /foo Px -> target, } }" \
