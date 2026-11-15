@@ -344,7 +344,10 @@ class capability_lookup {
 				return add_cap_result::ERROR;
 			}
 			new_entry.cap = cap;
-			new_entry.backmap = 0;
+			/* a capability the parser does not know has no older
+			 * capability to fall back to
+			 */
+			new_entry.backmap = NO_BACKMAP_CAP;
 			new_entry.flags = flag;
 			try {
 				this->add_capability_table_entry_raw(new_entry);
