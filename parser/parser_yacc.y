@@ -686,7 +686,7 @@ opt_priority: { $$ = 0; }
 		if (tmp > MAX_POLICY_PRIORITY)
 			yyerror("invalid priority %ld > %d", tmp, MAX_POLICY_PRIORITY);
 		if (tmp < MIN_POLICY_PRIORITY)
-			yyerror("invalid priority %ld > %d", tmp, MIN_POLICY_PRIORITY);
+			yyerror("invalid priority %ld < %d", tmp, MIN_POLICY_PRIORITY);
 		$$ = tmp;
 	}
 
