@@ -1,0 +1,5 @@
+#
+# priority below the minimum
+/does/not/exist {
+  priority=-1001 /a r,
+}

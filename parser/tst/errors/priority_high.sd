@@ -1,0 +1,5 @@
+#
+# priority above the maximum
+/does/not/exist {
+  priority=1001 /a r,
+}

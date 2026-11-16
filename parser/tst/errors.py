@@ -75,6 +75,18 @@ class AAErrorTests(testlib.AATestTemplate):
             "AppArmor parser error for errors/double.sd in profile errors/includes/busted at line 66: Could not open 'does-not-exist'\n",
         )
 
+    def test_priority_low(self):
+        self._run_test(
+            'errors/priority_low.sd',
+            "AppArmor parser error for errors/priority_low.sd in profile errors/priority_low.sd at line 4: invalid priority -1001 < -1000\n",
+        )
+
+    def test_priority_high(self):
+        self._run_test(
+            'errors/priority_high.sd',
+            "AppArmor parser error for errors/priority_high.sd in profile errors/priority_high.sd at line 4: invalid priority 1001 > 1000\n",
+        )
+
     def test_modefail(self):
         self._run_test(
             'errors/modefail.sd',
