@@ -767,13 +767,13 @@ rules: rules opt_prefix network_rule
 		auto nm_af_unix = $3->network_map.find(AF_UNIX);
 		if (nm_af_unix != $3->network_map.end()) {
 			for (auto& entry : nm_af_unix->second) {
+				/* only what the network rule allows */
 				unix_rule *rule = new unix_rule(entry.type,
+								$3->perms,
 								audit_t::UNSPECIFIED,
 								rule_mode_t::UNSPECIFIED);
 				if (!rule)
 					yyerror(_("Memory allocation error."));
-				/* only what the network rule allows */
-				rule->perms = $3->perms;
 				if (!rule->add_prefix($2, error))
 					yyerror("%s", error);
 				$1->add_rule(rule);
