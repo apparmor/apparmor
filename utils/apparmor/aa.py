@@ -1545,7 +1545,6 @@ def set_logfile(filename):
 
 def do_logprof_pass(logmark=''):
     # set up variables for this pass
-    global active_profiles
     global sev_db
 #    aa = hasher()
 #     changed = dict()
