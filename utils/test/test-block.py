@@ -280,7 +280,7 @@ class BlockTestIsCovered(AATest):
 
 class BlockTestSeverity(AATest):
     tests = (
-        ('  audit {\n    /etc/shadow r,\n  }',                      5),
+        ('  audit {\n    /etc/shadow r,\n  }',                      7),
         ('  audit {\n    /etc/passwd r,\n    /etc/shadow w,\n  }',  9),  # the highest one wins
         ('  audit {\n    /etc/passwd r,\n  }',                      4),
         ('  audit {\n    {\n      /etc/shadow w,\n    }\n  }',      9),  # nested
