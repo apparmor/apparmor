@@ -813,7 +813,7 @@ rules:	rules opt_prefix change_profile
 		if (!$3)
 			yyerror(_("Assert: `change_profile' returned NULL."));
 		if ($2.owner != OWNER_UNSPECIFIED)
-			yyerror(_("owner conditional not allowed on unix rules"));
+			yyerror(_("owner conditional not allowed on change_profile rules"));
 		if (($2.rule_mode == RULE_DENY) && $2.audit == AUDIT_FORCE) {
 			$3->rule_mode = RULE_DENY;
 		} else if ($2.rule_mode == RULE_DENY) {
@@ -919,11 +919,12 @@ rules: rules TOK_SET TOK_RLIMIT TOK_ID TOK_LE TOK_VALUE opt_id TOK_END_OF_RULE
 			case RLIMIT_SIGPENDING:
 #ifdef RLIMIT_RTPRIO
 			case RLIMIT_RTPRIO:
+#endif
 				if (!end || $6 == end || $7 || tmp < 0)
 					yyerror("RLIMIT '%s' invalid value %s %s\n", $4, $6, $7 ? $7 : "");
 				value = tmp;
 				break;
-#endif
+
 #ifdef RLIMIT_NICE
 			case RLIMIT_NICE:
 				if (!end || $6 == end || $7)

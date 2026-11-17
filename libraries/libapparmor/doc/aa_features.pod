@@ -40,6 +40,8 @@ aa_features_write_to_file - write a string representation of an aa_features obje
 
 aa_features_is_equal - equality test for two aa_features objects
 
+aa_features_check - check if an aa_features object matches one from a path
+
 aa_features_supports - provides aa_features object support status
 
 aa_features_id - provides unique identifier for an aa_features object
@@ -69,6 +71,8 @@ B<int aa_features_write_to_fd(aa_features *features, int fd);>
 B<int aa_features_write_to_file(aa_features *features, int dirfd, const char *path);>
 
 B<bool aa_features_is_equal(aa_features *features1, aa_features *features2);>
+
+B<int aa_features_check(int dirfd, const char *path, aa_features *features);>
 
 B<bool aa_features_supports(aa_features *features, const char *str);>
 
@@ -122,6 +126,9 @@ aa_features_is_equal() can be used to detect if the I<features1> and
 I<features2> objects are equal. The definition of equality is private to
 libapparmor and may be changed in ways that do not break backward
 compatibility.
+
+aa_features_check() can be used to check whether a I<features> object matches
+the features defined by the given directory file descriptor and path.
 
 The aa_features_supports() function can be used to query the I<features> object
 to determine if a feature is supported. The I<str> argument should be equal to

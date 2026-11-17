@@ -42,6 +42,7 @@ profile syslogd /{usr/,}{bin,sbin}/syslogd {
   /var/log/**                   rw,
   @{run}/syslog.pid           krwl,
   @{run}/syslogd.pid          krwl,
+  @{run}/syslogd.cache        mrw,
   @{run}/utmp                 rw,
   /var/spool/compaq/nic/messages_fifo rw,
 

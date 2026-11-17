@@ -83,8 +83,8 @@ done
 gen_send_no_connect()
 {
 	genprofile \
-	  "network;(send,receive,accept,listen,bind);ip=127.0.0.1;port=$port" \
-	  "network;(send,receive,accept,listen,bind);ip=::1;port=$port" \
+	  "network;(create,send,receive,accept,listen,bind);ip=127.0.0.1;port=$port" \
+	  "network;(create,send,receive,accept,listen,bind);ip=::1;port=$port" \
 	  "network;(send,receive);peer=(ip=127.0.0.1)" \
 	  "network;(send,receive);peer=(ip=::1)" \
 	  "network;(setopt,getopt);ip=0.0.0.0;port=0" \
@@ -120,7 +120,7 @@ fi
 
 # ---- positive control: when connect IS allowed, both succeed (no false deny) ----
 genprofile \
-  "network;(connect,send,receive,accept,listen,bind);ip=127.0.0.1;port=$port" \
+  "network;(create,connect,send,receive,accept,listen,bind);ip=127.0.0.1;port=$port" \
   "network;(connect,send,receive);peer=(ip=127.0.0.1)" \
   "network;(setopt,getopt);ip=0.0.0.0;port=0"
 # Here the binary's "denied" assertion is FALSE (op allowed), so it prints
