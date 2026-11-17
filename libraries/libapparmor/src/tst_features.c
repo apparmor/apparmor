@@ -302,5 +302,9 @@ int main(void)
 	if (retval)
 		rc = retval;
 
+	retval = test_features_is_equal_unterminated();
+	if (retval)
+		rc = retval;
+
 	return rc;
 }
