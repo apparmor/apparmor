@@ -1687,6 +1687,26 @@ static int test_aaregex_to_pcre(void)
 	MY_REGEX_TEST("{alpha,b[\\{a,b\\}]t,gamma}", "(alpha|b[\\{a,b\\}]t|gamma)", pattern_t::Regex);
 	MY_REGEX_TEST("{alpha,b[\\{a\\,b\\}]t,gamma}", "(alpha|b[\\{a\\,b\\}]t|gamma)", pattern_t::Regex);
 
+	/*   -- glob characters are literal inside a class */
+	MY_REGEX_TEST("b[?]t", "b[?]t", pattern_t::Regex);
+	MY_REGEX_TEST("b[*]t", "b[*]t", pattern_t::Regex);
+	MY_REGEX_TEST("b[x**]t", "b[x**]t", pattern_t::Regex);
+	MY_REGEX_TEST("/[*]", "/[*]", pattern_t::Regex);
+	MY_REGEX_TEST("/[*]/", "/[*]/", pattern_t::Regex);
+	MY_REGEX_TEST("b[\\*]t", "b[\\*]t", pattern_t::Regex);
+	MY_REGEX_TEST("b[\\?]t", "b[?]t", pattern_t::Regex);
+	MY_REGEX_TEST("b[?]t?", "b[?]t[^/\\x00]", pattern_t::Regex);
+	MY_REGEX_TEST("b[*]t*", "b[*]t[^/\\x00]*", pattern_t::Regex);
+	MY_REGEX_EXT_TEST(glob_null, "b[?*]t", "b[?*]t", pattern_t::Regex);
+
+	/*   -- an escaped ^ or $ stays escaped inside a class */
+	MY_REGEX_TEST("b[^lor]t", "b[^lor]t", pattern_t::Regex);
+	MY_REGEX_TEST("b[\\^lor]t", "b[\\^lor]t", pattern_t::Regex);
+	MY_REGEX_TEST("b[l^or]t", "b[l^or]t", pattern_t::Regex);
+	MY_REGEX_TEST("b[l\\^or]t", "b[l\\^or]t", pattern_t::Regex);
+	MY_REGEX_TEST("b[lo$r]t", "b[lo$r]t", pattern_t::Regex);
+	MY_REGEX_TEST("b[\\$lor]t", "b[\\$lor]t", pattern_t::Regex);
+
 	/* test different globbing behavior conversion */
 	MY_REGEX_EXT_TEST(glob_default, "/foo/**", "/foo/[^/\\x00][^\\x00]*", pattern_t::TailGlob);
 	MY_REGEX_EXT_TEST(glob_null, "/foo/**", "/foo/[^/].*", pattern_t::TailGlob);
