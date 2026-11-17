@@ -174,6 +174,9 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 				 * non-escaped regex follows)
 				 */
 				pcre.append("\\*");
+			} else if (incharclass) {
+				/* don't expand inside [] */
+				pcre.append(1, *sptr);
 			} else {
 				if ((pcre.length() > 0) && pcre[pcre.length() - 1]  == '/') {
 					#if 0
@@ -234,6 +237,9 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 				 * so no need to escape, just skip
 				 * transform
 				 */
+				pcre.append(1, *sptr);
+			} else if (incharclass) {
+				/* don't expand inside [] */
 				pcre.append(1, *sptr);
 			} else {
 				update_re_pos(sptr - aare);
@@ -358,6 +364,10 @@ pattern_t convert_aaregex_to_pcre(const char *aare, int anchor, int glob,
 		case '^':
 		case '$':
 			if (incharclass) {
+				/* keep an escaped ^ escaped, so that
+				 * [\^a] does not become a negated class */
+				if (bEscape)
+					pcre.append("\\");
 				pcre.append(1, *sptr);
 			} else {
 				pcre.append("\\");
