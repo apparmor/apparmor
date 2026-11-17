@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION no whitespace between the exec target and +objects=
+#=EXRESULT FAIL
+#
+profile test {
+  px /usr/bin/child -> child+objects={},
+}

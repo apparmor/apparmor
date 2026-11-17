@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION no profile name before +identities=
+#=EXRESULT FAIL
+#
+profile +identities=(foo) {
+  file,
+}

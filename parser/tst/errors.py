@@ -81,6 +81,18 @@ class AAErrorTests(testlib.AATestTemplate):
             "AppArmor parser error for errors/modefail.sd in profile errors/modefail.sd at line 6: syntax error, unexpected TOK_ID, expecting TOK_MODE\n",
         )
 
+    def test_delegation_space(self):
+        self._run_test(
+            'errors/delegation_space.sd',
+            "AppArmor parser error for errors/delegation_space.sd in profile errors/delegation_space.sd at line 4: Missing whitespace before '+identities=' in 'foo+identities=(bar)'\n",
+        )
+
+    def test_delegation_noname(self):
+        self._run_test(
+            'errors/delegation_noname.sd',
+            "AppArmor parser error for errors/delegation_noname.sd in profile errors/delegation_noname.sd at line 4: Missing name before '+identities='\n",
+        )
+
     def test_multi_include(self):
         self._run_test(
             'errors/multi_include.sd',

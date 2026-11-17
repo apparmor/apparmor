@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION no whitespace between a path profile name and +identities=
+#=EXRESULT FAIL
+#
+/usr/bin/p+identities=(foo) {
+  file,
+}

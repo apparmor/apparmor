@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION +objects= in a quoted exec target is part of the target
+#=EXRESULT PASS
+#
+profile test {
+  px /usr/bin/child -> "child+objects={}",
+}

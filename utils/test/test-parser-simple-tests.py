@@ -252,6 +252,9 @@ exception_not_raised = (
     'link/bad_leading_link_x4.sd',
     'link/bad_leading_link_x5.sd',
     'link/bad_leading_link_x6.sd',
+
+    # an exec target running into '+objects=' isn't detected by the tools
+    'xtrans/simple_bad_plus_objects_1.sd',
 )
 
 # testcases with lines that don't match any regex and end up as "unknown line"

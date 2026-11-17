@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION +identities= in a quoted profile name is part of the name
+#=EXRESULT PASS
+#
+profile "p+identities=(foo)" {
+  file,
+}
