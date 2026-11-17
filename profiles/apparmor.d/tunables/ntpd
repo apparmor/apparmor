@@ -10,8 +10,9 @@
 # ------------------------------------------------------------------
 
 #Add your ntpd devices here eg. if you have a DCF clock
+@{NTPD_DEVICE}="/dev/null"
 # @{NTPD_DEVICE}=/dev/ttyS*
-@{NTPD_DEVICE}="/dev/tty10"
+# @{NTPD_DEVICE}="/dev/tty10"
 
 # Also, include files in tunables/ntpd.d for site-specific adjustments
 include if exists <tunables/ntpd.d>
