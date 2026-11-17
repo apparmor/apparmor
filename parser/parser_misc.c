@@ -1626,7 +1626,7 @@ int test_cap_table_growth(void)
 			(desc + ": name_to_capability").c_str());
 		MY_TEST(strcmp(capability_to_name(ncaps + i), name.c_str()) == 0,
 			(desc + ": capability_to_name").c_str());
-		MY_TEST(capability_backmap(ncaps + i) == 0,
+		MY_TEST(capability_backmap(ncaps + i) == NO_BACKMAP_CAP,
 			(desc + ": capability_backmap").c_str());
 		MY_TEST(capability_in_kernel(ncaps + i),
 			(desc + ": capability_in_kernel").c_str());
