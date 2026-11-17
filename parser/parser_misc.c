@@ -1566,6 +1566,72 @@ int test_convert_time_units()
 	return rc;
 }
 
+/*
+ * Add capabilities the parser does not know to the table, the way a
+ * kernel or policy feature set with a newer caps/mask does, and check
+ * that the built-in entries still look up correctly afterwards. The
+ * lookup maps hold references to the table's entries, so the table
+ * must not move them when it grows.
+ */
+int test_cap_table_growth(void)
+{
+	int rc = 0;
+	const unsigned int new_caps = 64;
+	unsigned int ncaps = 0;
+	string mask;
+	aa_features *features = NULL;
+
+	/* the mask lists capabilities by number, from 0 */
+	while (strcmp(capability_to_name(ncaps), "invalid-capability") != 0) {
+		mask += " ";
+		mask += capability_to_name(ncaps);
+		ncaps++;
+	}
+	MY_TEST(ncaps == BASE_CAP_TABLE_SIZE,
+		"base capability numbers are contiguous from 0");
+	for (unsigned int i = 0; i < new_caps; i++)
+		mask += " tst_newcap" + to_string(i);
+	string feature_str = "caps {mask {" + mask + "\n}\n}\n";
+
+	MY_TEST(aa_features_new_from_string(&features, feature_str.c_str(),
+					    feature_str.size()) == 0,
+		"build features from string");
+	if (!features)
+		return 1;
+	MY_TEST(add_cap_feature_mask(features, capability_flags::KERNEL_FEATURE),
+		"add caps/mask with unknown capabilities");
+	aa_features_unref(features);
+
+	for (size_t i = 0; i < BASE_CAP_TABLE_SIZE; i++) {
+		struct capability_table *ent = &base_capability_table[i];
+		string desc = string("built-in capability ") + ent->name;
+
+		MY_TEST(name_to_capability(ent->name) == (int) ent->cap,
+			(desc + ": name_to_capability").c_str());
+		MY_TEST(strcmp(capability_to_name(ent->cap), ent->name) == 0,
+			(desc + ": capability_to_name").c_str());
+		MY_TEST(capability_backmap(ent->cap) == (int) ent->backmap,
+			(desc + ": capability_backmap").c_str());
+		MY_TEST(capability_in_kernel(ent->cap),
+			(desc + ": capability_in_kernel").c_str());
+	}
+	for (unsigned int i = 0; i < new_caps; i++) {
+		string name = "tst_newcap" + to_string(i);
+		string desc = "added capability " + name;
+
+		MY_TEST(name_to_capability(name.c_str()) == (int) (ncaps + i),
+			(desc + ": name_to_capability").c_str());
+		MY_TEST(strcmp(capability_to_name(ncaps + i), name.c_str()) == 0,
+			(desc + ": capability_to_name").c_str());
+		MY_TEST(capability_backmap(ncaps + i) == 0,
+			(desc + ": capability_backmap").c_str());
+		MY_TEST(capability_in_kernel(ncaps + i),
+			(desc + ": capability_in_kernel").c_str());
+	}
+
+	return rc;
+}
+
 int main(void)
 {
 	int rc = 0;
@@ -1584,6 +1650,10 @@ int main(void)
 		rc = retval;
 
 	retval = test_convert_time_units();
+	if (retval != 0)
+		rc = retval;
+
+	retval = test_cap_table_growth();
 	if (retval != 0)
 		rc = retval;
 
