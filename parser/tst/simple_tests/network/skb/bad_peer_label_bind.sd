@@ -1,0 +1,8 @@
+#
+#=DESCRIPTION network peer label with local bind permission
+#=EXRESULT FAIL
+#
+
+profile a_profile {
+  network bind peer=(label=foo),
+}

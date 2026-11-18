@@ -1,0 +1,8 @@
+#
+#=DESCRIPTION network peer label with local create and listen permissions
+#=EXRESULT FAIL
+#
+
+profile a_profile {
+  network (create, listen) peer=(label=foo),
+}

@@ -1,0 +1,8 @@
+#
+#=DESCRIPTION network peer label on the inet6 family
+#=EXRESULT PASS
+#
+
+profile a_profile {
+  network inet6 stream peer=(label=foo),
+}

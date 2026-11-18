@@ -1,0 +1,8 @@
+#
+#=DESCRIPTION network peer label on the netlink family
+#=EXRESULT FAIL
+#
+
+profile a_profile {
+  network netlink peer=(label=foo),
+}

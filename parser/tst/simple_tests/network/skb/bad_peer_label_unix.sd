@@ -1,0 +1,8 @@
+#
+#=DESCRIPTION network peer label on the unix family
+#=EXRESULT FAIL
+#
+
+profile a_profile {
+  network unix peer=(label=foo),
+}
