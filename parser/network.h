@@ -223,7 +223,7 @@ public:
 	ip_conds peer;
 	ip_conds local;
 	bool has_local_conds(void) { return local.sip || local.sport || local.iface || local.label_match; }
-	bool has_peer_conds(void) { return peer.sip || peer.sport; }
+	bool has_peer_conds(void) { return peer.sip || peer.sport || peer.label_match; }
 	/* empty constructor used only for the profile to access
 	 * static elements to maintain compatibility with
 	 * AA_CLASS_NET */
