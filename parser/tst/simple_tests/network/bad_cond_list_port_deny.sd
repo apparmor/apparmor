@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION deny network port conditional with a list of values
+#=EXRESULT FAIL
+#
+/usr/bin/foo {
+  deny network inet port=(80, 81),
+}

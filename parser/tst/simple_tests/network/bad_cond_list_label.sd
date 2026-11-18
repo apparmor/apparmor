@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION network label conditional with a list of values
+#=EXRESULT FAIL
+#
+/usr/bin/foo {
+  network inet label=(a b),
+}

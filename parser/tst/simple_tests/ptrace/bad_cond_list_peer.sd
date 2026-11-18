@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION ptrace peer conditional with a list of values
+#=EXRESULT FAIL
+#
+/usr/bin/foo {
+  ptrace peer=(a b),
+}

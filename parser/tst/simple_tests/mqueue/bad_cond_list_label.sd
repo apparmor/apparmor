@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION mqueue label conditional with a list of values
+#=EXRESULT FAIL
+#
+/usr/bin/foo {
+  mqueue label=(a b) type=posix /q,
+}

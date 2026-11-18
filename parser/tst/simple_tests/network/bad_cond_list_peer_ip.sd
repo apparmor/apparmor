@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION network peer ip conditional with a list of values
+#=EXRESULT FAIL
+#
+/usr/bin/foo {
+  network inet peer=(ip=(1.2.3.4 1.2.3.5)),
+}

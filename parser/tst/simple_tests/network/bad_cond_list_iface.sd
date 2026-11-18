@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION network interface conditional with a list of values
+#=EXRESULT FAIL
+#
+/usr/bin/foo {
+  network inet interface=(eth0 eth1),
+}
