@@ -1603,7 +1603,7 @@ io_uring_perm: TOK_VALUE
 		else if (strcmp($1, "sqpoll") == 0)
 			$$ = AA_IO_URING_SQPOLL;
 		else
-			$$ = 0;
+			yyerror(_("invalid io_uring permission '%s'"), $1);
 
 		if ($1)
 			free($1);
