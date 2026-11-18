@@ -51,6 +51,11 @@ profile lsof /usr/bin/lsof flags=(attach_disconnected.path=/att/lsof/) {
 
   @{PROC}/@{pid}/net/* r,
 
+  # These are required by CI so it doesn't fail on denials. Investigate
+  # whether we should deny access to these
+  @{PROC}/@{pid}/net/sctp/assocs r,
+  @{PROC}/@{pid}/net/sctp/eps r,
+
   include if exists <local/lsof>
 }
 
