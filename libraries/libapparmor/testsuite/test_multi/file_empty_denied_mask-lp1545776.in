@@ -1,0 +1,1 @@
+type=AVC msg=audit(1455544394.446:262): apparmor="ALLOWED" operation="open" profile="/root/tmp/bash" name="/root/.bash_history" pid=8675 comm="bash" requested_mask="" denied_mask="" fsuid=0 ouid=0
