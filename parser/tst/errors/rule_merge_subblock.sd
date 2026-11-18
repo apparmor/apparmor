@@ -1,0 +1,12 @@
+#
+# rules in subblocks must still be merged when the enclosing block
+# has merged rules
+profile rule_merge_subblock {
+  /a r,
+  /a r,
+
+  audit {
+    /b r,
+    /b w,
+  }
+}

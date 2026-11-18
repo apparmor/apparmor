@@ -302,11 +302,25 @@ int block::apply_aliases(void)
 	}, false, false);
 }
 
+/* returns number of rules merged, or negative number on error */
 int block::merge_duplicated_rules(void)
 {
-	return for_each_recursive([](block *b) {
-		return b->rules.merge_duplicated_rules(b->parent->name);
+	int count = 0;
+
+	/* for_each_recursive stops on a non-zero return, so only return
+	 * errors from the callback and accumulate the merge count
+	 */
+	int error = for_each_recursive([&](block *b) {
+		int res = b->rules.merge_duplicated_rules(b->parent->name);
+		if (res < 0)
+			return res;
+		count += res;
+		return 0;
 	}, false, false);
+	if (error)
+		return error;
+
+	return count;
 }
 
 void block::post_parse_profile(Profile &prof)
