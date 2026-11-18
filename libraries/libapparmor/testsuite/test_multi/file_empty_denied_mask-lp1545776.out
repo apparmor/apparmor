@@ -1,0 +1,15 @@
+START
+File: file_empty_denied_mask-lp1545776.in
+Event type: AA_RECORD_ALLOWED
+Audit ID: 1455544394.446:262
+Operation: open
+Mask: 
+Denied Mask: 
+fsuid: 0
+ouid: 0
+Profile: /root/tmp/bash
+Name: /root/.bash_history
+Command: bash
+PID: 8675
+Epoch: 1455544394
+Audit subid: 262
