@@ -1264,6 +1264,9 @@ void move_conditional_value(const char *rulename, char **dst_ptr,
 	if (*dst_ptr)
 		yyerror("%s conditional \"%s\" can only be specified once\n",
 			rulename, cond_ent->name);
+	if (list_len(cond_ent->vals) > 1)
+		yyerror("%s conditional \"%s\" only supports a single value\n",
+			rulename, cond_ent->name);
 
 	*dst_ptr = cond_ent->vals->value;
 	cond_ent->vals->value = NULL;
