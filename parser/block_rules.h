@@ -70,6 +70,11 @@ struct capabilities {
 			return false;
 		}
 
+		if (p.rule_mode == rule_mode_t::PROMPT) {
+			error = _("prompt prefix not allowed on capability rules");
+			return false;
+		}
+
 		if (p.rule_mode == rule_mode_t::UNSPECIFIED &&
 		    p.audit == audit_t::UNSPECIFIED)
 			return true;
