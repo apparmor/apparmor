@@ -121,6 +121,7 @@ static char **parse_args(int argc, char **argv)
 		{"namespace", required_argument, 0, 'n'},
 		{"immediate", no_argument, 0, 'i'},
 		{"verbose", no_argument, 0, 'v'},
+		{NULL, 0, NULL, 0},
 	};
 
 	while ((opt = getopt_long(argc, argv, "+dhp:n:iv", long_opts, NULL)) != -1) {

@@ -119,6 +119,7 @@ static char **parse_args(int argc, char **argv)
 		{"file", required_argument, 0, 'f'},
 		{"write", required_argument, 0, 'w'},
 		{"stdout", no_argument, 0, ARG_STDOUT},
+		{NULL, 0, NULL, 0},
 	};
 
 	while ((opt = getopt_long(argc, argv, "+dvhxf:l:w:", long_opts, NULL)) != -1) {
