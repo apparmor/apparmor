@@ -486,7 +486,8 @@ int block_rules::add_named_transition(Profile *prof, struct cod_entry *entry)
 		char *sub = strstr(entry->nt_name, "//");
 		/* does the subprofile name match the rule */
 
-		if (sub && strncmp(prof->name, sub, sub - entry->nt_name) &&
+		if (sub && strlen(prof->name) == (size_t) (sub - entry->nt_name) &&
+		    strncmp(prof->name, entry->nt_name, sub - entry->nt_name) == 0 &&
 		    strcmp(sub + 2, entry->name) == 0) {
 			free(entry->nt_name);
 			entry->nt_name = NULL;
