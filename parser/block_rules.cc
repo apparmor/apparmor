@@ -19,6 +19,7 @@
 #include "profile.h"
 
 #include <algorithm>
+#include <limits.h>
 
 void block_rules::add_entry(struct cod_entry *entry)
 {
@@ -386,6 +387,9 @@ int block_rules::merge_duplicated_rules(const char *profname)
 
 	if (parseopts.dump & DUMP_RULE_MERGE)
 		fprintf(stderr, "RULE MERGE: deleted %d file rules, %d rules\n", file, rule);
+
+	if (file > INT_MAX - rule)
+		return INT_MAX;
 
 	return file + rule;
 }
