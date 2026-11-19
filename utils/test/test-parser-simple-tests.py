@@ -255,6 +255,11 @@ exception_not_raised = (
 
     # an exec target running into '+objects=' isn't detected by the tools
     'xtrans/simple_bad_plus_objects_1.sd',
+
+    # the tools do not check which rules a prompt block may hold
+    'capability/bad_prompt_4.sd',
+    'capability/bad_prompt_5.sd',
+    'capability/bad_prompt_6.sd',
 )
 
 # testcases with lines that don't match any regex and end up as "unknown line"

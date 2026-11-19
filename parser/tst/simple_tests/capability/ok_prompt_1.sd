@@ -1,0 +1,10 @@
+#
+#=DESCRIPTION capability rule next to a prompt block
+#=EXRESULT PASS
+#
+/usr/bin/foo {
+  capability chown,
+  prompt {
+    /foo r,
+  }
+}

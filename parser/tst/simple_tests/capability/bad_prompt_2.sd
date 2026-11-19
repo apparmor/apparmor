@@ -1,0 +1,7 @@
+#
+#=DESCRIPTION prompt capability rule without a capability
+#=EXRESULT FAIL
+#
+/usr/bin/foo {
+  prompt capability,
+}
