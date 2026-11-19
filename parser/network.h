@@ -149,7 +149,7 @@ public:
 	uint16_t to_port = 0;
 	port_type_t port_type = port_type_t::UNSPECIFIED;
 
-	struct ip_address ip;
+	struct ip_address ip = {};
 
 	bool is_none = false;
 

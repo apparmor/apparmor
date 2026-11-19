@@ -94,10 +94,8 @@ public:
 
 	rule_t(int t): rule_type(t), flags(rule_flags_t::NONE), removed_by(NULL) { }
 	rule_t(const rule_t &r) : rule_type(r.rule_type), flags(r.flags),
-				  removed_by(r.removed_by)
+				  removed_by(r.removed_by), warned_name(r.warned_name)
 	{
-		if (r.warned_name)
-			warned_name = warned_name;
 	}
 	rule_t(rule_t &&r) noexcept : rule_type(r.rule_type), flags(r.flags),
 				      removed_by(r.removed_by), warned_name(r.warned_name)

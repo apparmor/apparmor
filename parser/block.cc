@@ -336,7 +336,8 @@ void block::post_parse_profile(Profile &prof)
 
 void block::add_implied_rules(Profile &prof)
 {
-	for_each_recursive([&](block *b) {
+	/* Cannot fail ==> no result to check */
+	(void) for_each_recursive([&](block *b) {
 		b->rules.add_implied_rules(&prof);
 		return 0;
 	}, true, false);
